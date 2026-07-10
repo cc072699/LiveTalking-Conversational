@@ -1,6 +1,6 @@
 # LiveTalking-560 实时交互数字人系统
 
-本项目基于开源的 `lipku/LiveTalking` （https://github.com/cc072699/-livetalking.git）实时数字人引擎进行二次开发，由 **五六零人工智能（560 AI）** 团队深度定制与重构，旨在提供极致低延迟、高稳定性、内置企业专属知识库的音视频同步实时交互数字人解决方案。
+本项目基于开源的 `lipku/LiveTalking` （https://gitee.com/lipku/LiveTalking.git）实时数字人引擎进行二次开发，由 **五六零人工智能（560 AI）** 团队深度定制与重构，旨在提供极致低延迟、高稳定性、内置企业专属知识库的音视频同步实时交互数字人解决方案。
 
 ---
 
