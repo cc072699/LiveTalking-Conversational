@@ -1,0 +1,31 @@
+# ---- Python ----
+__pycache__/
+build/
+*.egg-info/
+*.so
+dist/
+venv/
+
+# ---- 大文件（保留目录结构，忽略内容） ----
+data/avatars/
+data/record/
+data/tmp/
+models/*
+!models/.gitkeep
+
+# ---- 日志 & 密钥 ----
+*.log
+.env
+.env.bak
+
+# ---- 备份文件 ----
+*.bak
+*.backup_*
+*.before_fix_*
+*.before_jitter_fix_*
+
+# ---- 媒体 & 系统 ----
+*.mp4
+*.wav
+.DS_Store
+.idea

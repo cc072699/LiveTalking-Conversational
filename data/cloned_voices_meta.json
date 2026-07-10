@@ -1,0 +1,20 @@
+{
+  "voices": {
+    "my_voice_clone": {
+      "voice_id": "",
+      "ref_text": "测试克隆文本",
+      "speaker_description": "",
+      "local_file": "/Users/macmima1234/Desktop/claude code/LiveTalking实时交互数字人/data/cloned_voices/clone_audio.wav",
+      "created_at": 1781680910,
+      "status": "requires_oss_upload"
+    },
+    "tts1": {
+      "voice_id": "",
+      "ref_text": "“哈喽，大家好呀！现在是晚上的散步时间。一出门就看到今晚的夜景真的太美了，微风吹过来超级舒服，感觉一整天的疲惫瞬间就被治愈了。平时工作虽然挺忙的，但只要看到这些生活里的小美好，就觉得充满了动力。在这个快节奏的城市里，希望我的声音能像这晚风一样，陪你聊聊天，给你带去一点点温暖和快乐。今天也要好好爱自己哦，一起加油吧！”",
+      "speaker_description": "温柔女声",
+      "local_file": "/Users/macmima1234/Desktop/claude code/LiveTalking实时交互数字人/data/cloned_voices/__.wav",
+      "created_at": 1781681167,
+      "status": "requires_oss_upload"
+    }
+  }
+}

@@ -1,0 +1,1688 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LiveTalking - 数字人实时驱动</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <style>
+        :root {
+            --primary: #4361ee;
+            --primary-dark: #3f37c9;
+            --bg: #f0f4fc;
+            --card-bg: rgba(255,255,255,0.85);
+            --radius: 14px;
+        }
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background: linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%);
+            color: #1e293b;
+            min-height: 100vh;
+            padding-bottom: 40px;
+        }
+        .navbar-brand { font-weight: 700; }
+        .glass-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255,255,255,0.4);
+            border-radius: var(--radius);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+            margin-bottom: 20px;
+        }
+        .card-header {
+            background: transparent;
+            border-bottom: 1px solid rgba(0,0,0,0.06);
+            padding: 16px 20px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .card-header i { color: var(--primary); }
+        .card-body { padding: 20px; }
+        .btn-primary-custom {
+            background: linear-gradient(135deg, #4361ee, #3f37c9);
+            border: none;
+            color: #fff;
+            font-weight: 600;
+            border-radius: 8px;
+            padding: 8px 16px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .btn-primary-custom:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(67,97,238,0.3); color: #fff; }
+        .btn-primary-custom:active { transform: translateY(0); }
+        .btn-danger-custom { background: #ef4444; border: none; color: #fff; font-weight: 600; border-radius: 8px; padding: 8px 16px; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; }
+        .btn-danger-custom:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(239,68,68,0.3); }
+        .btn-danger-custom:active { transform: translateY(0); }
+        .btn-outline-custom { border: 2px solid var(--primary); color: var(--primary); font-weight: 600; border-radius: 8px; padding: 8px 16px; background: transparent; cursor: pointer; transition: all 0.2s; }
+        .btn-outline-custom:hover { background: var(--primary); color: #fff; }
+        .btn-outline-custom:active { transform: scale(0.97); }
+        video { width: 100%; border-radius: 8px; background: #000; }
+        .session-badge { font-size: 0.75rem; padding: 4px 10px; border-radius: 20px; }
+        .connected { background: #d1fae5; color: #065f46; }
+        .disconnected { background: #fee2e2; color: #991b1b; }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+        .status-dot.on { background: #10b981; }
+        .status-dot.off { background: #ef4444; }
+        .quick-link { text-decoration: none; }
+        .quick-link .glass-card { transition: transform 0.3s, box-shadow 0.3s; cursor: pointer; }
+        .quick-link:hover .glass-card { transform: translateY(-3px); box-shadow: 0 12px 28px rgba(0,0,0,0.1); }
+        pre { background: #1e293b; color: #e2e8f0; padding: 12px; border-radius: 8px; font-size: 0.8rem; max-height: 120px; overflow-y: auto; }
+        label { font-weight: 500; font-size: 0.9rem; color: #64748b; margin-bottom: 4px; }
+        .param-hint { font-size: 0.75rem; color: #94a3b8; }
+        ::placeholder { color: #9ca3af !important; opacity: 1; }
+        :-ms-input-placeholder { color: #9ca3af; }
+        .voice-transcript {
+            background: rgba(67, 97, 238, 0.06);
+            border-radius: 8px;
+            padding: 10px 14px;
+            min-height: 40px;
+            font-size: 0.9rem;
+            color: #334155;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        .voice-chat-log {
+            max-height: 200px;
+            overflow-y: auto;
+            font-size: 0.85rem;
+            padding: 8px 0;
+        }
+        .voice-chat-log .msg-user { color: var(--primary); margin-bottom: 4px; }
+        .voice-chat-log .msg-user::before { content: '🗣️ '; }
+        .voice-chat-log .msg-avatar { color: #64748b; margin-bottom: 8px; }
+        .voice-chat-log .msg-avatar::before { content: '🤖 '; }
+
+        /* Fullscreen wrapper */
+        .video-fs-wrapper { position: relative; display: inline-block; width: 100%; }
+        .video-fs-wrapper:fullscreen,
+        .video-fs-wrapper:-webkit-full-screen {
+            display: flex; align-items: center; justify-content: center;
+            background: #000; width: 100vw; height: 100vh;
+        }
+        .video-fs-wrapper:fullscreen video,
+        .video-fs-wrapper:-webkit-full-screen video {
+            max-width: 100%; max-height: 100vh; width: auto; height: auto; border-radius: 0;
+        }
+        /* Side panel: absolute overlay on the right */
+        .video-fs-wrapper:fullscreen .fs-side-panel,
+        .video-fs-wrapper:-webkit-full-screen .fs-side-panel {
+            display: none; flex-direction: column; position: absolute; top: 0; right: 0;
+            width: 380px; height: 100vh; overflow-y: auto; padding: 16px; gap: 16px;
+            background: #0d1117; color: #e6edf3; z-index: 100;
+        }
+        /* Panel open state */
+        .video-fs-wrapper:fullscreen.fs-panel-open .fs-side-panel,
+        .video-fs-wrapper:-webkit-full-screen.fs-panel-open .fs-side-panel {
+            display: flex;
+        }
+        .video-fs-wrapper:fullscreen .fs-side-panel .fs-glass-card,
+        .video-fs-wrapper:-webkit-full-screen .fs-side-panel .fs-glass-card {
+            background: rgba(255,255,255,0.85); backdrop-filter: blur(12px);
+            border: 1px solid rgba(255,255,255,0.4); border-radius: 14px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.06); color: #1e293b;
+        }
+        .video-fs-wrapper:fullscreen .fs-side-panel .fs-card-header,
+        .video-fs-wrapper:-webkit-full-screen .fs-side-panel .fs-card-header {
+            background: transparent; border-bottom: 1px solid rgba(0,0,0,0.06);
+            padding: 14px 18px; font-weight: 600; display: flex; align-items: center; gap: 8px;
+        }
+        .video-fs-wrapper:fullscreen .fs-side-panel .fs-card-header i,
+        .video-fs-wrapper:-webkit-full-screen .fs-side-panel .fs-card-header i { color: #4361ee; }
+        .video-fs-wrapper:fullscreen .fs-side-panel .fs-card-body,
+        .video-fs-wrapper:-webkit-full-screen .fs-side-panel .fs-card-body { padding: 16px 18px; }
+        /* Hide native fullscreen button */
+        video::-webkit-media-controls-fullscreen-button { display: none !important; }
+        video::-moz-full-screen-button { display: none !important; }
+        /* Fullscreen button (normal state) */
+        .fs-trigger {
+            position: absolute; bottom: 8px; right: 8px;
+            background: rgba(0,0,0,0.6); color: #fff; border: none;
+            border-radius: 4px; padding: 4px 8px; cursor: pointer;
+            font-size: 14px; z-index: 10; opacity: 0.7; transition: opacity 0.2s;
+        }
+        .fs-trigger:hover { opacity: 1; }
+        /* Toolbar in fullscreen (top-right, contains panel toggle + exit) */
+        .fs-toolbar {
+            display: none; position: fixed; top: 12px; right: 12px; z-index: 2147483647;
+            gap: 8px;
+        }
+        .video-fs-wrapper:fullscreen .fs-toolbar,
+        .video-fs-wrapper:-webkit-full-screen .fs-toolbar { display: flex; }
+        .fs-toolbar button {
+            background: rgba(255,255,255,0.15); color: #fff; border: 1px solid rgba(255,255,255,0.25);
+            border-radius: 6px; padding: 6px 14px; cursor: pointer; font-size: 14px;
+            transition: background 0.2s;
+        }
+        .fs-toolbar button:hover { background: rgba(255,255,255,0.3); }
+        .fs-toolbar button.active { background: rgba(67,97,238,0.7); border-color: rgba(67,97,238,0.9); }
+        /* Side panel hidden in normal state */
+        .fs-side-panel { display: none; }
+    </style>
+</head>
+<body>
+
+<nav class="navbar navbar-dark" style="background: linear-gradient(135deg, #4361ee, #3f37c9); box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+    <div class="container-fluid px-4">
+        <span class="navbar-brand"><i class="bi bi-camera-video-fill me-2"></i>LiveTalking</span>
+        <a href="/index-en.html" class="text-white-50 small text-decoration-none me-2">English</a>
+        <div class="d-flex gap-2">
+            <span class="session-badge disconnected" id="statusBadge"><span class="status-dot off"></span>未连接</span>
+            <span class="text-white-50 small" id="sessionIdDisplay">SID: -</span>
+        </div>
+    </div>
+</nav>
+
+<div class="container mt-4">
+    <!-- Quick Links -->
+    <div class="row g-3 mb-2">
+        <div class="col-md-3">
+            <a href="/avatar.html" class="quick-link" target="_blank">
+                <div class="glass-card p-3 text-center">
+                    <i class="bi bi-person-bounding-box fs-2" style="color: #4361ee;"></i>
+                    <div class="fw-bold mt-2">Avatar 生成</div>
+                    <div class="small text-muted">创建数字人形象</div>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-3">
+            <a href="/admin.html" class="quick-link" target="_blank">
+                <div class="glass-card p-3 text-center">
+                    <i class="bi bi-speedometer2 fs-2" style="color: #4361ee;"></i>
+                    <div class="fw-bold mt-2">管理后台</div>
+                    <div class="small text-muted">监控会话与配置</div>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-3">
+            <a href="/tts/index.html" class="quick-link" target="_blank">
+                <div class="glass-card p-3 text-center">
+                    <i class="bi bi-soundwave fs-2" style="color: #4361ee;"></i>
+                    <div class="fw-bold mt-2">TTS 语音管理</div>
+                    <div class="small text-muted">语音列表 · 克隆 · 合成</div>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Left Column: Connection + Video -->
+        <div class="col-lg-7">
+            <!-- 1. WebRTC Connection -->
+            <div class="glass-card">
+                <div class="card-header"><i class="bi bi-broadcast"></i> WebRTC 连接</div>
+                <div class="card-body">
+                    <div class="row g-2 align-items-end mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Avatar ID</label>
+                            <input type="text" class="form-control form-control-sm" id="offerAvatar" list="avatarList" placeholder="cc3" value="cc3">
+                            <datalist id="avatarList">
+                                <option value="cc3">
+                                <option value="cc2">
+                                <option value="cc1">
+                                <option value="wav2lip256_avatar1">
+                                <option value="musetalk_avatar3">
+                            </datalist>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">参考音频</label>
+                            <input type="text" class="form-control form-control-sm" id="offerRefAudio" placeholder="zh-CN-YunxiaNeural">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">参考音频文本</label>
+                            <input type="text" class="form-control form-control-sm" id="offerRefText" placeholder="参考文本（可选）">
+                        </div>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button class="btn-primary-custom" id="btnStart" onclick="start()"><i class="bi bi-play-fill"></i> 开始连接</button>
+                        <button class="btn-danger-custom" id="btnStop" onclick="stop()" style="display:none;"><i class="bi bi-stop-fill"></i> 断开连接</button>
+                    </div>
+                    <div class="mt-3">
+                        <div id="videoFullscreenWrapper" class="video-fs-wrapper">
+                            <video id="video" autoplay playsinline muted controls></video>
+                            <audio id="audio" autoplay></audio>
+                            <button class="fs-trigger" id="fsBtn" onclick="toggleFullscreen()" title="全屏">⛶</button>
+                            <div class="fs-toolbar" id="fsToolbar">
+                                <button id="fsPanelToggle" onclick="toggleFsPanel()" title="控制面板">☰ 控制</button>
+                                <button onclick="toggleFullscreen()" title="退出全屏">✕ 退出</button>
+                            </div>
+                            <div id="fsSidePanel" class="fs-side-panel">
+                                <!-- Voice Conversation -->
+                                <div class="fs-glass-card">
+                                    <div class="fs-card-header"><i class="bi bi-mic-fill"></i> 语音对话</div>
+                                    <div class="fs-card-body">
+                                        <div id="fsVoiceStatusBar" class="small mb-2" style="display:none;color:#64748b;">
+                                            <span id="fsVoiceStatusIcon">🎤</span>
+                                            <span id="fsVoiceStatusText"></span>
+                                        </div>
+                                        <div class="d-flex gap-2 align-items-center mb-2">
+                                            <select class="form-select form-select-sm" id="fsVoiceMode"
+                                                onchange="document.getElementById('voiceMode').value=this.value; onVoiceModeChange();"
+                                                style="width:130px;">
+                                                <option value="off">🎙️ 关闭</option>
+                                                <option value="free">💬 自由对话</option>
+                                                <option value="ptt">🎤 按住说话</option>
+                                            </select>
+                                            <button class="btn-outline-custom btn-sm" onclick="interrupt()"><i class="bi bi-stop-circle"></i> 打断</button>
+                                        </div>
+                                        <div class="d-flex gap-2 align-items-center mb-2 small">
+                                            <label class="mb-0 text-muted" style="white-space:nowrap;">音色</label>
+                                            <select class="form-select form-select-sm" id="fsVoiceTtsVoice"
+                                                onchange="document.getElementById('ttsVoice').value=this.value; document.getElementById('voiceTtsVoice').value=this.value"
+                                                style="width:100px;">
+                                                <option value="Ethan" selected>Ethan (英文男声)</option>
+                            <option value="Cherry">Cherry</option>
+                                            </select>
+                                        </div>
+                                        <div id="fsPttContainer" style="display:none;" class="mb-2">
+                                            <button id="fsPttButton" class="btn-primary-custom w-100 py-3 fs-5"
+                                                onmousedown="pttStart()" onmouseup="pttEnd()" ontouchstart="pttStart()" ontouchend="pttEnd()">
+                                                🎤 按住说话
+                                            </button>
+                                        </div>
+                                        <div id="fsVoiceTranscript" class="voice-transcript mb-2" style="display:none;"></div>
+                                        <div id="fsVoiceChatLog" class="voice-chat-log"></div>
+                                    </div>
+                                </div>
+                                <!-- Text Driver -->
+                                <div class="fs-glass-card">
+                                    <div class="fs-card-header"><i class="bi bi-chat-text-fill"></i> 文本驱动</div>
+                                    <div class="fs-card-body">
+                                        <div class="mb-2">
+                                            <label class="form-label">输入文本 <span class="param-hint">(type: echo/chat)</span></label>
+                                            <textarea class="form-control form-control-sm" id="fsTxtMessage" rows="2" placeholder="输入要播报的文本..."></textarea>
+                                        </div>
+                                        <div class="d-flex gap-2 align-items-end mb-2">
+                                            <select class="form-select form-select-sm" style="width:120px;" id="fsTxtType">
+                                                <option value="echo">Echo 复读</option>
+                                                <option value="chat">Chat LLM</option>
+                                            </select>
+                                            <div class="form-check form-switch">
+                                                <input class="form-check-input" type="checkbox" id="fsTxtInterrupt" checked>
+                                                <label class="form-check-label small">打断</label>
+                                            </div>
+                                            <button class="btn-primary-custom btn-sm ms-auto" onclick="sendFsText()"><i class="bi bi-send"></i> 发送</button>
+                                            <button class="btn-outline-custom btn-sm" onclick="interrupt()"><i class="bi bi-stop-circle"></i> 打断</button>
+                                        </div>
+                                        <div class="d-flex gap-2 align-items-center">
+                                            <label class="form-label mb-0" style="white-space:nowrap;">TTS 模型</label>
+                                            <select class="form-select form-select-sm" id="fsTtsModel" style="flex:1;">
+                                                <option value="qwen-tts-realtime-latest" selected>qwen-tts-realtime-latest</option>
+                                                <option value="qwen-tts-realtime-2025-07-15">qwen-tts-realtime-2025-07-15</option>
+                                                <option value="qwen-tts-2025-05-22">qwen-tts-2025-05-22</option>
+                                                <option value="qwen-tts-latest">qwen-tts-latest</option>
+                                                <option value="qwen3-tts-flash-realtime" disabled>qwen3-tts-flash-realtime ⚠️ 额度不足</option>
+                                            </select>
+                                            <label class="form-label mb-0" style="white-space:nowrap;">音色</label>
+                                            <select class="form-select form-select-sm" id="fsTtsVoice" style="width:120px;">
+                                                <option value="Ethan" selected>Ethan (英文男声)</option>
+                            <option value="Cherry">Cherry</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Drivers + Actions -->
+        <div class="col-lg-5">
+            <!-- 2. Voice Conversation -->
+            <div class="glass-card">
+                <div class="card-header"><i class="bi bi-mic-fill"></i> 语音对话</div>
+                <div class="card-body">
+                    <div id="voiceStatusBar" class="small text-muted mb-2" style="display:none;">
+                        <span id="voiceStatusIcon">🎤</span>
+                        <span id="voiceStatusText">聆听中...</span>
+                    </div>
+                    <div class="d-flex gap-2 align-items-center mb-2">
+                        <select class="form-select form-select-sm" id="voiceMode" onchange="onVoiceModeChange()" style="width:130px;">
+                            <option value="off">🎙️ 关闭</option>
+                            <option value="free">💬 自由对话</option>
+                            <option value="ptt">🎤 按住说话</option>
+                        </select>
+                        <button class="btn-outline-custom btn-sm" onclick="interrupt()"><i class="bi bi-stop-circle"></i> 打断</button>
+                    </div>
+                    <div class="d-flex gap-2 align-items-center mb-2 small">
+                        <label class="mb-0 text-muted" style="white-space:nowrap;">音色</label>
+                        <select class="form-select form-select-sm" id="voiceTtsVoice" onchange="document.getElementById('ttsVoice').value=this.value" style="width:100px;">
+                            <option value="Ethan" selected>Ethan (英文男声)</option>
+                            <option value="Cherry">Cherry</option>
+                        </select>
+                        <label class="mb-0 text-muted" style="white-space:nowrap;">模型</label>
+                        <select class="form-select form-select-sm" id="voiceTtsModel" onchange="document.getElementById('ttsModel').value=this.value" style="flex:1;">
+                            <option value="qwen-tts-realtime-latest" selected>qwen-tts-realtime-latest</option>
+                        </select>
+                    </div>
+                    <div id="pttContainer" style="display:none;" class="mb-2">
+                        <button id="pttButton" class="btn-primary-custom w-100 py-3 fs-5" onmousedown="pttStart()" onmouseup="pttEnd()" ontouchstart="pttStart()" ontouchend="pttEnd()">🎤 按住说话</button>
+                    </div>
+                    <div id="voiceTranscript" class="voice-transcript mb-2" style="display:none;"></div>
+                    <div id="voiceChatLog" class="voice-chat-log"></div>
+                </div>
+            </div>
+
+            <!-- 3. Text Driver -->
+            <div class="glass-card">
+                <div class="card-header"><i class="bi bi-chat-text-fill"></i> 文本驱动 (POST /human)</div>
+                <div class="card-body">
+                    <div class="mb-2">
+                        <label class="form-label">输入文本 <span class="param-hint">(type: echo/chat)</span></label>
+                        <textarea class="form-control form-control-sm" id="txtMessage" rows="2" placeholder="输入要播报的文本...">你好，欢迎使用LiveTalking</textarea>
+                    </div>
+                    <div class="d-flex gap-2 align-items-end mb-2">
+                        <select class="form-select form-select-sm" style="width:120px;" id="txtType">
+                            <option value="echo">Echo 复读</option>
+                            <option value="chat">Chat LLM</option>
+                        </select>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="txtInterrupt" checked>
+                            <label class="form-check-label small">打断</label>
+                        </div>
+                        <button class="btn-primary-custom btn-sm ms-auto" onclick="sendText()"><i class="bi bi-send"></i> 发送</button>
+                        <button class="btn-outline-custom btn-sm" onclick="interrupt()"><i class="bi bi-stop-circle"></i> 打断</button>
+                    </div>
+                    <div class="d-flex gap-2 align-items-center">
+                        <label class="form-label mb-0" style="white-space:nowrap;">TTS 模型</label>
+                        <select class="form-select form-select-sm" id="ttsModel" style="flex:1;">
+                            <option value="qwen-tts-realtime-latest" selected>qwen-tts-realtime-latest ✅</option>
+                            <option value="qwen-tts-realtime-2025-07-15">qwen-tts-realtime-2025-07-15 ✅</option>
+                            <option value="qwen-tts-2025-05-22">qwen-tts-2025-05-22 ✅</option>
+                            <option value="qwen-tts-latest">qwen-tts-latest ✅</option>
+                            <option value="qwen3-tts-flash-realtime" disabled>qwen3-tts-flash-realtime ⚠️ 额度不足</option>
+                        </select>
+                        <label class="form-label mb-0" style="white-space:nowrap;">音色</label>
+                        <select class="form-select form-select-sm" id="ttsVoice" style="width:120px;">
+                            <option value="Ethan" selected>Ethan (英文男声)</option>
+                            <option value="Cherry">Cherry</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. Audio Upload -->
+            <div class="glass-card">
+                <div class="card-header"><i class="bi bi-mic-fill"></i> 音频驱动 (POST /humanaudio)</div>
+                <div class="card-body">
+                    <input type="file" class="form-control form-control-sm mb-2" id="audioFile" accept="audio/*">
+                    <button class="btn-primary-custom btn-sm" onclick="uploadAudio()"><i class="bi bi-upload"></i> 上传并播放</button>
+                </div>
+            </div>
+
+            <!-- 4. Recording -->
+            <div class="glass-card">
+                <div class="card-header"><i class="bi bi-record-circle"></i> 录制控制 (POST /record)</div>
+                <div class="card-body">
+                    <div class="d-flex gap-2">
+                        <button class="btn-outline-custom btn-sm" id="btnRecToggle" onclick="toggleRecord()"><i class="bi bi-record-circle"></i> 开始录制</button>
+                        <button class="btn-outline-custom btn-sm" id="btnDownload" onclick="downloadRecord()" disabled><i class="bi bi-download"></i> 下载录像</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 5. Custom State -->
+            <div class="glass-card">
+                <div class="card-header"><i class="bi bi-sliders"></i> 动作编排 (POST /set_audiotype)</div>
+                <div class="card-body">
+                    <div class="row g-2 align-items-end">
+                        <div class="col-6">
+                            <label class="form-label">Audiotype 索引</label>
+                            <input type="number" class="form-control form-control-sm" id="audiotypeVal" value="2" min="2">
+                        </div>
+                        <div class="col-6">
+                            <button class="btn-primary-custom btn-sm w-100" onclick="setAudiotype()"><i class="bi bi-arrow-right-circle"></i> 切换状态</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+let pc = null;
+let sessionid = null;
+
+function updateStatus(connected) {
+    const badge = document.getElementById('statusBadge');
+    if (connected) {
+        badge.className = 'session-badge connected';
+        badge.innerHTML = '<span class="status-dot on"></span>已连接';
+    } else {
+        badge.className = 'session-badge disconnected';
+        badge.innerHTML = '<span class="status-dot off"></span>未连接';
+    }
+}
+
+function setSessionId(sid) {
+    sessionid = sid;
+    document.getElementById('sessionIdDisplay').textContent = 'SID: ' + (sid || '-');
+}
+
+// ─── WebRTC ────────────────────────────────────────────────
+let _reconnectAttempts = 0;
+const RECONNECT_MAX = 3;
+const RECONNECT_BASE_DELAY = 2000; // ms, exponential backoff
+
+function negotiate() {
+    pc.addTransceiver('video', { direction: 'recvonly' });
+    pc.addTransceiver('audio', { direction: 'recvonly' });
+    return pc.createOffer().then(offer => pc.setLocalDescription(offer)).then(() => {
+        return new Promise(resolve => {
+            if (pc.iceGatheringState === 'complete') resolve();
+            else {
+                const check = () => { if (pc.iceGatheringState === 'complete') { pc.removeEventListener('icegatheringstatechange', check); resolve(); } };
+                pc.addEventListener('icegatheringstatechange', check);
+            }
+        });
+    }).then(() => {
+        const offer = pc.localDescription;
+        const body = {
+            sdp: offer.sdp,
+            type: offer.type,
+            avatar: document.getElementById('offerAvatar').value || undefined,
+            refaudio: document.getElementById('offerRefAudio').value || undefined,
+            reftext: document.getElementById('offerRefText').value || undefined,
+        };
+        return fetch('/offer', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    }).then(res => res.json()).then(answer => {
+        if (answer.sessionid) setSessionId(answer.sessionid);
+        return pc.setRemoteDescription(new RTCSessionDescription({ type: 'answer', sdp: answer.sdp }));
+    }).then(() => {
+        _reconnectAttempts = 0; // 连接成功，重置重试计数
+    }).catch(e => {
+        console.error('Negotiation error:', e);
+        throw e; // 向上传播，让重连逻辑捕获
+    });
+}
+
+function _attemptReconnect() {
+    if (_reconnectAttempts >= RECONNECT_MAX) {
+        console.warn('WebRTC 重连失败，已达最大重试次数');
+        updateStatus(false);
+        setSessionId(null);
+        document.getElementById('btnStart').style.display = 'inline-block';
+        document.getElementById('btnStop').style.display = 'none';
+        return;
+    }
+    _reconnectAttempts++;
+    const delay = RECONNECT_BASE_DELAY * Math.pow(2, _reconnectAttempts - 1);
+    console.log(`WebRTC 重连 (${_reconnectAttempts}/${RECONNECT_MAX})，${delay}ms 后重试...`);
+    setTimeout(() => {
+        try {
+            if (pc) { try { pc.close(); } catch(e) {} pc = null; }
+            _setupConnection();
+            negotiate().catch(() => _attemptReconnect());
+        } catch(e) {
+            console.error('重连异常:', e);
+            _attemptReconnect();
+        }
+    }, delay);
+}
+
+function _setupConnection() {
+    const config = {
+        sdpSemantics: 'unified-plan',
+        iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
+    };
+    pc = new RTCPeerConnection(config);
+    pc.addEventListener('track', evt => {
+        if (evt.track.kind === 'video') document.getElementById('video').srcObject = evt.streams[0];
+        else document.getElementById('audio').srcObject = evt.streams[0];
+    });
+    pc.addEventListener('connectionstatechange', () => {
+        if (pc.connectionState === 'connected') {
+            updateStatus(true);
+            _reconnectAttempts = 0;
+        } else if (pc.connectionState === 'disconnected') {
+            console.warn('WebRTC 连接断开，尝试自动重连...');
+            _attemptReconnect();
+        } else if (pc.connectionState === 'failed') {
+            console.error('WebRTC 连接失败，尝试自动重连...');
+            _attemptReconnect();
+        }
+    });
+}
+
+function start() {
+    _reconnectAttempts = 0;
+    _setupConnection();
+    negotiate();
+    document.getElementById('btnStart').style.display = 'none';
+    document.getElementById('btnStop').style.display = 'inline-block';
+}
+
+function stop() {
+    _reconnectAttempts = RECONNECT_MAX; // 阻止自动重连
+    if (pc) { pc.close(); pc = null; }
+    updateStatus(false);
+    setSessionId(null);
+    document.getElementById('btnStart').style.display = 'inline-block';
+    document.getElementById('btnStop').style.display = 'none';
+    document.getElementById('video').srcObject = null;
+    document.getElementById('audio').srcObject = null;
+}
+
+// ─── Text ──────────────────────────────────────────────────
+function sendText() {
+    const text = document.getElementById('txtMessage').value;
+    const type = document.getElementById('txtType').value;
+    const interrupt = document.getElementById('txtInterrupt').checked;
+    if (!text || !sessionid) return alert('请先连接 WebRTC');
+
+    const ttsModel = document.getElementById('ttsModel').value;
+    const ttsVoice = document.getElementById('ttsVoice').value;
+    const body = { text, type, interrupt, sessionid: String(sessionid) };
+    const tts = { model: ttsModel };
+    tts.ref_file = ttsVoice;
+    body.tts = tts;
+
+    fetch('/human', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+    }).then(r => r.json()).then(d => {
+        console.log('human:', d);
+        document.getElementById('txtMessage').value = '';
+    });
+}
+
+// ─── Audio Upload ──────────────────────────────────────────
+function uploadAudio() {
+    const file = document.getElementById('audioFile').files[0];
+    if (!file || !sessionid) return alert('请先连接 WebRTC 并选择音频文件');
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('sessionid', String(sessionid));
+
+    fetch('/humanaudio', { method: 'POST', body: formData })
+        .then(r => r.json()).then(d => console.log('humanaudio:', d));
+}
+
+// ─── Interrupt ─────────────────────────────────────────────
+function interrupt() {
+    if (!sessionid) return;
+    fetch('/interrupt_talk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionid: String(sessionid) }),
+    }).then(r => r.json()).then(d => console.log('interrupt:', d));
+}
+
+// ─── Speaking Status ───────────────────────────────────────
+function checkSpeaking() {
+    if (!sessionid) return alert('请先连接 WebRTC');
+    fetch('/is_speaking', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionid: String(sessionid) }),
+    }).then(r => r.json()).then(d => alert('Speaking: ' + JSON.stringify(d.data)));
+}
+
+// ─── Recording ─────────────────────────────────────────────
+let recording = false;
+function toggleRecord() {
+    if (!sessionid) return alert('请先连接 WebRTC');
+    const btn = document.getElementById('btnRecToggle');
+    const type = recording ? 'end_record' : 'start_record';
+    fetch('/record', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type, sessionid: String(sessionid) }),
+    }).then(r => r.json()).then(d => {
+        console.log(type + ':', d);
+        recording = !recording;
+        if (recording) {
+            btn.className = 'btn-danger-custom btn-sm';
+            btn.innerHTML = '<i class="bi bi-stop-circle"></i> 停止录制';
+            document.getElementById('btnDownload').disabled = true;
+        } else {
+            btn.className = 'btn-outline-custom btn-sm';
+            btn.innerHTML = '<i class="bi bi-record-circle"></i> 开始录制';
+            document.getElementById('btnDownload').disabled = false;
+        }
+    });
+}
+function downloadRecord() {
+    if (!sessionid) return;
+    window.open('/record/' + sessionid, '_blank');
+}
+
+// ─── Audiotype ─────────────────────────────────────────────
+function setAudiotype() {
+    if (!sessionid) return alert('请先连接 WebRTC');
+    const val = parseInt(document.getElementById('audiotypeVal').value) || 0;
+    fetch('/set_audiotype', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ audiotype: val, sessionid: String(sessionid) }),
+    }).then(r => r.json()).then(d => console.log('set_audiotype:', d));
+}
+
+// ─── Voice Interaction (Free + Push-to-Talk) ─────────────────
+// State
+let voiceMode = 'off';
+let voiceRecognition = null;
+let voiceEnabled = false;
+let voicePollTimer = null;
+let voiceLastFinalText = '';
+let voiceWaitingForReply = false;
+let voiceRestartCount = 0;
+let voiceCooldownTimer = null;
+let voiceLastSentText = '';
+let voiceWaitingTimeout = null;
+const VOICE_WAITING_MAX_MS = 60000;   // Max total waiting time for reply
+const VOICE_WAITING_START_MS = 10000; // Max time before avatar starts speaking
+
+// Unified local ASR state
+let localASR = {
+    ws: null,
+    stream: null,
+    audioCtx: null,
+    source: null,
+    processor: null,
+    captureActive: false,    // true = sending audio frames to WebSocket
+    mode: null,              // 'free' or 'ptt'
+    pendingResolve: null,    // Promise resolve for pending result
+    pendingText: '',         // Accumulated result text
+    ready: false,            // true = WebSocket + mic are ready
+    closing: false,          // Prevent re-entrant close
+    // VAD state
+    vadSilenceMs: 0,
+    vadSpeechDetected: false,
+    vadStartTime: 0,
+    vadConfig: {
+        silenceThreshold: 0.01,   // RMS amplitude below this = silence
+        silenceDurationMs: 1500,  // 1.5s silence after speech → trigger ASR
+        minSpeechMs: 300,         // ignore speech shorter than 300ms (noise)
+        maxCaptureMs: 30000,      // safety limit: 30s max capture
+    },
+};
+
+const VOICE_MAX_RESTART = 3;
+const VOICE_ECHO_COOLDOWN_MS = 2000;   // 安全兜底冷却（回声检测成功时不受此限制）
+const VOICE_TEXT_MIN_LENGTH = 3;
+let _avatarSpeaking = false;           // 数字人是否正在说话
+let _avatarSpeakEndTime = 0;           // 数字人停止说话的时间戳
+let _avatarRecentTexts = [];           // 数字人最近说的话（用于回声检测）
+const AVATAR_TEXT_HISTORY_MAX = 10;    // 最多记住最近 N 句
+
+// ─── Voice Mode Switch ──────────────────────────────────────
+function onVoiceModeChange() {
+    const newMode = document.getElementById('voiceMode').value;
+    if (newMode === voiceMode) return;
+
+    stopVoiceMode();
+    voiceMode = newMode;
+    document.getElementById('pttContainer').style.display = (newMode === 'ptt') ? 'block' : 'none';
+
+    if (newMode === 'off') return;
+    if (!sessionid) { alert('请先连接 WebRTC'); resetVoiceMode(); return; }
+
+    const hasSpeechRecog = 'webkitSpeechRecognition' in window || 'SpeechRecognition' in window;
+
+    voiceEnabled = true;
+
+    if (newMode === 'free') {
+        showVoiceStatus(true, '🎤', '启动中...');
+        if (hasSpeechRecog) {
+            startFreeRecognition();
+        } else {
+            warmupLocalASR('free', () => {
+                if (voiceMode === 'free' && voiceEnabled) {
+                    startCapture();
+                    showVoiceStatus(true, '🎤', '聆听中...');
+                }
+            });
+        }
+    } else if (newMode === 'ptt') {
+        showVoiceStatus(true, '⏳', '准备麦克风...');
+        warmupLocalASR('ptt', () => {
+            if (voiceMode === 'ptt') {
+                showVoiceStatus(false);
+            }
+        });
+    }
+
+    // Sync fullscreen overlay voice mode
+    const fsVm = document.getElementById('fsVoiceMode');
+    if (fsVm) { fsVm.value = newMode; }
+    const fsPttC = document.getElementById('fsPttContainer');
+    if (fsPttC) { fsPttC.style.display = (newMode === 'ptt') ? 'block' : 'none'; }
+    // Sync fullscreen voice selectors
+    const fsVoiceSelect = document.getElementById('fsVoiceTtsVoice');
+    if (fsVoiceSelect) {
+        fsVoiceSelect.value = document.getElementById('voiceTtsVoice').value;
+    }
+}
+
+function resetVoiceMode() {
+    stopVoiceMode();
+    voiceMode = 'off';
+    document.getElementById('voiceMode').value = 'off';
+    document.getElementById('pttContainer').style.display = 'none';
+}
+
+// ─── Free Conversation Mode ──────────────────────────────────
+function startFreeRecognition() {
+    if (!voiceEnabled || voiceWaitingForReply) return;
+
+    try {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        voiceRecognition = new SpeechRecognition();
+        voiceRecognition.continuous = true;
+        voiceRecognition.interimResults = true;
+        voiceRecognition.lang = 'zh-CN';
+
+        voiceRecognition.onresult = function(event) {
+            let finalText = '';
+            let interimText = '';
+
+            for (let i = event.resultIndex; i < event.results.length; ++i) {
+                if (event.results[i].isFinal) {
+                    finalText += event.results[i][0].transcript;
+                } else {
+                    interimText += event.results[i][0].transcript;
+                }
+            }
+
+            if (interimText) {
+                showVoiceTranscript(finalText || interimText, true);
+                showVoiceStatus(true, '📝', '识别中...');
+            }
+
+            if (finalText) {
+                const text = finalText.trim();
+                showVoiceTranscript(text, false);
+
+                // Echo/noise rejection
+                if (!isValidVoiceInput(text)) return;
+                voiceLastFinalText = text;
+
+                // Stop recognition while processing
+                if (voiceRecognition) {
+                    try { voiceRecognition.stop(); } catch(e) {}
+                    voiceRecognition = null;
+                }
+
+                if (voiceWaitingForReply) {
+                    showVoiceStatus(true, '⏳', '打断中...');
+                    fetch('/interrupt_talk', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ sessionid: String(sessionid) }),
+                    }).then(() => sendVoiceText(text, true))
+                      .catch(() => sendVoiceText(text, true));
+                } else {
+                    sendVoiceText(text, true);
+                }
+            }
+        };
+
+        voiceRecognition.onerror = function(event) {
+            console.error('语音识别错误:', event.error);
+            if (event.error === 'aborted') return;
+
+            if (event.error === 'audio-capture' || event.error === 'no-speech') {
+                showVoiceStatus(true, '⚠️', event.error === 'audio-capture' ? '未检测到麦克风' : '语音识别不可用');
+                setTimeout(() => resetVoiceMode(), 2000);
+                return;
+            }
+
+            // Google service blocked (common in China) → fallback to local ASR
+            if (event.error === 'network') {
+                console.log('SpeechRecognition network error, falling back to local ASR');
+                showVoiceStatus(true, '🔄', '切换到本地语音识别...');
+                if (voiceRecognition) {
+                    try { voiceRecognition.stop(); } catch(e) {}
+                    voiceRecognition = null;
+                }
+                warmupLocalASR('free', () => {
+                    if (voiceMode === 'free' && voiceEnabled) {
+                        startCapture();
+                        showVoiceStatus(true, '🎤', '聆听中...（本地ASR）');
+                    }
+                });
+                return;
+            }
+
+            if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+                showVoiceStatus(true, '⏳', '请求麦克风权限...');
+                voiceRecognition = null;
+                _requestMicPermission().then(granted => {
+                    if (granted && voiceEnabled && !voiceWaitingForReply && !voiceCooldownTimer) {
+                        startFreeRecognition();
+                    }
+                });
+                return;
+            }
+
+            if (voiceEnabled && !voiceWaitingForReply) {
+                voiceRestartCount++;
+                if (voiceRestartCount <= VOICE_MAX_RESTART) {
+                    setTimeout(() => startFreeRecognition(), 500);
+                } else {
+                    showVoiceStatus(true, '⚠️', '识别异常');
+                    setTimeout(() => resetVoiceMode(), 2000);
+                }
+            }
+        };
+
+        voiceRecognition.onend = function() {
+            if (voiceEnabled && !voiceWaitingForReply && !voiceCooldownTimer) {
+                startFreeRecognition();
+            }
+        };
+
+        voiceRecognition.start();
+    } catch (e) {
+        console.error('启动语音识别失败:', e);
+        // Fallback to local ASR
+        warmupLocalASR('free', () => {
+            if (voiceMode === 'free' && voiceEnabled) {
+                startCapture();
+                showVoiceStatus(true, '🎤', '聆听中...（本地ASR）');
+            }
+        });
+    }
+}
+
+// ─── Microphone Permission ───────────────────────────────────
+function _requestMicPermission() {
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        return navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+            stream.getTracks().forEach(t => t.stop());
+            return true;
+        }).catch(err => {
+            console.error('麦克风权限请求失败:', err.name, err.message);
+            if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+                alert('麦克风权限被拒绝。请按以下步骤操作：\n\n1. 点击浏览器地址栏左侧的 🔒 图标\n2. 找到"麦克风"，改为"允许"\n3. 刷新页面后重试');
+            } else if (err.name === 'NotFoundError') {
+                alert('未检测到麦克风设备。请检查：\n\n1. 是否连接了麦克风\n2. macOS 系统设置 → 隐私 → 麦克风 → 允许 Chrome');
+            } else {
+                alert(`麦克风访问失败 (${err.name})，请检查系统音频设置后重试`);
+            }
+            return false;
+        });
+    }
+    alert('当前浏览器不支持麦克风访问，请使用 Chrome 或 Edge 浏览器');
+    return Promise.resolve(false);
+}
+// ─── Unified Local ASR ──────────────────────────────────────
+function warmupLocalASR(mode, onReady) {
+    if (localASR.ready && localASR.mode === mode && localASR.ws && localASR.ws.readyState === WebSocket.OPEN) {
+        if (onReady) onReady();
+        return;
+    }
+
+    localASR.closing = false;
+    localASR.mode = mode;
+    localASR.captureActive = false;
+    localASR.pendingText = '';
+
+    _requestMicPermission().then(granted => {
+        if (!granted || !voiceEnabled) { resetVoiceMode(); return; }
+        _connectLocalASR(onReady);
+    });
+}
+
+function _connectLocalASR(onReady) {
+    try {
+        navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+            if (!voiceEnabled) { stream.getTracks().forEach(t => t.stop()); return; }
+
+            localASR.stream = stream;
+            const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+            localASR.ws = new WebSocket(`${protocol}//${location.host}/api/asr`);
+
+            localASR.ws.onopen = () => {
+                if (!voiceEnabled) { _teardownLocalASR(); return; }
+                localASR.ws.send(JSON.stringify({
+                    chunk_size: [5, 10, 5],
+                    wav_name: "h5",
+                    is_speaking: true,
+                    mode: "2pass",
+                    itn: true,
+                }));
+                _setupAudioCapture(stream);
+                localASR.ready = true;
+                if (onReady) onReady();
+            };
+
+            localASR.ws.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    if (data.is_final) {
+                        const text = (data.text || '').trim();
+
+                        // ASR 返回空文本：VAD 检测到的不是有效语音，重启监听
+                        if (!text) {
+                            console.log('[ASR] result: (empty), restarting...');
+                            if (localASR.mode === 'free' && voiceEnabled && !voiceWaitingForReply) {
+                                localASR.captureActive = false;
+                                _restartAfterSilence();
+                            }
+                            return;
+                        }
+
+                        localASR.pendingText = text;
+                        showVoiceTranscript(text, false);
+                        console.log('[ASR] result:', text, '| mode:', localASR.mode, '| voiceWaitingForReply:', voiceWaitingForReply);
+
+                        if (!isValidVoiceInput(text)) {
+                            console.log('[ASR] rejected by isValidVoiceInput');
+                            if (localASR.mode === 'free' && voiceEnabled && !voiceWaitingForReply) {
+                                // Pause capture. Debounced restart prevents infinite loop
+                                // when VAD triggers on silence → ASR returns empty → restart.
+                                localASR.captureActive = false;
+                                if (text.length < VOICE_TEXT_MIN_LENGTH) {
+                                    _restartAfterSilence();
+                                } else {
+                                    // 回声被拒绝：立即重新开始监听（不等冷却）
+                                    console.log('[Echo] rejected, restarting listen immediately');
+                                    setTimeout(() => _restartFreeListening(), 500);
+                                }
+                            }
+                            return;
+                        }
+
+                        // CRITICAL: discard if waiting for reply (echo protection)
+                        if (voiceWaitingForReply) {
+                            console.log('[Echo] discard ASR result while waiting for reply');
+                            if (localASR.mode === 'free') localASR.captureActive = false;
+                            return;
+                        }
+
+                        // PTT 模式：ASR 结果可能在 pttEnd() 之前到达
+                        // 先存到 pendingText，不设 voiceLastFinalText（避免 pttEnd 重复检测误杀）
+                        // 如果 pendingResolve 已设置（pttEnd 先于 ASR 结果），直接 resolve
+                        if (localASR.mode === 'ptt') {
+                            if (localASR.pendingResolve) {
+                                localASR.pendingResolve(text);
+                                localASR.pendingResolve = null;
+                            }
+                            // 不设 voiceLastFinalText，等 sendVoiceText 统一设置
+                            return;
+                        }
+
+                        voiceLastFinalText = text;
+
+                        // Resolve pending PTT promise (fallback, should not normally reach here)
+                        if (localASR.pendingResolve) {
+                            localASR.pendingResolve(text);
+                            localASR.pendingResolve = null;
+                        }
+
+                        // Free mode: pause capture, keep connection alive for next turn
+                        if (localASR.mode === 'free') {
+                            localASR.captureActive = false;
+                            sendVoiceText(text, true);
+                        }
+                    }
+                } catch(e) { /* binary data — ignore */ }
+            };
+
+            localASR.ws.onerror = (err) => {
+                console.error('本地ASR WebSocket错误:', err);
+                if (!voiceEnabled) { resetVoiceMode(); return; }
+                showVoiceStatus(true, '⚠️', 'ASR连接错误，尝试重连...');
+                _teardownLocalASR();
+                // In free mode, auto-reconnect instead of giving up
+                if (voiceMode === 'free' && voiceEnabled) {
+                    setTimeout(() => {
+                        if (voiceEnabled && voiceMode === 'free') {
+                            _restartFreeListening();
+                        }
+                    }, 1000);
+                } else {
+                    setTimeout(() => resetVoiceMode(), 2000);
+                }
+            };
+
+            localASR.ws.onclose = () => {
+                _teardownAudioCapture();
+                localASR.ready = false;
+                if (localASR.pendingResolve) {
+                    localASR.pendingResolve('');
+                    localASR.pendingResolve = null;
+                }
+                // Auto-restart in free mode if connection drops unexpectedly
+                if (voiceEnabled && voiceMode === 'free' && !voiceWaitingForReply) {
+                    setTimeout(() => {
+                        if (voiceEnabled && voiceMode === 'free') {
+                            _restartFreeListening();
+                        }
+                    }, 500);
+                }
+            };
+        }).catch(err => {
+            console.error('获取麦克风失败:', err);
+            resetVoiceMode();
+        });
+    } catch(e) {
+        console.error('启动本地ASR失败:', e);
+        resetVoiceMode();
+    }
+}
+
+function _setupAudioCapture(stream) {
+    // Just store the stream for later. AudioContext is created in startCapture()
+    // where we have a user gesture context (needed for AudioContext.resume()).
+    localASR.stream = stream;
+}
+
+function _ensureAudioContext() {
+    if (localASR.audioCtx) return;
+    if (!localASR.stream) return;
+    try {
+        const SAMPLE_RATE = 16000;
+        localASR.audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: SAMPLE_RATE });
+        localASR.source = localASR.audioCtx.createMediaStreamSource(localASR.stream);
+        localASR.processor = localASR.audioCtx.createScriptProcessor(4096, 1, 1);
+        localASR.source.connect(localASR.processor);
+        // ScriptProcessor must be connected to destination for onaudioprocess to fire.
+        // Use a silent gain node to avoid playing mic audio through speakers.
+        const silentGain = localASR.audioCtx.createGain();
+        silentGain.gain.value = 0;
+        localASR.processor.connect(silentGain);
+        silentGain.connect(localASR.audioCtx.destination);
+
+        localASR.processor.onaudioprocess = (e) => {
+            if (!localASR.captureActive) return;
+            if (!localASR.ws || localASR.ws.readyState !== WebSocket.OPEN) return;
+            const input = e.inputBuffer.getChannelData(0);
+
+            // ── VAD: compute RMS amplitude ──
+            let sum = 0;
+            for (let i = 0; i < input.length; i++) sum += input[i] * input[i];
+            const rms = Math.sqrt(sum / input.length);
+            const chunkMs = (input.length / localASR.audioCtx.sampleRate) * 1000;
+            const cfg = localASR.vadConfig;
+
+            if (rms > cfg.silenceThreshold) {
+                // Speech detected
+                localASR.vadSpeechDetected = true;
+                localASR.vadSilenceMs = 0;
+            } else {
+                // Silence
+                localASR.vadSilenceMs += chunkMs;
+            }
+
+            const elapsedMs = Date.now() - localASR.vadStartTime;
+
+            // In PTT mode, don't auto-stop — user controls stop via button release
+            if (localASR.mode !== 'ptt') {
+                // Free mode: auto-stop on silence after speech, or max capture time
+                if ((localASR.vadSpeechDetected && localASR.vadSilenceMs >= cfg.silenceDurationMs && elapsedMs >= cfg.minSpeechMs) ||
+                    elapsedMs >= cfg.maxCaptureMs) {
+                    localASR.captureActive = false;
+                    stopCapture();
+                    return; // Don't send this trailing silence chunk
+                }
+            } else if (elapsedMs >= cfg.maxCaptureMs) {
+                // PTT mode: only auto-stop at max capture limit (30s)
+                localASR.captureActive = false;
+                stopCapture();
+                return;
+            }
+
+            // Send audio to ASR server
+            const pcm16 = new Int16Array(input.length);
+            for (let i = 0; i < input.length; i++) {
+                pcm16[i] = Math.max(-32768, Math.min(32767, Math.round(input[i] * 32768)));
+            }
+            localASR.ws.send(pcm16.buffer);
+        };
+    } catch(e) { console.error('音频上下文创建失败:', e); }
+}
+
+function _teardownAudioCapture() {
+    if (localASR.processor) { localASR.processor.disconnect(); localASR.processor = null; }
+    if (localASR.source) { localASR.source.disconnect(); localASR.source = null; }
+    if (localASR.audioCtx) { localASR.audioCtx.close().catch(() => {}); localASR.audioCtx = null; }
+    if (localASR.stream) { localASR.stream.getTracks().forEach(t => t.stop()); localASR.stream = null; }
+}
+
+function _teardownLocalASR() {
+    if (localASR.closing) return;
+    localASR.closing = true;
+    localASR.captureActive = false;
+    if (localASR.ws) {
+        try { localASR.ws.close(); } catch(e) {}
+        localASR.ws = null;
+    }
+    _teardownAudioCapture();
+    localASR.ready = false;
+    localASR.mode = null;
+    setTimeout(() => { localASR.closing = false; }, 100);
+}
+
+function _resumeASRSession() {
+    if (localASR.ws && localASR.ws.readyState === WebSocket.OPEN) {
+        try {
+            localASR.ws.send(JSON.stringify({
+                chunk_size: [5, 10, 5], wav_name: "h5",
+                is_speaking: true, mode: "2pass", itn: true,
+            }));
+        } catch(e) {}
+    }
+}
+
+function startCapture() {
+    if (!localASR.ready || !localASR.ws || localASR.ws.readyState !== WebSocket.OPEN) return;
+    if (!localASR.stream) return;
+
+    // Create AudioContext on demand (needs user gesture for resume to work)
+    _ensureAudioContext();
+    localASR.captureActive = true;
+
+    // Reset VAD state
+    localASR.vadSilenceMs = 0;
+    localASR.vadSpeechDetected = false;
+    localASR.vadStartTime = Date.now();
+
+    const doStart = () => {
+        // Always start a fresh ASR session (server resets its buffer on each is_speaking:true)
+        _resumeASRSession();
+    };
+
+    // Resume AudioContext (Chrome suspends it when created outside user gesture)
+    if (localASR.audioCtx && localASR.audioCtx.state === 'suspended') {
+        localASR.audioCtx.resume().then(doStart).catch(e => {
+            console.error('AudioContext resume failed:', e);
+            localASR.captureActive = false;
+            showVoiceStatus(true, '⚠️', '请点击页面后重试');
+            // One-time click listener to retry
+            const retry = () => {
+                document.removeEventListener('click', retry);
+                if (localASR.audioCtx && localASR.audioCtx.state === 'suspended') {
+                    localASR.audioCtx.resume().then(() => {
+                        if (voiceMode !== 'off' && voiceEnabled) startCapture();
+                    }).catch(() => {});
+                }
+            };
+            document.addEventListener('click', retry);
+        });
+    } else {
+        doStart();
+    }
+}
+
+function stopCapture() {
+    localASR.captureActive = false;
+    if (localASR.ws && localASR.ws.readyState === WebSocket.OPEN) {
+        try { localASR.ws.send(JSON.stringify({ is_speaking: false })); } catch(e) {}
+    }
+}
+
+// ─── Push-to-Talk Mode ──────────────────────────────────────
+let _pttActive = false;
+
+function pttStart() {
+    if (!sessionid) return;
+    _pttActive = true;
+
+    document.getElementById('pttButton').className = 'btn-danger-custom w-100 py-3 fs-5';
+    document.getElementById('pttButton').textContent = '✋ 松开发送';
+
+    // Sync fullscreen PTT button
+    const fsPttBtn = document.getElementById('fsPttButton');
+    if (fsPttBtn) { fsPttBtn.className = 'btn btn-danger w-100 py-2'; fsPttBtn.textContent = '✋ 松开发送'; }
+
+    // Clear any previous waiting state so new input is not discarded
+    _clearVoiceWaiting();
+
+    // 重置回声过滤状态，避免上次对话的文字阻止本次识别
+    voiceLastFinalText = '';
+    voiceLastSentText = '';
+    localASR.pendingText = '';
+
+    console.log('[PTT] start');
+
+    // Interrupt any ongoing avatar speech
+    fetch('/interrupt_talk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionid: String(sessionid) }),
+    }).catch(() => {});
+
+    // Always use local ASR for PTT (pre-warmed, no Google SpeechRecognition issues)
+    _startPTTLocal();
+}
+
+function _startPTTLocal() {
+    if (localASR.ready && localASR.ws && localASR.ws.readyState === WebSocket.OPEN) {
+        localASR.mode = 'ptt';
+        startCapture();
+        showVoiceStatus(true, '🎤', '请说话...');
+        return;
+    }
+    showVoiceStatus(true, '⏳', '启动本地语音识别...');
+    warmupLocalASR('ptt', () => {
+        if (localASR.ready && voiceEnabled) {
+            startCapture();
+            showVoiceStatus(true, '🎤', '请说话...');
+        }
+    });
+}
+
+function pttEnd() {
+    if (!_pttActive) return;
+    _pttActive = false;
+
+    document.getElementById('pttButton').className = 'btn-primary-custom w-100 py-3 fs-5';
+    document.getElementById('pttButton').textContent = '🎤 按住说话';
+
+    // Sync fullscreen PTT button
+    const fsPttBtn = document.getElementById('fsPttButton');
+    if (fsPttBtn) { fsPttBtn.className = 'btn btn-primary w-100 py-2'; fsPttBtn.textContent = '🎤 按住说话'; }
+
+    showVoiceStatus(true, '⏳', '处理中...');
+
+    // 无论 captureActive 状态如何，都停止采集并等待 ASR 结果
+    // （自由对话模式的 VAD 可能已提前将 captureActive 设为 false）
+    if (localASR.ready && localASR.ws && localASR.ws.readyState === WebSocket.OPEN) {
+        stopCapture();
+
+        new Promise((resolve) => {
+            localASR.pendingResolve = resolve;
+            setTimeout(() => {
+                if (localASR.pendingResolve) {
+                    console.log('[PTT] ASR result timeout, using pendingText:', localASR.pendingText);
+                    localASR.pendingResolve(localASR.pendingText || '');
+                    localASR.pendingResolve = null;
+                }
+            }, 5000);
+        }).then(text => {
+            if (text && isValidVoiceInput(text)) {
+                showVoiceStatus(true, '📝', '识别完成');
+                console.log('[PTT] sending:', text.substring(0, 50));
+                sendVoiceText(text, false);
+            } else {
+                console.log('[PTT] no valid speech detected, text:', JSON.stringify(text));
+                showVoiceStatus(true, '⏳', '未检测到语音');
+                setTimeout(() => showVoiceStatus(false), 1500);
+            }
+        });
+        return;
+    }
+
+    showVoiceStatus(false);
+}
+
+// Global listeners: stop PTT if mouse/touch released anywhere on the page
+document.addEventListener('mouseup', () => { if (_pttActive) pttEnd(); });
+document.addEventListener('touchend', () => { if (_pttActive) pttEnd(); });
+document.addEventListener('touchcancel', () => { if (_pttActive) pttEnd(); });
+
+// ─── Shared Voice Functions ──────────────────────────────────
+function isValidVoiceInput(text) {
+    if (!text || text.length < VOICE_TEXT_MIN_LENGTH) return false;
+    if (text === voiceLastFinalText) return false;
+    if (text === voiceLastSentText) {
+        console.log('[Echo Reject] matches last sent:', text);
+        return false;
+    }
+    if (voiceLastSentText && isTextSimilar(text, voiceLastSentText)) {
+        console.log('[Echo Reject] similar to last sent:', text);
+        return false;
+    }
+    // 回声检测：ASR 结果与数字人最近说的话相似 → 判定为回声
+    for (const avatarText of _avatarRecentTexts) {
+        if (isTextSimilar(text, avatarText)) {
+            console.log('[Echo Reject] matches avatar speech:', text, '~', avatarText.substring(0, 30));
+            return false;
+        }
+    }
+    return true;
+}
+
+function isTextSimilar(a, b) {
+    if (!a || !b) return false;
+    const aWords = a.toLowerCase().replace(/[^\w一-鿿]/g, ' ').split(/\s+/).filter(Boolean);
+    const bWords = b.toLowerCase().replace(/[^\w一-鿿]/g, ' ').split(/\s+/).filter(Boolean);
+    if (aWords.length < 2 || bWords.length < 2) return false;
+    const short = aWords.length <= bWords.length ? aWords : bWords;
+    const long = aWords.length > bWords.length ? aWords : bWords;
+    const match = short.filter(w => long.includes(w)).length;
+    return match / short.length >= 0.7;
+}
+
+function startVoiceCooldown() {
+    if (voiceCooldownTimer) { clearTimeout(voiceCooldownTimer); voiceCooldownTimer = null; }
+    const jitter = VOICE_ECHO_COOLDOWN_MS * (0.8 + Math.random() * 0.4);
+    voiceCooldownTimer = setTimeout(() => {
+        voiceCooldownTimer = null;
+        if (voiceMode === 'free' && voiceEnabled && !voiceWaitingForReply) {
+            _restartFreeListening();
+        }
+    }, jitter);
+    showVoiceStatus(true, '🔇', '冷却中...');
+}
+
+function _restartFreeListening() {
+    if (!voiceEnabled || voiceWaitingForReply) return;
+
+    // If already capturing, no action needed
+    if (localASR.captureActive) return;
+
+    // 数字人正在说话，不重启 ASR
+    if (_avatarSpeaking) {
+        console.log('[Voice] blocked: avatar still speaking');
+        setTimeout(() => _restartFreeListening(), 1000);
+        return;
+    }
+    // 数字人刚说完不到 2 秒，等待回声消散
+    const sinceSpeak = Date.now() - _avatarSpeakEndTime;
+    if (_avatarSpeakEndTime > 0 && sinceSpeak < VOICE_ECHO_COOLDOWN_MS) {
+        const remain = VOICE_ECHO_COOLDOWN_MS - sinceSpeak;
+        console.log('[Voice] echo cooldown,', Math.ceil(remain / 1000), 's remaining');
+        setTimeout(() => _restartFreeListening(), remain);
+        return;
+    }
+
+    // If connection is still alive, just start capture (which sends is_speaking:true)
+    if (localASR.ready && localASR.ws && localASR.ws.readyState === WebSocket.OPEN) {
+        showVoiceStatus(true, '🎤', '聆听中...');
+        startCapture();
+        return;
+    }
+
+    // Connection lost — full warmup needed
+    showVoiceStatus(true, '🎤', '聆听中...（重新连接）');
+    warmupLocalASR('free', () => {
+        if (voiceMode === 'free' && voiceEnabled && !voiceWaitingForReply) startCapture();
+    });
+}
+
+let _silenceRestartTimer = null;
+function _restartAfterSilence() {
+    // Restart listening after an empty/noise ASR result.
+    // Debounced to prevent VAD→ASR→empty→restart infinite loops.
+    if (!voiceEnabled || voiceMode !== 'free' || voiceWaitingForReply) return;
+    if (_silenceRestartTimer) return; // Already pending
+    _silenceRestartTimer = setTimeout(() => {
+        _silenceRestartTimer = null;
+        if (voiceEnabled && voiceMode === 'free' && !voiceWaitingForReply) {
+            _restartFreeListening();
+        }
+    }, 500);
+}
+
+function sendVoiceText(text, interrupt) {
+    if (!text || !sessionid) {
+        console.warn('[Voice] sendVoiceText blocked:', { text: !!text, sessionid });
+        return;
+    }
+    voiceWaitingForReply = true;
+    voiceLastSentText = text;
+    voiceLastFinalText = text;  // 标记为已处理，防止重复
+    console.log('[Voice] sendVoiceText:', text.substring(0, 50));
+    showVoiceStatus(true, '⏳', '处理中...');
+    appendVoiceChatLog('user', text);
+    showVoiceTranscript('', false);
+
+    // Start total timeout — if reply never comes, recover
+    if (voiceWaitingTimeout) clearTimeout(voiceWaitingTimeout);
+    voiceWaitingTimeout = setTimeout(() => {
+        if (voiceWaitingForReply) {
+            console.warn('[Voice] Total reply timeout — recovering');
+            _clearVoiceWaiting();
+            appendVoiceChatLog('avatar', '(回复超时)');
+            if (voiceMode === 'free' && voiceEnabled) _restartFreeListening();
+        }
+    }, VOICE_WAITING_MAX_MS);
+
+    const type = document.getElementById('txtType').value;
+    const ttsVoice = (document.getElementById('voiceTtsVoice')?.value || document.getElementById('ttsVoice').value);
+    const ttsModel = (document.getElementById('voiceTtsModel')?.value || document.getElementById('ttsModel').value);
+    const body = { text, type, interrupt, sessionid: String(sessionid) };
+    const tts = { model: ttsModel };
+    tts.ref_file = ttsVoice;
+    body.tts = tts;
+    console.log('[Voice] /human body:', JSON.stringify({ text: text.substring(0,30), type, ttsVoice, ttsModel }));
+    fetch('/human', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+    }).then(r => r.json()).then(d => {
+        console.log('[Voice] /human response:', d);
+        if (d.code !== 0) {
+            console.error('voice send error:', d);
+            _clearVoiceWaiting();
+            if (voiceMode === 'free' && voiceEnabled) startVoiceCooldown();
+            return;
+        }
+        if (voiceMode === 'free') pollSpeakingEnd();
+    }).catch(e => {
+        console.error('voice send error:', e);
+        _clearVoiceWaiting();
+        if (voiceMode === 'free' && voiceEnabled) startVoiceCooldown();
+    });
+}
+
+function _clearVoiceWaiting() {
+    voiceWaitingForReply = false;
+    if (voiceWaitingTimeout) { clearTimeout(voiceWaitingTimeout); voiceWaitingTimeout = null; }
+    if (voicePollTimer) { clearInterval(voicePollTimer); voicePollTimer = null; }
+}
+
+function pollSpeakingEnd() {
+    if (!voiceEnabled || !sessionid) return;
+    showVoiceStatus(true, '🔊', '说话中...');
+    const pollStartTime = Date.now();
+    let avatarEverSpoke = false;
+
+    voicePollTimer = setInterval(() => {
+        if (!voiceEnabled || !sessionid) {
+            _clearVoiceWaiting();
+            return;
+        }
+        fetch('/is_speaking', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sessionid: String(sessionid) }),
+        }).then(r => r.json()).then(d => {
+            // Handle both old (boolean) and new (object) response format
+            const speaking = typeof d.data === 'boolean' ? d.data : (d.data && d.data.speaking);
+            const llmPending = d.data && typeof d.data === 'object' && d.data.llm_pending;
+
+            // 更新数字人最近说的话（用于回声检测）
+            if (d.data && d.data.recent_texts) {
+                _avatarRecentTexts = d.data.recent_texts;
+            }
+
+            if (speaking) {
+                avatarEverSpoke = true;
+                _avatarSpeaking = true;
+            }
+
+            if (!speaking) {
+                if (_avatarSpeaking) {
+                    _avatarSpeaking = false;
+                    _avatarSpeakEndTime = Date.now();
+                }
+
+                if (avatarEverSpoke) {
+                    // Avatar finished speaking — normal end
+                    _clearVoiceWaiting();
+                    voiceRestartCount = 0;
+                    appendVoiceChatLog('avatar', '(回复完成)');
+                    if (voiceMode === 'free' && voiceEnabled) startVoiceCooldown();
+                } else if (!llmPending && Date.now() - pollStartTime > VOICE_WAITING_START_MS) {
+                    // LLM finished but avatar never spoke — error
+                    console.warn('[Voice] LLM done but avatar never spoke');
+                    _clearVoiceWaiting();
+                    appendVoiceChatLog('avatar', '(未收到回复)');
+                    if (voiceMode === 'free' && voiceEnabled) _restartFreeListening();
+                }
+            }
+        }).catch(() => {});
+    }, 500);
+}
+
+function showVoiceStatus(show, icon, text) {
+    const bar = document.getElementById('voiceStatusBar');
+    const iconEl = document.getElementById('voiceStatusIcon');
+    const textEl = document.getElementById('voiceStatusText');
+    if (show) { bar.style.display = 'block'; iconEl.textContent = icon; textEl.textContent = text; }
+    else { bar.style.display = 'none'; }
+}
+
+function showVoiceTranscript(text, interim) {
+    const el = document.getElementById('voiceTranscript');
+    if (!text) { el.style.display = 'none'; el.textContent = ''; return; }
+    el.style.display = 'block';
+    el.textContent = text;
+    el.style.opacity = interim ? '0.6' : '1';
+}
+
+function appendVoiceChatLog(role, text) {
+    const log = document.getElementById('voiceChatLog');
+    const div = document.createElement('div');
+    div.className = role === 'user' ? 'msg-user' : 'msg-avatar';
+    div.textContent = text;
+    log.appendChild(div);
+    log.scrollTop = log.scrollHeight;
+}
+
+function stopVoiceMode() {
+    voiceEnabled = false;
+    voiceWaitingForReply = false;
+    voiceRestartCount = 0;
+    if (voiceRecognition) { try { voiceRecognition.stop(); } catch(e) {} voiceRecognition = null; }
+    _teardownLocalASR();
+    if (voiceCooldownTimer) { clearTimeout(voiceCooldownTimer); voiceCooldownTimer = null; }
+    if (voiceWaitingTimeout) { clearTimeout(voiceWaitingTimeout); voiceWaitingTimeout = null; }
+    if (_silenceRestartTimer) { clearTimeout(_silenceRestartTimer); _silenceRestartTimer = null; }
+    if (voicePollTimer) { clearInterval(voicePollTimer); voicePollTimer = null; }
+    showVoiceStatus(false);
+}
+
+// Override stop() to also stop voice mode
+const _origStop = stop;
+stop = function() {
+    try { if (voiceMode !== 'off') resetVoiceMode(); } catch(e) { console.error('voice cleanup error:', e); }
+    _origStop();
+};
+
+// Sync voice panel selectors with text panel on startup
+(function initVoiceSelectors() {
+    const voiceTtsVoice = document.getElementById('voiceTtsVoice');
+    const ttsVoice = document.getElementById('ttsVoice');
+    if (voiceTtsVoice && ttsVoice) voiceTtsVoice.value = ttsVoice.value;
+    const voiceTtsModel = document.getElementById('voiceTtsModel');
+    const ttsModel = document.getElementById('ttsModel');
+    if (voiceTtsModel && ttsModel) voiceTtsModel.value = ttsModel.value;
+})();
+
+// ─── Fullscreen Side Panel ────────────────────────────────────
+const _wrapper = document.getElementById('videoFullscreenWrapper');
+let _isFullscreen = false;
+
+function toggleFullscreen() {
+    const fsEl = document.fullscreenElement || document.webkitFullscreenElement;
+    if (fsEl) {
+        (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+    } else {
+        const req = _wrapper.requestFullscreen || _wrapper.webkitRequestFullscreen;
+        if (req) req.call(_wrapper);
+    }
+}
+
+document.addEventListener('fullscreenchange', onFullscreenChange);
+document.addEventListener('webkitfullscreenchange', onFullscreenChange);
+
+function onFullscreenChange() {
+    const fsEl = document.fullscreenElement || document.webkitFullscreenElement;
+    _isFullscreen = (fsEl === _wrapper);
+    if (_isFullscreen) {
+        // Sync state into side panel (ready for when user opens it)
+        document.getElementById('fsVoiceMode').value = document.getElementById('voiceMode').value;
+        document.getElementById('fsPttContainer').style.display =
+            (document.getElementById('voiceMode').value === 'ptt') ? 'block' : 'none';
+        document.getElementById('fsTxtType').value = document.getElementById('txtType').value;
+        document.getElementById('fsTxtInterrupt').checked = document.getElementById('txtInterrupt').checked;
+        document.getElementById('fsTtsModel').value = document.getElementById('ttsModel').value;
+        document.getElementById('fsTtsVoice').value = document.getElementById('ttsVoice').value;
+        const fsLog = document.getElementById('fsVoiceChatLog');
+        fsLog.innerHTML = document.getElementById('voiceChatLog').innerHTML;
+        fsLog.scrollTop = fsLog.scrollHeight;
+        // Panel starts closed
+        _wrapper.classList.remove('fs-panel-open');
+        document.getElementById('fsPanelToggle').classList.remove('active');
+    } else {
+        _wrapper.classList.remove('fs-panel-open');
+        document.getElementById('fsPanelToggle').classList.remove('active');
+    }
+}
+
+function toggleFsPanel() {
+    const open = _wrapper.classList.toggle('fs-panel-open');
+    document.getElementById('fsPanelToggle').classList.toggle('active', open);
+}
+
+// Send text from fullscreen side panel
+function sendFsText() {
+    const fsInput = document.getElementById('fsTxtMessage');
+    if (!fsInput.value.trim()) return;
+    // Sync to main panel
+    document.getElementById('txtMessage').value = fsInput.value;
+    document.getElementById('txtType').value = document.getElementById('fsTxtType').value;
+    document.getElementById('txtInterrupt').checked = document.getElementById('fsTxtInterrupt').checked;
+    document.getElementById('ttsModel').value = document.getElementById('fsTtsModel').value;
+    document.getElementById('ttsVoice').value = document.getElementById('fsTtsVoice').value;
+    sendText();
+    fsInput.value = '';
+}
+
+// Mirror voice chat log and status to fullscreen panel
+const _origAppendVoiceChatLog = appendVoiceChatLog;
+appendVoiceChatLog = function(role, text) {
+    _origAppendVoiceChatLog(role, text);
+    if (_isFullscreen) {
+        const fsLog = document.getElementById('fsVoiceChatLog');
+        const div = document.createElement('div');
+        div.className = role === 'user' ? 'msg-user' : 'msg-avatar';
+        div.textContent = text;
+        fsLog.appendChild(div);
+        fsLog.scrollTop = fsLog.scrollHeight;
+    }
+};
+
+const _origShowVoiceStatus = showVoiceStatus;
+showVoiceStatus = function(show, icon, text) {
+    _origShowVoiceStatus(show, icon, text);
+    if (_isFullscreen) {
+        const bar = document.getElementById('fsVoiceStatusBar');
+        if (show) {
+            bar.style.display = 'block';
+            document.getElementById('fsVoiceStatusIcon').textContent = icon;
+            document.getElementById('fsVoiceStatusText').textContent = text;
+        } else {
+            bar.style.display = 'none';
+        }
+    }
+};
+
+const _origShowVoiceTranscript = showVoiceTranscript;
+showVoiceTranscript = function(text, interim) {
+    _origShowVoiceTranscript(text, interim);
+    if (_isFullscreen) {
+        const el = document.getElementById('fsVoiceTranscript');
+        if (!text) { el.style.display = 'none'; el.textContent = ''; return; }
+        el.style.display = 'block';
+        el.textContent = (interim ? '...' : '✓ ') + text;
+    }
+};
+
+</script>
+</body>
+</html>

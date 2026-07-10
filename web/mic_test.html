@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>Mic Test</title></head>
+<body>
+<h3>麦克风诊断</h3>
+<button onclick="testMic()">测试 getUserMedia</button>
+<button onclick="testSR()">测试 SpeechRecognition</button>
+<button onclick="testPerm()">检查权限状态</button>
+<div id="out" style="margin-top:20px;white-space:pre-wrap;font-family:monospace;"></div>
+<script>
+function log(msg) { document.getElementById('out').textContent += msg + '\n'; }
+function testPerm() {
+  log('--- 权限检查 ---');
+  if (!navigator.permissions) { log('permissions API 不支持'); return; }
+  navigator.permissions.query({name: 'microphone'}).then(s => {
+    log('麦克风权限状态: ' + s.state);
+    s.onchange = () => log('权限状态变化: ' + s.state);
+  }).catch(e => log('权限查询失败: ' + e.name + ' ' + e.message));
+}
+function testMic() {
+  log('--- getUserMedia 测试 ---');
+  if (!navigator.mediaDevices) { log('mediaDevices 不存在'); return; }
+  log('mediaDevices 存在');
+  navigator.mediaDevices.enumerateDevices().then(devs => {
+    const mics = devs.filter(d => d.kind === 'audioinput');
+    log('音频输入设备数: ' + mics.length);
+    mics.forEach(m => log('  - ' + (m.label || '(无标签)') + ' id=' + m.deviceId.slice(0,20)));
+    return navigator.mediaDevices.getUserMedia({ audio: true });
+  }).then(s => {
+    log('getUserMedia 成功!');
+    s.getTracks().forEach(t => { log('释放轨道: ' + t.kind); t.stop(); });
+  }).catch(e => {
+    log('getUserMedia 失败: ' + e.name + ' - ' + e.message);
+    if (e.name === 'NotAllowedError') log('→ 权限被拒绝，请在地址栏🔒中开启麦克风');
+    if (e.name === 'NotFoundError') log('→ 未找到麦克风设备');
+  });
+}
+function testSR() {
+  log('--- SpeechRecognition 测试 ---');
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { log('SpeechRecognition 不支持'); return; }
+  log('SpeechRecognition 支持');
+  const r = new SR();
+  r.lang = 'zh-CN';
+  r.continuous = true;
+  r.interimResults = true;
+  r.onstart = () => log('SpeechRecognition 启动成功! 请说话...');
+  r.onresult = e => { for (let i = e.resultIndex; i < e.results.length; i++) { log('识别: ' + e.results[i][0].transcript + (e.results[i].isFinal ? ' [最终]' : ' [中间]')); } };
+  r.onerror = e => log('SpeechRecognition 错误: ' + e.error);
+  r.onend = () => log('SpeechRecognition 结束');
+  r.start();
+}
+log('诊断页面已加载，请点击按钮测试\n');
+</script>
+</body></html>
