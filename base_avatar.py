@@ -464,7 +464,7 @@ class BaseAvatar:
         logger.info('baseavatar inference thread stop')
 
     def process_frames(self,quit_event):
-        enable_transition = False  # 设置为False禁用过渡效果，True启用
+        enable_transition = True  # 启用说话/静音过渡，减少口型突变僵硬感
         
         _last_speaking = False
         _transition_start = time.time()
@@ -617,7 +617,7 @@ class BaseAvatar:
             logger.info('Render already started for session %s, skipping', self.sessionid)
             return
         self._render_started = True
-        self._render_quit = threading.Event()
+        self._render_quit = Event()  # Event already imported from threading
         self._render_thread = Thread(
             target=self.render,
             args=(self._render_quit,),

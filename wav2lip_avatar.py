@@ -137,6 +137,8 @@ class LipReal(BaseAvatar):
                                       dtype=torch.float32, device=device)
         self._img_transposed = torch.zeros(1, dtype=torch.float32, device=device)
         self._audio_transposed = torch.zeros(1, dtype=torch.float32, device=device)
+        # ── 帧间平滑：缓存上一帧推理结果，用于 temporal blending ──
+        self._prev_pred_cpu = None  # shape: [H, W, 3] float32
 
     def inference_batch(self, index, audiofeat_batch):
         length = len(self.face_list_cycle)
@@ -199,26 +201,53 @@ class LipReal(BaseAvatar):
 
     def paste_back_frame(self, pred_frame, idx: int):
         bbox = self.coord_list_cycle[idx]
+        y1, y2, x1, x2 = bbox
+        rh, rw = y2 - y1, x2 - x1
 
+        # ── 1) 推理帧 resize 到目标区域尺寸 ──
         if _use_gpu and torch.is_tensor(pred_frame):
-            # ── GPU 路径：torch resize + clone 替代 cv2.resize + np.copy ──
-            y1, y2, x1, x2 = bbox
-            # pred_frame: [3, H, W] float32 on GPU → interpolate → [3, y2-y1, x2-x1]
             pred_4d = pred_frame.unsqueeze(0)  # [1, 3, H, W]
-            resized = F.interpolate(pred_4d, size=(y2 - y1, x2 - x1),
-                                    mode='bilinear', align_corners=False)
-            resized = resized.squeeze(0).permute(1, 2, 0)  # [H, W, 3]
-            resized = resized.mul(255.).byte().clamp(0, 255)
-
-            # GPU clone 替代 np.copy（快 3-5x）
-            combine = self.full_gpu[idx].clone()
-            combine[y1:y2, x1:x2] = resized
-            return combine.cpu().numpy()
+            resized_t = F.interpolate(pred_4d, size=(rh, rw),
+                                      mode='bilinear', align_corners=False)
+            resized_np = resized_t.squeeze(0).permute(1, 2, 0).mul(255.).clamp(0, 255).cpu().numpy().astype(np.float32)
         else:
-            # ── CPU 回退路径 ──
-            y1, y2, x1, x2 = bbox
-            combine_frame = np.copy(self.frame_list_cycle[idx])
-            res_frame = cv2.resize(pred_frame.astype(np.uint8, copy=False), (x2 - x1, y2 - y1))
-            combine_frame[y1:y2, x1:x2] = res_frame
-            return combine_frame
+            src = pred_frame.cpu().numpy() if torch.is_tensor(pred_frame) else np.asarray(pred_frame, dtype=np.float32)
+            resized_np = cv2.resize(src, (rw, rh)).astype(np.float32)
+
+        # ── 2) 帧间平滑（Temporal Smoothing）：与上一帧加权融合，减少口型跳变 ──
+        # TEMPORAL_ALPHA: 当前帧权重（0.85 = 快速响应 + 轻微平滑）
+        # 可在 0.7~0.95 之间调整（值越小越平滑但越滞后）
+        TEMPORAL_ALPHA = 0.85
+        if self._prev_pred_cpu is not None and self._prev_pred_cpu.shape == resized_np.shape:
+            resized_np = TEMPORAL_ALPHA * resized_np + (1.0 - TEMPORAL_ALPHA) * self._prev_pred_cpu
+        self._prev_pred_cpu = resized_np.copy()
+
+        # ── 3) 边缘羽化（Feathering）：在嘴部贴图四周做渐变融合，消除硬边缘 ──
+        FEATHER_PX = 7  # 羽化像素宽度（5~12 px 为宜）
+        mask = np.ones((rh, rw), dtype=np.float32)
+        if rh > FEATHER_PX * 2 and rw > FEATHER_PX * 2:
+            for i in range(FEATHER_PX):
+                alpha_v = float(i + 1) / float(FEATHER_PX + 1)
+                mask[i, :]            = alpha_v
+                mask[rh - 1 - i, :]   = alpha_v
+                mask[:, i]            = np.minimum(mask[:, i], alpha_v)
+                mask[:, rw - 1 - i]   = np.minimum(mask[:, rw - 1 - i], alpha_v)
+        mask_3c = mask[:, :, np.newaxis]
+
+        # ── 4) 取背景帧对应区域并融合 ──
+        if _use_gpu and self.full_gpu is not None:
+            bg_region = self.full_gpu[idx, y1:y2, x1:x2].cpu().numpy().astype(np.float32)
+        else:
+            bg_region = self.frame_list_cycle[idx][y1:y2, x1:x2].astype(np.float32)
+
+        blended = mask_3c * resized_np + (1.0 - mask_3c) * bg_region
+        blended = np.clip(blended, 0, 255).astype(np.uint8)
+
+        # ── 5) 贴回完整帧 ──
+        if _use_gpu and self.full_gpu is not None:
+            combine = self.full_gpu[idx].clone().cpu().numpy().copy()
+        else:
+            combine = np.copy(self.frame_list_cycle[idx])
+        combine[y1:y2, x1:x2] = blended
+        return combine
 

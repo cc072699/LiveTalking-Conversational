@@ -49,7 +49,7 @@ def llm_response(message, avatar_session: 'BaseAvatar', datainfo: dict = {}):
             messages=[{'role': 'system', 'content': _load_system_prompt()},
                       {'role': 'user', 'content': message}],
             stream=True,
-            max_tokens=512,
+            max_tokens=1024,
         )
         result = ""
         first = True

@@ -151,7 +151,6 @@ def get_latest_logs(lines=100):
     return logs
 
 def update_dialog_state(new_logs):
-    global sessions
     tts_status = '未知'
     tts_session = None
     inference_active = False
