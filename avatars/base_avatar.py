@@ -160,6 +160,12 @@ class BaseAvatar:
         self._subtitle_font_scale = getattr(opt, 'subtitle_font_scale', 1.0)
         # 字幕 Y 轴位置比例（距底部）
         self._subtitle_y_ratio = getattr(opt, 'subtitle_y_offset_ratio', 0.08)
+        # 字幕逐行展示
+        self._subtitle_reveal_start = 0.0
+        self._subtitle_reveal_ended = False
+        self._subtitle_line_count = 0
+        self._subtitle_line_h = 0
+        self._subtitle_y_start = 0
 
         self.batch_size = opt.batch_size
         self.res_frame_queue = Queue(self.batch_size*8)
@@ -630,8 +636,9 @@ class BaseAvatar:
                     ud = af.userdata
                     if ud.get("status") == "start" and ud.get("text"):
                         self._current_subtitle = ud["text"]
+                        self._subtitle_reveal_ended = False
                     elif ud.get("status") == "end":
-                        self._current_subtitle = ""
+                        self._subtitle_reveal_ended = True
 
             if self._watermark_text:
                 cv2.putText(combine_frame, self._watermark_text, (10, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.3, (128,128,128), 1)
@@ -682,19 +689,44 @@ class BaseAvatar:
                             overlay_bgr = overlay_np[:, :, :3][:, :, ::-1]  # RGBA→BGR
                             self._cached_subtitle_overlay = (overlay_bgr * alpha).astype(np.uint8)
                             self._cached_subtitle_mask = alpha  # [H, W, 1] float32
-                            self._cached_subtitle_inv_mask = (1.0 - alpha).astype(np.float32)  # broadcast ready
-                            # 将 inv_mask 扩展到 3 通道供 cv2.multiply 使用
+                            self._cached_subtitle_inv_mask = (1.0 - alpha).astype(np.float32)
                             self._cached_subtitle_inv_mask = np.repeat(self._cached_subtitle_inv_mask, 3, axis=2)
-                            # 转为 uint8 乘法友好格式（0 或 255）
-                            # 注意：alpha 可能是中间值（如抗锯齿），保持 float 精度
-                            self._cached_subtitle_overlay = self._cached_subtitle_overlay
                             self._last_rendered_subtitle = txt
-                        # 合成缓存层到视频帧（OpenCV 叠加，避免 PIL 转换开销）
+                            # 记录逐行展示参数
+                            self._subtitle_line_count = len(lines)
+                            self._subtitle_line_h = line_h + 4
+                            self._subtitle_y_start = y_start
+                            self._subtitle_reveal_start = time.perf_counter()
+                            self._subtitle_reveal_ended = False
+                        # ── 合成缓存层（逐行展示）──
                         if self._cached_subtitle_overlay is not None:
-                            mask = self._cached_subtitle_mask
-                            inv_mask = self._cached_subtitle_inv_mask
-                            combine_frame = cv2.multiply(combine_frame, inv_mask, dtype=cv2.CV_8U)
-                            combine_frame = cv2.add(combine_frame, self._cached_subtitle_overlay)
+                            _REVEAL_INTERVAL = 0.45  # 每行展示间隔（秒）
+                            _REVEAL_HOLD = 1.5       # 播完后停留时间（秒）
+                            elapsed = time.perf_counter() - self._subtitle_reveal_start
+                            total = self._subtitle_line_count
+                            if self._subtitle_reveal_ended:
+                                n_revealed = total
+                            else:
+                                n_revealed = min(total, max(1, int(elapsed / _REVEAL_INTERVAL) + 1))
+                            if n_revealed < total:
+                                ln_h = self._subtitle_line_h
+                                yoff = self._subtitle_y_start
+                                reveal_y = yoff + (total - n_revealed) * ln_h
+                                mask = self._cached_subtitle_mask.copy()
+                                mask[:reveal_y, :] = 0.0
+                                overlay = self._cached_subtitle_overlay.copy()
+                                overlay[:reveal_y, :] = 0
+                                inv = np.repeat(1.0 - mask, 3, axis=2)
+                                combine_frame = cv2.multiply(combine_frame, inv, dtype=cv2.CV_8U)
+                                combine_frame = cv2.add(combine_frame, overlay)
+                            else:
+                                combine_frame = cv2.multiply(combine_frame, self._cached_subtitle_inv_mask, dtype=cv2.CV_8U)
+                                combine_frame = cv2.add(combine_frame, self._cached_subtitle_overlay)
+                            # 播完停留后清除
+                            if self._subtitle_reveal_ended and n_revealed >= total:
+                                if elapsed > total * _REVEAL_INTERVAL + _REVEAL_HOLD:
+                                    self._current_subtitle = ""
+                                    self._subtitle_reveal_ended = False
                 except Exception as e:
                     logger.warning(f"Subtitle render error: {e}")
             
