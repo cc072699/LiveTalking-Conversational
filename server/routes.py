@@ -221,14 +221,13 @@ async def admin_sessions(request):
 
 
 async def admin_shutdown(request):
-    """立即关闭服务器进程"""
+    """优雅关闭服务器进程（通过 asyncio 事件循环停止）"""
     try:
-        import os as _os
-        import time as _time
         logger.info("Shutdown requested via admin API")
         resp = json_ok(data={"msg": "Server shutting down now"})
-        # 延迟退出，确保 HTTP 响应先发回
-        asyncio.get_event_loop().call_later(0.5, lambda: _os._exit(0))
+        # 延迟停止，确保 HTTP 响应先发回；走 loop.stop() 触发 on_shutdown 钩子
+        loop = asyncio.get_event_loop()
+        loop.call_later(0.5, loop.stop)
         return resp
     except Exception as e:
         logger.exception('admin_shutdown exception:')

@@ -7,6 +7,31 @@ if TYPE_CHECKING:
     from avatars.base_avatar import BaseAvatar
 from utils.logger import logger
 
+# ── LLM Client 单例缓存（避免每次请求重新建立 HTTP 连接）────────────────────
+_llm_clients: dict = {}
+
+def _get_llm_client(provider: str):
+    """按 provider 返回复用的 OpenAI client 单例，避免每次请求重建连接"""
+    global _llm_clients
+    if provider in _llm_clients:
+        return _llm_clients[provider]
+    from openai import OpenAI
+    if provider == "sensenova":
+        client = OpenAI(
+            api_key=os.getenv("SENSNOVA_API_KEY"),
+            base_url=os.getenv("SENSNOVA_BASE_URL", "https://token.sensenova.cn/v1"),
+            timeout=httpx.Timeout(60.0, connect=10.0),
+        )
+    else:
+        client = OpenAI(
+            api_key=os.getenv("DASHSCOPE_API_KEY"),
+            base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
+            timeout=httpx.Timeout(60.0, connect=10.0),
+        )
+    _llm_clients[provider] = client
+    logger.info(f"LLM client created for provider={provider}")
+    return client
+
 
 def _load_system_prompt():
     """从配置文件加载 System Prompt，支持热更新（每次请求重新读取）"""
@@ -25,27 +50,16 @@ def llm_response(message, avatar_session: 'BaseAvatar', datainfo: dict = {}):
         opt = avatar_session.opt
         start = time.perf_counter()
 
-        from openai import OpenAI
-
         provider = os.getenv("LLM_PROVIDER", "dashscope")
+        client = _get_llm_client(provider)
 
         if provider == "sensenova":
-            client = OpenAI(
-                api_key=os.getenv("SENSNOVA_API_KEY"),
-                base_url=os.getenv("SENSNOVA_BASE_URL", "https://token.sensenova.cn/v1"),
-                timeout=httpx.Timeout(60.0, connect=10.0),
-            )
             model = os.getenv("SENSNOVA_MODEL", "sensenova-6.7-flash-lite")
         else:
-            client = OpenAI(
-                api_key=os.getenv("DASHSCOPE_API_KEY"),
-                base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
-                timeout=httpx.Timeout(60.0, connect=10.0),
-            )
             model = os.getenv("DASHSCOPE_MODEL", "qwen-plus")
 
         end = time.perf_counter()
-        logger.info(f"llm Time init: {end-start}s, provider={provider}, model={model}")
+        logger.info(f"llm provider={provider}, model={model}, init={end-start:.3f}s")
 
         completion = client.chat.completions.create(
             model=model,
@@ -60,7 +74,7 @@ def llm_response(message, avatar_session: 'BaseAvatar', datainfo: dict = {}):
             if len(chunk.choices) > 0:
                 if first:
                     end = time.perf_counter()
-                    logger.info(f"llm Time to first chunk: {end-start}s")
+                    logger.info(f"llm Time to first chunk: {end-start:.3f}s")
                     first = False
                 msg = chunk.choices[0].delta.content
                 if msg is None:
@@ -75,7 +89,7 @@ def llm_response(message, avatar_session: 'BaseAvatar', datainfo: dict = {}):
                             result = ""
                 result = result + msg[lastpos:]
         end = time.perf_counter()
-        logger.info(f"llm Time to last chunk: {end-start}s")
+        logger.info(f"llm Time to last chunk: {end-start:.3f}s")
         if result:
             avatar_session.put_msg_txt(result, datainfo)
 
