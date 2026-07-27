@@ -698,16 +698,20 @@ class BaseAvatar:
                             self._subtitle_y_start = y_start
                             self._subtitle_reveal_start = time.perf_counter()
                             self._subtitle_reveal_ended = False
-                        # ── 合成缓存层（逐行展示）──
+                        # ── 合成缓存层（逐行展示，按文本字数估算语速）──
                         if self._cached_subtitle_overlay is not None:
-                            _REVEAL_INTERVAL = 0.45  # 每行展示间隔（秒）
                             _REVEAL_HOLD = 1.5       # 播完后停留时间（秒）
+                            _CHAR_PER_SEC = 4.0      # 中文语速：字/秒
                             elapsed = time.perf_counter() - self._subtitle_reveal_start
                             total = self._subtitle_line_count
+                            chars = len(txt)
+                            # 按字数估算总时长，除以行数得到每行间隔
+                            total_est = max(0.6, chars / _CHAR_PER_SEC)
+                            line_interval = total_est / max(total, 1)
                             if self._subtitle_reveal_ended:
                                 n_revealed = total
                             else:
-                                n_revealed = min(total, max(1, int(elapsed / _REVEAL_INTERVAL) + 1))
+                                n_revealed = min(total, max(1, int(elapsed / line_interval) + 1))
                             if n_revealed < total:
                                 ln_h = self._subtitle_line_h
                                 yoff = self._subtitle_y_start
@@ -724,7 +728,7 @@ class BaseAvatar:
                                 combine_frame = cv2.add(combine_frame, self._cached_subtitle_overlay)
                             # 播完停留后清除
                             if self._subtitle_reveal_ended and n_revealed >= total:
-                                if elapsed > total * _REVEAL_INTERVAL + _REVEAL_HOLD:
+                                if elapsed > total_est + _REVEAL_HOLD:
                                     self._current_subtitle = ""
                                     self._subtitle_reveal_ended = False
                 except Exception as e:
