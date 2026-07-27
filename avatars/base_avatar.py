@@ -55,18 +55,18 @@ from PIL import Image, ImageDraw, ImageFont
 # 在 macOS 上查找可用的中文字体
 _SUBTITLE_FONT_PATH = None
 _CANDIDATE_FONTS = [
+    "/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc",
+    "/usr/share/fonts/truetype/wqy/wqy-microhei.ttc",
+    "/usr/share/fonts/truetype/droid/DroidSansFallbackFull.ttf",
+    "/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc",
+    "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
+    "/usr/share/fonts/truetype/arphic/uming.ttc",
+    "/tmp/custom_nodes_extra/comfyui-mixlab-nodes/assets/fonts/有爱黑体ARHei.ttf",
+    "/tmp/custom_nodes_extra/comfyui-mixlab-nodes/assets/fonts/有爱黑体arheiuhk_bd.ttf",
+    "/tmp/custom_nodes_extra/comfyui-mixlab-nodes/assets/fonts/庞门正道粗书体6.0.ttf",
     "/Library/Fonts/Arial Unicode.ttf",
     "/System/Library/Fonts/Supplemental/Arial Unicode.ttf",
     "/System/Library/Fonts/STSong.ttf",
-    "/System/Library/Fonts/Apple Symbols.ttf",
-    "/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc",
-    "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
-    "/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc",
-    "/usr/share/fonts/truetype/wqy/wqy-microhei.ttf",
-    "/usr/share/fonts/truetype/droid/DroidSansFallbackFull.ttf",
-    "/usr/share/fonts/truetype/noto/NotoSansSC-Regular.ttf",
-    "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
-    "/usr/share/fonts/truetype/arphic/uming.ttc",
 ]
 
 def _detect_subtitle_font(override_path=None):
