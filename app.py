@@ -61,6 +61,21 @@ global_avatars = {} # avatar_id: payload
 # rtc_manager replaces the old pcs set and duplicate offer handlers.
 rtc_manager = None
 
+import collections
+
+_session_cache: Dict[str, BaseAvatar] = collections.OrderedDict()
+_SESSION_CACHE_MAX = 2  # 最多缓存 2 个不同配置，超出则淘汰最旧的
+
+def _cache_evict_oldest():
+    """淘汰最旧的一个缓存 session（停止渲染并释放资源）"""
+    if len(_session_cache) > _SESSION_CACHE_MAX:
+        old_key, old_session = _session_cache.popitem(last=False)
+        try:
+            old_session.release_resources()
+        except Exception as e:
+            logger.warning(f'Session cache evict failed: {e}')
+        logger.info(f'Session cache evicted: avatar={old_key[0]} voice={old_key[1]}')
+
 def randN(N)->int:
     '''生成长度为 N的随机数 '''
     min = pow(10, N - 1)
@@ -75,22 +90,61 @@ def build_avatar_session(sessionid:str, params:dict)->BaseAvatar:
     opt_this.avatar_id = avatar_id
     ref_audio = params.get('refaudio','') #音色
     ref_text = params.get('reftext','')
+    custom_config = params.get('custom_config','')
+
+    # ── 缓存 key：(avatar_id, tts_voice, has_custom) ──
+    cache_key = (avatar_id, ref_audio, bool(custom_config))
+    if cache_key in _session_cache:
+        cached = _session_cache[cache_key]
+        if cached and not cached.is_speaking():
+            cached.opt.sessionid = sessionid
+            # 检测 render 是否需要重启：_render_started=False 或 render 线程已退出但标记未清理
+            render_alive = cached._render_thread and cached._render_thread.is_alive()
+            if not render_alive:
+                cached._render_started = False  # 同步标记位
+                cached.start_render()  # 重启渲染管线
+            logger.info(f'Session cache HIT avatar={avatar_id}')
+            return cached
+        else:
+            # talking session cannot be reused — evict and recreate
+            if cached is not None:
+                _stale = cached
+                def _cleanup_stale():
+                    try:
+                        _stale.release_resources()
+                    except:
+                        pass
+                Thread(target=_cleanup_stale, daemon=True).start()
+            del _session_cache[cache_key]
+            logger.info(f'Session cache INVALIDATED (busy): avatar={avatar_id}')
+
     if (avatar_id and avatar_id != opt.avatar_id):
         # Avoid reloading if already cached globally
         if avatar_id not in global_avatars:
             global_avatars[avatar_id] = load_avatar(avatar_id)
         avatar_this = global_avatars[avatar_id]
-    else:
+    elif opt.avatar_id and opt.avatar_id in global_avatars:
         # Default avatar loaded at startup
         avatar_this = global_avatars.get(opt.avatar_id)
+    else:
+        # No default avatar available — try the first available one
+        avatar_this = next(iter(global_avatars.values()), None)
+        if avatar_this:
+            logger.warning(f"No specific avatar requested and default not available; falling back to first available avatar")
     if ref_audio: #请求参数配置了参考音频
         opt_this.REF_FILE = ref_audio
         opt_this.REF_TEXT = ref_text
-    custom_config=params.get('custom_config','') #动作编排配置
     if custom_config:
         opt_this.customopt = json.loads(custom_config)
 
     avatar_session = registry.create("avatar", opt.model, opt=opt_this, model=model, avatar=avatar_this)
+    avatar_session._cache_key = cache_key  # 供 remove_session 定位缓存条目
+    # 缓存前淘汰旧条目（LRU 策略，max 2）
+    if cache_key in _session_cache:
+        del _session_cache[cache_key]  # 移到末尾（刷新 LRU 顺序）
+    _session_cache[cache_key] = avatar_session
+    _cache_evict_oldest()
+    logger.info(f'Session cache MISS avatar={avatar_id}')
     return avatar_session
 
 async def offer(request):
@@ -133,23 +187,34 @@ def main():
 
     if opt.model == 'musetalk':
         model = load_model()
-        global_avatars[opt.avatar_id] = load_avatar(opt.avatar_id)
+        if opt.avatar_id:
+            global_avatars[opt.avatar_id] = load_avatar(opt.avatar_id)
+        else:
+            logger.warning("No avatar_id configured — default avatar not loaded")
         warm_up(opt.batch_size,model)
     elif opt.model == 'wav2lip':
         model = load_model("./models/wav2lip.pth")
-        global_avatars[opt.avatar_id] = load_avatar(opt.avatar_id)
+        if opt.avatar_id:
+            global_avatars[opt.avatar_id] = load_avatar(opt.avatar_id)
+        else:
+            logger.warning("No avatar_id configured — default avatar not loaded")
         # 开启 cudnn benchmark: 输入形状固定时缓存最优卷积算法
         torch.backends.cudnn.benchmark = True
         warm_up(opt.batch_size,model,256)
+        # ── 按需加载 avatar（不再预加载所有，节省内存 ~2.8GB/avatar）──
         gc.collect()
         torch.cuda.empty_cache()
     elif opt.model == 'ultralight':
         model = load_model(opt)
-        global_avatars[opt.avatar_id] = load_avatar(opt.avatar_id)
-        warm_up(opt.batch_size,global_avatars[opt.avatar_id],160)
+        if opt.avatar_id:
+            global_avatars[opt.avatar_id] = load_avatar(opt.avatar_id)
+            warm_up(opt.batch_size, global_avatars[opt.avatar_id], 160)
+        else:
+            logger.warning("No avatar_id configured — default avatar not loaded")
 
     # init rtc manager
     session_manager.init_builder(build_avatar_session)
+    session_manager.set_cache(_session_cache)
     rtc_manager = RTCManager(opt)
     # share avatar_sessions (RTCManager handles it but routes.py expects it)
     

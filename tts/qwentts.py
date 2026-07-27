@@ -51,8 +51,8 @@ class QwenTTS(BaseTTS):
                 self.speech_rate = float(self.speech_rate)
             except ValueError:
                 self.speech_rate = 1.0
-        # 模型名
-        self.model = getattr(opt, 'qwen_tts_model', 'qwen3-tts-flash-realtime')
+        # 模型名 — 优先从 opt 读取，fallback 与 config.py 默认值一致
+        self.model = getattr(opt, 'qwen_tts_model', None) or 'qwen-tts-realtime-latest'
         self._default_model = self.model
         # WebSocket URL
         self.ws_url = getattr(opt, 'qwen_tts_url',
@@ -72,9 +72,11 @@ class QwenTTS(BaseTTS):
         self._current_text = ''
         self._current_textevent = {}
         self._ws_connected = False        # WebSocket 连接状态
+        self._tts_client = None           # 延迟初始化：第一次 txt_to_audio 时才连接
+        self._callback = None
 
-        # ---------- 建立唯一连接 ----------
-        self._build_client()
+        # ── 连接推迟：不在 __init__ 中连接，避免阻塞 session 创建 ──
+        # 原 _build_client() 移到第一次使用时调用
 
     class _Callback(QwenTtsRealtimeCallback):
         def __init__(self, tts_ref):
@@ -116,6 +118,29 @@ class QwenTTS(BaseTTS):
             except Exception as e:
                 logger.exception(f"QwenTTS 回调处理异常: {e}")
 
+    def _ensure_connected(self):
+        """Lazy connect: 第一次 txt_to_audio 调用时建立 WebSocket"""
+        if self._tts_client is not None and self._ws_connected:
+            return
+        if self._tts_client is None:
+            self._build_client()
+        elif not self._ws_connected:
+            # 之前断开了，仅重连 WebSocket（不重建 client）
+            try:
+                self._tts_client.connect()
+                self._tts_client.update_session(
+                    voice=self.voice,
+                    response_format=AudioFormat.PCM_24000HZ_MONO_16BIT,
+                    sample_rate=24000,
+                    mode='commit',
+                    speech_rate=self.speech_rate,
+                )
+                self._ws_connected = True
+                logger.info("QwenTTS reconnected")
+            except Exception:
+                logger.warning("QwenTTS reconnect failed, rebuilding")
+                self._build_client()
+
     def _build_client(self):
         """初始化 / 重建 QwenTtsRealtime 客户端（使用 self.model / self.voice / self.speech_rate）"""
         self._remainder = np.array([], dtype=np.float32)
@@ -141,10 +166,11 @@ class QwenTTS(BaseTTS):
 
     def _rebuild_client(self, model: str = None, voice: str = None, speed: float = None):
         """关闭旧连接，用新参数重建 QwenTtsRealtime 客户端"""
-        try:
-            self._tts_client.close()
-        except Exception:
-            pass
+        if self._tts_client:
+            try:
+                self._tts_client.close()
+            except Exception:
+                pass
         if model:
             self.model = model
         if voice:
@@ -174,7 +200,14 @@ class QwenTTS(BaseTTS):
         text, textevent = msg
         t_start = time.perf_counter()
 
+        # ── Lazy connect：第一次说话时才建立 WebSocket 连接 ──
+        self._ensure_connected()
+
         ref_file = textevent.get('tts', {}).get('ref_file', self.opt.REF_FILE)
+        if ref_file == self.opt.REF_FILE and self.voice != self.opt.REF_FILE:
+            logger.debug(f"QwenTTS using fallback voice={ref_file} (no ref_file in datainfo)")
+        elif ref_file != self.voice:
+            logger.info(f"QwenTTS voice switching: {self.voice} -> {ref_file}")
 
         # 重置状态
         self._remainder = np.array([], dtype=np.float32)
@@ -197,16 +230,20 @@ class QwenTTS(BaseTTS):
                     self._build_client()
                     logger.info(f"QwenTTS model changed, rebuilt client: model={self.model}")
                 else:
-                    self._tts_client.close()
-                    self._tts_client.connect()
-                    self._tts_client.update_session(
-                        voice=self.voice,
-                        response_format=AudioFormat.PCM_24000HZ_MONO_16BIT,
-                        sample_rate=24000,
-                        mode='commit',
-                        speech_rate=self.speech_rate,
-                    )
-                    logger.info(f"QwenTTS reconnected: voice={self.voice}, speech_rate={self.speech_rate}")
+                    try:
+                        self._tts_client.close()
+                        self._tts_client.connect()
+                        self._tts_client.update_session(
+                            voice=self.voice,
+                            response_format=AudioFormat.PCM_24000HZ_MONO_16BIT,
+                            sample_rate=24000,
+                            mode='commit',
+                            speech_rate=self.speech_rate,
+                        )
+                        logger.info(f"QwenTTS reconnected: voice={self.voice}, speech_rate={self.speech_rate}")
+                    except Exception:
+                        logger.warning("QwenTTS reconnect failed, rebuilding client")
+                        self._build_client()
             elif not self._ws_connected:
                 # 连接已断开（Idle timeout / 服务端关闭），自动重建
                 self._build_client()
@@ -251,7 +288,7 @@ class QwenTTS(BaseTTS):
             return
 
         # 整段 24kHz PCM -> float32 -> 一次性 resample 到 16kHz
-        samples_24k = np.frombuffer(pcm_data, dtype=np.int16).astype(np.float32) / 32768.0
+        samples_24k = np.frombuffer(pcm_data, dtype=np.int16).astype(np.float32) / 32767.0
         samples_16k = resampy.resample(x=samples_24k, sr_orig=SRC_SR, sr_new=DST_SR)
 
         # 拼接上次剩余
@@ -302,5 +339,6 @@ class QwenTTS(BaseTTS):
         self.parent.put_audio_frame(np.zeros(self.chunk, np.float32), eventpoint)
 
     def stop_tts(self):
-        self._tts_client.close()
+        if self._tts_client:
+            self._tts_client.close()
         logger.info("QwenTTS 已关闭")

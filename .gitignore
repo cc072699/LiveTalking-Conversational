@@ -6,17 +6,21 @@ build/
 dist/
 venv/
 
-# ---- 大文件（保留目录结构，忽略内容） ----
+# ---- 模型权重文件（不上传） ----
+*.pth
+*.pt
+*.ckpt
+*.safetensors
+*.bin
+models/*
+
+# ---- 形象帧数据（不上传） ----
 data/avatars/
 data/record/
 data/tmp/
-models/*
-!models/.gitkeep
 
-# ---- 日志 & 密钥 ----
+# ---- 日志 ----
 *.log
-.env
-.env.bak
 
 # ---- 备份文件 ----
 *.bak

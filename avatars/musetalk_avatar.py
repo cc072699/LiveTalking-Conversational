@@ -116,9 +116,7 @@ class MuseReal(BaseAvatar):
 
         #self.fps = opt.fps # 20 ms per frame
 
-        # self.batch_size = opt.batch_size
-        # self.idx = 0
-        # self.res_frame_queue = mp.Queue(self.batch_size*2)
+        # batch_size, idx, res_frame_queue are inherited from BaseAvatar.__init__
 
         self.vae, self.unet, self.pe, self.timesteps, self.audio_processor = model
 

@@ -51,6 +51,10 @@ device = initialize_device()
 _use_gpu = str(device) == 'cuda'
 logger.info('Using {} for inference. _use_gpu={}'.format(device, _use_gpu))
 
+# ── GPU tensor 缓存（按 avatar_id 跨 session 共享，避免重复加载）──
+_face_gpu_cache: dict = {}
+_FACE_GPU_CACHE_MAX = 3  # 最多缓存 3 个 GPU face tensor
+
 def _load(checkpoint_path):
     if device == 'cuda':
         checkpoint = torch.load(checkpoint_path)
@@ -72,6 +76,7 @@ def load_model(path):
     model = model.to(device)
     return model.eval()
 
+
 def load_avatar(avatar_id):
     avatar_path = f"./data/avatars/{avatar_id}"
     full_imgs_path = f"{avatar_path}/full_imgs" 
@@ -80,7 +85,6 @@ def load_avatar(avatar_id):
     
     with open(coords_path, 'rb') as f:
         coord_list_cycle = pickle.load(f)
-    frame_list_cycle = None
     input_img_list = glob.glob(os.path.join(full_imgs_path, '*.[jpJP][pnPN]*[gG]'))
     input_img_list = sorted(input_img_list, key=lambda x: int(os.path.splitext(os.path.basename(x))[0]))
     frame_list_cycle = read_imgs(input_img_list)
@@ -110,28 +114,37 @@ class LipReal(BaseAvatar):
 
         # ── 预加载 GPU 张量（弱 CPU 强 GPU 场景关键优化）──
         if _use_gpu:
-            # face_list_cycle → [N, 3, H, W] float32 归一化张量（避免每 batch 重复 CPU→GPU 传输）
-            face_tensors = []
-            for face_img in self.face_list_cycle:
-                face_tensors.append(torch.from_numpy(face_img).permute(2, 0, 1).float().div(255.0))
-            self.face_gpu = torch.stack(face_tensors).to(device)
-            logger.info(f"Pre-loaded {len(face_tensors)} face frames to GPU: {self.face_gpu.shape}")
-
-            # full frame list → [N, H, W, 3] uint8 张量（paste_back_frame 时 clone 避免 np.copy）
-            full_tensors = []
-            for frame in self.frame_list_cycle:
-                full_tensors.append(torch.from_numpy(frame))
-            self.full_gpu = torch.stack(full_tensors).to(device)
-            logger.info(f"Pre-loaded {len(full_tensors)} full frames to GPU: {self.full_gpu.shape}")
-            # release intermediate lists and trigger GC after GPU preload
-            del face_tensors, full_tensors
-            gc.collect()
-            torch.cuda.empty_cache()
-            logger.info("GPU pre-load done, cleaned up CPU temporary memory")
-
+            # face_list_cycle → [N, 3, H, W] fp16 归一化张量（避免每 batch 重复 CPU→GPU 传输）
+            avatar_id = getattr(opt, 'avatar_id', 'default')
+            cache_key = avatar_id
+            if cache_key in _face_gpu_cache:
+                # 命中缓存：直接复用已加载的 GPU tensor
+                self.face_gpu = _face_gpu_cache[cache_key]
+                logger.info(f'face_gpu cache HIT for {avatar_id}: {self.face_gpu.shape}')
+            else:
+                # 未命中：构建并缓存
+                face_tensors = []
+                for face_img in self.face_list_cycle:
+                    face_tensors.append(torch.from_numpy(face_img).permute(2, 0, 1).float().div(255.0).half())
+                self.face_gpu = torch.stack(face_tensors).to(device)
+                # 淘汰最旧缓存（LRU）
+                if len(_face_gpu_cache) >= _FACE_GPU_CACHE_MAX:
+                    oldest = next(iter(_face_gpu_cache))
+                    logger.info(f'face_gpu cache evicted: {oldest}')
+                    del _face_gpu_cache[oldest]
+                _face_gpu_cache[cache_key] = self.face_gpu
+                logger.info(f'face_gpu cache MISS for {avatar_id}: pre-loaded {len(face_tensors)} frames (fp16): {self.face_gpu.shape}')
+                del face_tensors
+                gc.collect()
+                torch.cuda.empty_cache()
         else:
             self.face_gpu = None
-            self.full_gpu = None
+
+        # ── GPU 缓存就绪后释放 CPU 端 numpy 拷贝（节省 ~12MB/avatar）──
+        if _use_gpu and self.face_list_cycle is not None:
+            self._face_count = len(self.face_list_cycle)  # 缓存长度供 inference_batch 使用
+            self.face_list_cycle = None
+            gc.collect()
 
         # inference batch counter for periodic GC
         self._infer_count = 0
@@ -148,7 +161,7 @@ class LipReal(BaseAvatar):
         self._audio_transposed = torch.zeros(1, dtype=torch.float32, device=device)
 
     def inference_batch(self, index, audiofeat_batch):
-        length = len(self.face_list_cycle)
+        length = self._face_count if hasattr(self, '_face_count') else len(self.face_list_cycle)
 
         if _use_gpu:
             # ── GPU 路径：从预加载张量切片，避免 numpy 操作和 CPU→GPU 传输 ──

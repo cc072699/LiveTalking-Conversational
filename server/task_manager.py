@@ -96,6 +96,7 @@ class TaskManager:
                     extra_margin=task.params.get('extra_margin', 10),
                     parsing_mode=task.params.get('parsing_mode', 'jaw'),
                     version=task.params.get('version', 'v15'),
+                    face_det_batch_size=task.params.get('face_det_batch_size', 8),
                     progress_callback=progress_callback
                 )
             elif task.model_type == "wav2lip":

@@ -131,9 +131,7 @@ class LightReal(BaseAvatar):
 
         #self.fps = opt.fps # 20 ms per frame
         
-        # self.batch_size = opt.batch_size
-        # self.idx = 0
-        # self.res_frame_queue = Queue(self.batch_size*2)
+        # batch_size, idx, res_frame_queue are inherited from BaseAvatar.__init__
 
         audio_processor,_ = model
         self.model,self.frame_list_cycle,self.face_list_cycle,self.coord_list_cycle = avatar

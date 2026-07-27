@@ -121,6 +121,46 @@ class VAE():
         latent_model_input = torch.cat([masked_latents, ref_latents], dim=1)
         return latent_model_input
 
+    @torch.no_grad()
+    def get_latents_for_unet_batch(self, imgs):
+        """
+        Batch version: encode multiple images for maximum GPU utilization.
+        :param imgs: List of numpy/cv2 images (BGR) to process.
+        :return: List of [1, 8, 32, 32] latent tensors.
+        """
+        if not imgs:
+            return []
+
+        window_masked = []
+        window_full = []
+        for img_name in imgs:
+            img = cv2.cvtColor(img_name, cv2.COLOR_BGR2RGB)
+            window_masked.append(img)
+            window_full.append(img)
+
+        # ── Masked batch (CPU preprocess then GPU) ──
+        x_masked = np.asarray(window_masked, dtype=np.float32) / 255.
+        x_masked = x_masked.transpose(0, 3, 1, 2)  # [B, 3, 256, 256]
+        x_masked = torch.from_numpy(x_masked)
+        mask_gpu = self._mask_tensor.to(self.vae.device)  # half_mask on GPU
+        x_masked = x_masked.to(self.vae.device)
+        x_masked = x_masked * mask_gpu.unsqueeze(0).unsqueeze(0)
+        x_masked = self.transform(x_masked).to(dtype=self.vae.dtype)
+
+        # ── Full batch (CPU preprocess then GPU) ──
+        x_full = np.asarray(window_full, dtype=np.float32) / 255.
+        x_full = x_full.transpose(0, 3, 1, 2)  # [B, 3, 256, 256]
+        x_full = torch.from_numpy(x_full).to(self.vae.device)
+        x_full = self.transform(x_full).to(dtype=self.vae.dtype)
+
+        with torch.cuda.amp.autocast(dtype=torch.float16):
+            masked_latents = self.encode_latents(x_masked)  # [B, 4, 32, 32]
+            full_latents = self.encode_latents(x_full)      # [B, 4, 32, 32]
+
+        # Return as list of [1, 8, 32, 32] for backward compatibility
+        combined = torch.cat([masked_latents, full_latents], dim=1)  # [B, 8, 32, 32]
+        return [combined[i:i+1] for i in range(combined.size(0))]
+
 if __name__ == "__main__":
     vae_mode_path = "./models/sd-vae-ft-mse/"
     vae = VAE(model_path = vae_mode_path,use_float16=False)

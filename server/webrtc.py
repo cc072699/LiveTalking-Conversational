@@ -179,6 +179,7 @@ class HumanPlayer:
     ):
         self.__thread: Optional[threading.Thread] = None
         self.__thread_quit: Optional[threading.Event] = None
+        self.__start_lock = threading.Lock()
 
         # examine streams
         self.__started: Set[PlayerStreamTrack] = set()
@@ -208,14 +209,20 @@ class HumanPlayer:
     def push_video(self, frame):
         from av import VideoFrame
         new_frame = VideoFrame.from_ndarray(frame, format="bgr24")
-        self.__video._queue.put((new_frame, None))
+        try:
+            self.__video._queue.put((new_frame, None), timeout=2.0)
+        except queue.Full:
+            mylogger.warning('video queue full, dropping frame')
 
     def push_audio(self, frame, eventpoint=None):
         from av import AudioFrame
         new_frame = AudioFrame(format='s16', layout='mono', samples=frame.shape[0])
         new_frame.planes[0].update(frame.tobytes())
         new_frame.sample_rate = 16000
-        self.__audio._queue.put((new_frame, eventpoint))
+        try:
+            self.__audio._queue.put((new_frame, eventpoint), timeout=2.0)
+        except queue.Full:
+            mylogger.warning('audio queue full, dropping frame')
 
     def get_buffer_size(self) -> int:
         return self.__video._queue.qsize()
@@ -240,18 +247,19 @@ class HumanPlayer:
 
     def _start(self, track: PlayerStreamTrack) -> None:
         self.__started.add(track)
-        if self.__thread is None:
-            self.__log_debug("Starting worker thread")
-            self.__thread_quit = threading.Event()
-            self.__thread = threading.Thread(
-                name="media-player",
-                target=player_worker_thread,
-                args=(
-                    self.__thread_quit,
-                    self.__container
-                ),
-            )
-            self.__thread.start()
+        with self.__start_lock:
+            if self.__thread is None:
+                self.__log_debug("Starting worker thread")
+                self.__thread_quit = threading.Event()
+                self.__thread = threading.Thread(
+                    name="media-player",
+                    target=player_worker_thread,
+                    args=(
+                        self.__thread_quit,
+                        self.__container
+                    ),
+                )
+                self.__thread.start()
 
     def _stop(self, track: PlayerStreamTrack) -> None:
         self.__started.discard(track)
@@ -265,7 +273,10 @@ class HumanPlayer:
             self.__thread = None
 
         if not self.__started and self.__container is not None:
-            #self.__container.close()
+            try:
+                self.__container.stop_render()
+            except Exception as e:
+                mylogger.warning(f"Error stopping render in _stop: {e}")
             self.__container = None
 
     def __log_debug(self, msg: str, *args) -> None:

@@ -83,6 +83,7 @@ class RTCManager:
         avatar_session = session_manager.get_session(sessionid)
         if avatar_session is None:
             logger.error("avatar session 为 None, sessionid=%s", sessionid)
+            session_manager.remove_session(sessionid)
             return web.Response(
                 content_type="application/json",
                 text=json.dumps({"code": -1, "msg": "avatar session not ready"}),
@@ -90,19 +91,38 @@ class RTCManager:
             )
 
         # 创建 PeerConnection
-        ice_server = RTCIceServer(urls='stun:stun.qq.com:3478')
+        stun_url = getattr(self.opt, 'stun_server', 'stun:stun.qq.com:3478')
+        ice_server = RTCIceServer(urls=stun_url)
         pc = RTCPeerConnection(
             configuration=RTCConfiguration(iceServers=[ice_server])
         )
         self.pcs.add(pc)
 
+        _cleanup_done = False
+
         @pc.on("connectionstatechange")
         async def on_connectionstatechange():
-            logger.info("Connection state is %s", pc.connectionState)
+            nonlocal _cleanup_done
+            logger.info("Connection state is %s, session=%s", pc.connectionState, sessionid)
+            if _cleanup_done:
+                return
             if pc.connectionState in ("failed", "closed"):
+                _cleanup_done = True
                 await pc.close()
                 self.pcs.discard(pc)
                 session_manager.remove_session(sessionid)
+                logger.info("Session %s cleaned up (state=%s)", sessionid, pc.connectionState)
+            elif pc.connectionState == "disconnected":
+                # 用户关闭浏览器时 ICE 可能停在 disconnected，永不转 failed
+                async def _delayed_cleanup():
+                    await asyncio.sleep(15)
+                    if not _cleanup_done:
+                        _cleanup_done = True
+                        await pc.close()
+                        self.pcs.discard(pc)
+                        session_manager.remove_session(sessionid)
+                        logger.info("Session %s cleaned up (disconnected timeout)", sessionid)
+                asyncio.create_task(_delayed_cleanup())
 
         # 添加发送轨道
         from server.webrtc import HumanPlayer
@@ -151,12 +171,30 @@ class RTCManager:
         pc = RTCPeerConnection()
         self.pcs.add(pc)
 
+        _cleanup_done = False
+
         @pc.on("connectionstatechange")
         async def on_connectionstatechange():
-            logger.info("Connection state is %s", pc.connectionState)
-            if pc.connectionState == "failed":
+            nonlocal _cleanup_done
+            logger.info("RTCPush Connection state is %s, session=%s", pc.connectionState, sessionid)
+            if _cleanup_done:
+                return
+            if pc.connectionState in ("failed", "closed"):
+                _cleanup_done = True
                 await pc.close()
                 self.pcs.discard(pc)
+                session_manager.remove_session(sessionid)
+                logger.info("RTCPush session %s cleaned up (state=%s)", sessionid, pc.connectionState)
+            elif pc.connectionState == "disconnected":
+                async def _delayed_cleanup():
+                    await asyncio.sleep(15)
+                    if not _cleanup_done:
+                        _cleanup_done = True
+                        await pc.close()
+                        self.pcs.discard(pc)
+                        session_manager.remove_session(sessionid)
+                        logger.info("RTCPush session %s cleaned up (disconnected timeout)", sessionid)
+                asyncio.create_task(_delayed_cleanup())
 
         from server.webrtc import HumanPlayer
         player = HumanPlayer(avatar_session)
@@ -176,5 +214,5 @@ class RTCManager:
     async def shutdown(self):
         """关闭所有 PeerConnection"""
         coros = [pc.close() for pc in self.pcs]
-        await asyncio.gather(*coros)
+        await asyncio.gather(*coros, return_exceptions=True)
         self.pcs.clear()

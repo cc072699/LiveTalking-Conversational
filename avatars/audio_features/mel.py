@@ -71,9 +71,15 @@ class MelASR(BaseASR):
                 mel_chunks.append(mel[:, start_idx : start_idx + mel_step_size])
             i += 1
         try:
-            self.feat_queue.put(mel_chunks, timeout=3.0)
+            self.feat_queue.put(mel_chunks, timeout=5.0)
         except queue.Full:
-            logger.warning('[MelASR] feat_queue full, dropping mel_chunks')
+            logger.error('[MelASR] feat_queue full after 5s — pipeline bottleneck detected, discarding stale audio')
+            # 丢弃 output_queue 中本次产生的音频帧以保持 pipeline 对齐
+            for _ in range(self.batch_size * 2):
+                try:
+                    self.output_queue.get_nowait()
+                except queue.Empty:
+                    break
         
         # discard the old part to save memory
         self.frames = self.frames[-(self.stride_left_size + self.stride_right_size):]

@@ -193,7 +193,10 @@
                     <div class="row g-2 align-items-end mb-3">
                         <div class="col-md-4">
                             <label class="form-label">Avatar ID</label>
-                            <input type="text" class="form-control form-control-sm" id="offerAvatar" placeholder="wav2lip256_avatar1">
+                            <select class="form-select form-select-sm" id="offerAvatar">
+                                <option value="">Loading...</option>
+                            </select>
+                            <small class="text-muted" id="avatarStatus"></small>
                         </div>
                         <div class="col-md-4">
                             <label class="form-label">Ref Audio</label>
@@ -312,6 +315,42 @@
 </div>
 
 <script>
+// ── Dynamic avatar list loading ──────────────────────────────
+async function loadAvatars() {
+    const select = document.getElementById('offerAvatar');
+    const statusEl = document.getElementById('avatarStatus');
+    try {
+        const resp = await fetch('/api/avatars');
+        const json = await resp.json();
+        if (json.code === 0 && json.data && json.data.avatars) {
+            const avatars = json.data.avatars;
+            const defaultId = json.data.default || '';
+            select.innerHTML = '';
+            if (avatars.length === 0) {
+                select.innerHTML = '<option value="">No avatars available</option>';
+                if (statusEl) statusEl.textContent = 'Please create an avatar first';
+            } else {
+                avatars.forEach(id => {
+                    const opt = document.createElement('option');
+                    opt.value = id;
+                    opt.textContent = id;
+                    if (id === defaultId) opt.selected = true;
+                    select.appendChild(opt);
+                });
+                if (statusEl) statusEl.textContent = avatars.length + ' avatar(s) available';
+            }
+        } else {
+            select.innerHTML = '<option value="">Failed to load</option>';
+            if (statusEl) statusEl.textContent = 'Cannot fetch avatar list';
+        }
+    } catch (e) {
+        console.error('Failed to load avatars:', e);
+        select.innerHTML = '<option value="">Failed to load</option>';
+        if (statusEl) statusEl.textContent = 'Network error';
+    }
+}
+document.addEventListener('DOMContentLoaded', loadAvatars);
+
 let pc = null;
 let sessionid = null;
 

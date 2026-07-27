@@ -68,13 +68,13 @@ cp .env.example .env
 | 参数 | 默认值 | 说明 |
 |------|--------|------|
 | `MODEL` | `wav2lip` | 数字人模型，可选 `wav2lip`/`musetalk`/`ultralight` |
-| `AVATAR_ID` | `cc3` | 形象 ID，对应 `data/avatars/<ID>/` 目录名 |
+| `AVATAR_ID` | 自动检测 | 形象 ID，对应 `data/avatars/<ID>/` 目录名（不填则自动检测第一个可用形象） |
 | `TTS` | `qwentts` | TTS 引擎，可选 `qwentts`/`edgetts`/`dashscopetts`/`cosyvoice` 等 |
-| `REF_FILE` | `Cherry` | TTS 音色，qwentts 可选 `Cherry`(女)/`Ethan`(男) |
+| `REF_FILE` | `Ethan` | TTS 音色，qwentts 可选 `Ethan`(男)/`Cherry`(女) |
 | `LLM_PROVIDER` | `sensenova` | LLM 提供商，可选 `sensenova`/`dashscope` |
 | `TRANSPORT` | `webrtc` | 传输方式，可选 `webrtc`/`rtmp`/`virtualcam` |
-| `SSL_ENABLED` | `False` | 是否启用 HTTPS（远程麦克风需要） |
-| `LISTEN_PORT` | `8010` | 服务监听端口 |
+| `SSL_ENABLED` | `True` | 是否启用 HTTPS（远程麦克风必须开启） |
+| `LISTEN_PORT` | `5001` | 服务监听端口 |
 
 ---
 
@@ -85,31 +85,37 @@ cp .env.example .env
 | 文件 | 功能说明 |
 |------|----------|
 | `prompt_config.yaml` | 🆕 **企业知识库配置文件**，热更新，修改无需重启 |
+| `monitor.sh` | 🆕 **资源监控脚本**，每 5 秒记录 RAM/GPU/CPU/Session/FPS |
 | `monitor.py` | 🆕 **实时监控脚本**，查看 FPS/GPU/会话/日志状态 |
 | `mel.py` | 🆕 **GPU 加速 Mel 频谱**，降低 CPU 负载 |
 | `audio.py` | 🆕 **音频处理**，GPU 加速 |
-| `routes.py` | 🆕 **统一 API 路由**，自定义异常处理 |
-| `rtc_manager.py` | 🆕 **WebRTC 连接管理器** |
-| `session_manager.py` | 🆕 **全局会话管理器**，单例模式 |
+| `server/` | 🆕 **服务端模块**（routes.py / rtc_manager.py / session_manager.py / webrtc.py） |
 | `server/tts_proxy.py` | 🆕 **TTS 代理**，兼容 DashScope OmniTTS |
+| `tts/qwentts.py` | 🆕 **QwenTTS 插件**（阿里云通义千问实时语音合成） |
 | `tts/dashscopetts.py` | 🆕 **DashScope TTS 插件** |
-| `wav2lip_avatar.py` | 🆕 **Wav2Lip 形象包装器** |
-| `webrtc.py` | 🆕 **WebRTC 实现** |
-| `ssl/cert.pem` + `ssl/key.pem` | 🆕 **自签名 SSL 证书**（用于 HTTPS） |
+| `streamout/` | 🆕 **流输出模块**（RTMP / VirtualCam） |
+| `ssl/cert.pem` + `ssl/key.pem` | 🆕 **自签名 SSL 证书**（用于 HTTPS 远程访问） |
 | `web/mic_test.html` | 🆕 **麦克风测试页面** |
+| `.env.example` | 🆕 **环境变量模板**，完整的配置项说明和密钥模板 |
 
 #### 修改文件（改动较大）
 
 | 文件 | 改动内容 |
 |------|----------|
-| `app.py` | 集成 SSL、CORS、SessionManager、更多路由注册 |
-| `config.py` | 新增 SSL/QwenTTS/字幕/传输方式等配置项 |
-| `llm.py` | 支持 `prompt_config.yaml` 热加载，支持 SenseNova/DashScope 双提供商 |
-| `base_avatar.py` | **OpenCV 像素级字幕渲染**（替代 PIL，30ms→1ms），修复静音/说话节拍器 Bug，消除视频抖动 |
-| `server/` | 路由重构，加入 ASR 端点、TTS 代理、会话管理 |
-| `web/index.html` | 修复音色切换逻辑，优化 UI 布局 |
-| `requirements.txt` | 启用 `funasr`/`modelscope`（本地 ASR）和 `dashscope`（QwenTTS） |
-| `.env.example` | 完整的配置项说明和密钥模板 |
+| `app.py` | 集成 SSL/CORS/SessionManager、Session 缓存 LRU 淘汰（max=2）、avatar_id 自动检测、资源释放钩子 |
+| `config.py` | 新增 SSL/QwenTTS/字幕/传输方式/fps 校验等配置项，avatar_id 自动从 `data/avatars/` 检测 |
+| `llm.py` | 支持 `prompt_config.yaml` 热加载，SenseNova/DashScope 双提供商，API 超时与日志脱敏 |
+| `avatars/base_avatar.py` | OpenCV 像素级字幕渲染（30ms→1ms）、Queue 全链超时死锁防护、静音帧 fallback、GPU 定期清理、`release_resources()` 资源释放 |
+| `avatars/wav2lip_avatar.py` | face_gpu 缓存 maxsize=3 淘汰、`_face_count` 防 None 崩溃 |
+| `avatars/audio_features/` | feat_queue / output_queue 有界化、feat 丢失时 pipeline 对齐 |
+| `server/routes.py` | API 路由重构，新增 `/api/avatars`、`/api/admin/shutdown` |
+| `server/rtc_manager.py` | WebRTC `disconnected` 状态延迟清理、双重 cleanup 防护 |
+| `server/session_manager.py` | 单例线程安全、session 占位符失败清理、`release_resources` 集成 |
+| `server/webrtc.py` | push_video/audio 超时防护、双线程启动锁、stop 时释放资源 |
+| `tts/qwentts.py` | 音频归一化修正（32767）、重连失败重建、模型名对齐 |
+| `tts/base_tts.py` | msgqueue maxsize=10 有界化 |
+| `tts/edge.py` + `doubao.py` | asyncio 事件循环泄漏修复 |
+| `web/index.html` | `<select>` 真下拉动态加载 avatar、音色链路修复（negotiate + sendVoiceText）、远程关闭服务器按钮 |
 
 #### 删除的文件（相比原版）
 
@@ -187,30 +193,63 @@ python app.py
 
 ### 6. 客户端访问
 
-**`https://<服务器IP>:8051`**（或根据 `LISTEN_PORT` 配置）
+**`https://<服务器IP>:5001/index.html`**（或根据 `LISTEN_PORT` 配置）
 
 ---
 
 ## 🌟 560 二次开发优化特性
 
-### 1. 视频抖动深度消除
-- 修复了原推理管线（Pacing）在静音与说话状态下的节拍器缩进 Bug，杜绝无限制帧堆积引发的画面卡顿与抖动。
-- 采用 OpenCV 像素级矩阵运算代替 PIL 进行字幕渲染，单帧合成耗时从 30ms 降低至约 1ms，实现稳定 25fps 推流。
+### 1. 运行时稳定性（修复 40+ 项 Bug）
+- **死锁防护**：渲染管线全部 Queue 添加超时机制，防止满队列永久阻塞
+- **资源释放**：连接断开时自动释放 TTS WebSocket、帧缓存 numpy 数组、渲染线程及队列资源，CPU 和内存实时回落
+- **WebRTC 生命周期**：处理 `disconnected` 状态（用户关闭浏览器），15 秒延迟清理 + 双重 cleanup 防护
+- **竞态条件修复**：SessionManager 单例线程安全、HumanPlayer 双线程启动锁、缓存命中 `thread.is_alive()` 检测
+- **音频对齐**：Mel 特征队列满时同步丢弃 output_queue 保 pipeline 对齐、TTS 重连失败自动重建客户端
 
-### 2. 专属企业知识库注入（热更新）
-- 根目录 `prompt_config.yaml` 外部配置文件，内置 560 AI 公司知识体系。
-- **修改无需重启服务**，下一次提问自动生效。
+### 2. 内存优化
+- Session 缓存 LRU 淘汰（max=2），防止多音色切换永久泄漏
+- face_gpu 缓存 maxsize=3 淘汰，长期运行不膨胀
+- full_imgs 帧数据断开后释放，GPU 定期清理碎片
+- TTS msgqueue / ASR output_queue 全部有界化
 
-### 3. 本地 ASR 语音识别
-- 补齐 FunASR 的 `torchaudio` 硬件驱动依赖，激活本地 SenseVoice 语音识别引擎。
-- 内网/弱网环境下流畅使用"自由对话"与"按住说话"功能。
+### 3. 实测性能（2026-07-27 监控数据）
 
-### 4. 内存泄漏修复
-- 重构 WebRTC 连接生命周期，连接断开时强制回收渲染线程及视频队列资源。
-- 内存常驻占用稳定在约 8.4 GB，无持续增长。
+| 阶段 | RAM | GPU 显存 | CPU | fps |
+|------|:---:|:-------:|:---:|:---:|
+| 启动 warm_up | 369MB→4.1GB | 0.9→1.3GB | 300%→15% | — |
+| 待机空闲 | **4.1GB** | **1.3GB** | 5~15% | — |
+| 已连接（静默渲染） | 5.0GB | 1.4GB | 50~80% | 25 |
+| 对话中（TTS+推理全开） | **8.2GB** | **3.2GB** | 160~220% | 25 |
+| 断开后释放 | ↓ 回落 | ↓ 回落 | ↓ <10% | — |
 
-### 5. 预设男声 Ethan 默认音色
-- 修复前端音色切换逻辑，自由切换男女声。
+**性能需求**：
+
+| 资源 | 最低下限 | 推荐配置 |
+|------|:-------:|:-------:|
+| CPU 核心 | 2 核 | 4 核+ |
+| RAM 内存 | 8 GB | 12 GB+ |
+| GPU 显存 | 4 GB | 6 GB+ |
+
+### 4. 视频渲染优化
+- 采用 OpenCV 像素级矩阵运算代替 PIL 进行字幕渲染，单帧合成耗时从 30ms 降低至约 1ms
+- 水印文字、字幕字号/Y轴位置可外部配置，水印不设时默认不显示
+
+### 5. 专属企业知识库（热更新）
+- 根目录 `prompt_config.yaml` 外部配置文件，内置 560 AI 公司知识体系
+- **修改无需重启服务**，下一次提问自动生效
+
+### 6. 本地 ASR 语音识别
+- 补齐 FunASR 的 `torchaudio` 硬件驱动依赖，激活本地 SenseVoice 语音识别引擎
+- 内网/弱网环境下流畅使用"自由对话"与"按住说话"功能
+
+### 7. 音色链路修复
+- 预设男声 **Ethan** 为默认音色，前端 TTS 下拉框 `<select>` 自由切换男女声
+- 语音对话、文字输入、WebRTC 协商三个入口全部正确传递音色参数，消除 fallback 到女声的问题
+
+### 8. 运维便利性
+- Avatar ID 自动检测（扫描 `data/avatars/`），无需手动配置
+- 前端 `<select>` 真下拉从 API 动态加载可用形象，无硬编码
+- 前端一键关闭服务器进程按钮（含二次确认）
 
 ---
 
@@ -218,13 +257,14 @@ python app.py
 
 | 模块 | 文件 | 说明 |
 |------|------|------|
-| 主入口 | `app.py` | 数字人服务启动，SSL/CORS/路由注册 |
-| 配置 | `config.py` + `.env` | 命令行参数 + 环境变量 |
+| 主入口 | `app.py` | 数字人服务启动，SSL/CORS/SessionCache |
+| 配置 | `config.py` + `.env` | 命令行参数 + 环境变量 + avatar 自动检测 |
 | LLM 引擎 | `llm.py` + `prompt_config.yaml` | 大模型对话 + 企业知识库热加载 |
-| 数字人引擎 | `avatars/base_avatar.py` | 推理管线、字幕渲染、音视频同步 |
-| WebRTC | `webrtc.py` + `rtc_manager.py` | 实时音视频推流、连接管理 |
-| 会话管理 | `session_manager.py` | 多会话生命周期、资源回收 |
-| API 路由 | `routes.py` | HTTP 接口（human/humanaudio/record 等） |
+| 数字人引擎 | `avatars/base_avatar.py` | 推理管线、字幕渲染、资源释放 |
+| TTS 语音合成 | `tts/qwentts.py` + `tts/base_tts.py` | 阿里云通义千问实时 TTS |
+| WebRTC | `server/webrtc.py` + `server/rtc_manager.py` | 实时音视频推流、连接管理、disconnected 处理 |
+| 会话管理 | `server/session_manager.py` | 多会话生命周期、资源回收、缓存联动 |
+| API 路由 | `server/routes.py` | HTTP 接口（avatars/human/shutdown 等） |
 | 插件系统 | `registry.py` | TTS / Avatar / Output 可插拔注册 |
-| 监控 | `monitor.py` | 实时运行状态查看 |
+| 监控 | `monitor.sh` | 实时运行状态查看（每 5 秒） |
 | 前端 | `web/index.html` | Web 客户端页面 |

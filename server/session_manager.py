@@ -3,6 +3,7 @@
 ###############################################################################
 
 import asyncio
+import threading
 import uuid
 from typing import Dict, Optional
 from utils.logger import logger
@@ -19,17 +20,25 @@ class SessionManager:
     统一管理 avatar_sessions 生命周期，并在脱离 WebRTC 时依然保持服务可用。
     """
     _instance = None
+    _lock = threading.Lock()
     
     def __new__(cls, *args, **kwargs):
         if cls._instance is None:
-            cls._instance = super().__new__(cls)
+            with cls._lock:
+                if cls._instance is None:
+                    cls._instance = super().__new__(cls)
         return cls._instance
 
     def __init__(self):
         if not hasattr(self, "initialized"):
             self.sessions: Dict[str, BaseAvatar] = {}
             self.build_session_fn = None
+            self._cache = None  # 由 app.py 注入 _session_cache 引用
             self.initialized = True
+
+    def set_cache(self, cache_dict):
+        """注入 session 缓存字典引用，用于断开时清理"""
+        self._cache = cache_dict
 
     def init_builder(self, build_session_fn):
         """配置用于构建 avatar_session 的工厂函数"""
@@ -58,11 +67,15 @@ class SessionManager:
         # 预先占位防止重复
         self.sessions[sessionid] = None
 
-        # 在线程池中构建 session（加载模型非常耗时）
-        avatar_session = await asyncio.get_event_loop().run_in_executor(
-            None, self.build_session_fn, sessionid, params
-        )
-        self.sessions[sessionid] = avatar_session
+        try:
+            # 在线程池中构建 session（加载模型非常耗时）
+            avatar_session = await asyncio.get_event_loop().run_in_executor(
+                None, self.build_session_fn, sessionid, params
+            )
+            self.sessions[sessionid] = avatar_session
+        except Exception:
+            self.sessions.pop(sessionid, None)
+            raise
         return sessionid
         
     def add_session(self, sessionid: str, avatar_session: BaseAvatar):
@@ -70,17 +83,22 @@ class SessionManager:
         self.sessions[sessionid] = avatar_session
         
     def remove_session(self, sessionid: str):
-        """销毁会话资源"""
-        if sessionid in self.sessions:
+        """销毁会话资源（释放 CPU/GPU 内存，关闭 WebSocket 连接）"""
+        avatar = self.sessions.pop(sessionid, None)
+        if avatar is not None:
             logger.info(f"Removing session {sessionid}")
-            avatar = self.sessions.get(sessionid)
-            if avatar:
+            # 顺便从缓存移除
+            cache_key = getattr(avatar, '_cache_key', None)
+            if cache_key and self._cache is not None:
+                self._cache.pop(cache_key, None)
+                logger.info(f"Session cache removed for {sessionid}")
+            def _cleanup():
                 try:
-                    logger.info(f"Stopping render pipeline for {sessionid}")
-                    avatar.stop_render()
+                    avatar.release_resources()
                 except Exception as e:
-                    logger.error(f"Error stopping session {sessionid}: {e}")
-            self.sessions.pop(sessionid, None)
+                    logger.error(f"Error releasing session {sessionid}: {e}")
+            t = threading.Thread(target=_cleanup, daemon=True)
+            t.start()
 
 # 单例抛出
 session_manager = SessionManager()

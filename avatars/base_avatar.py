@@ -19,6 +19,7 @@
 #
 
 import math
+import gc
 from numpy.typing import NDArray
 import torch
 import numpy as np
@@ -67,6 +68,20 @@ _CANDIDATE_FONTS = [
     "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
     "/usr/share/fonts/truetype/arphic/uming.ttc",
 ]
+
+def _detect_subtitle_font(override_path=None):
+    """检测可用的中文字体，支持外部覆盖"""
+    if override_path and os.path.exists(override_path):
+        return override_path
+    for _f in _CANDIDATE_FONTS:
+        if os.path.exists(_f):
+            return _f
+    # 后备字体（仅当存在时）
+    fallback = "/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc"
+    if os.path.exists(fallback):
+        return fallback
+    return None
+
 for _f in _CANDIDATE_FONTS:
     if os.path.exists(_f):
         _SUBTITLE_FONT_PATH = _f
@@ -137,6 +152,14 @@ class BaseAvatar:
         self._cached_subtitle_inv_mask = None  # 缓存 1-alpha mask
         self._subtitle_font = None  # 缓存字体对象
         self._subtitle_font_size = 0
+        # 水印文字（空字符串表示不显示水印）
+        self._watermark_text = getattr(opt, 'watermark_text', '')
+        # 字幕字体路径（可覆盖自动检测）
+        self._subtitle_font_path_override = getattr(opt, 'subtitle_font_path', None)
+        # 字幕字号缩放系数
+        self._subtitle_font_scale = getattr(opt, 'subtitle_font_scale', 1.0)
+        # 字幕 Y 轴位置比例（距底部）
+        self._subtitle_y_ratio = getattr(opt, 'subtitle_y_offset_ratio', 0.08)
 
         self.batch_size = opt.batch_size
         self.res_frame_queue = Queue(self.batch_size*8)
@@ -245,17 +268,22 @@ class BaseAvatar:
 
         return stream
 
+    @staticmethod
+    def _drain_queue(q):
+        """清空队列中的所有元素"""
+        while not q.empty():
+            try:
+                q.get_nowait()
+            except queue.Empty:
+                break
+
     def flush_talk(self):
         if hasattr(self, 'tts') and hasattr(self.tts, 'flush_talk'):
             self.tts.flush_talk()
         if hasattr(self, 'asr') and hasattr(self.asr, 'flush_talk'):
             self.asr.flush_talk()
         # 清空推理结果队列
-        while not self.res_frame_queue.empty():
-            try:
-                self.res_frame_queue.get_nowait()
-            except queue.Empty:
-                break
+        self._drain_queue(self.res_frame_queue)
         # 清空输出队列（WebRTC HumanPlayer 等）
         if hasattr(self, 'output') and hasattr(self.output, 'flush'):
             self.output.flush()
@@ -431,7 +459,7 @@ class BaseAvatar:
             audio_frames: list[AudioFrameData] = []
             try:
                 for _ in range(self.batch_size * 2):
-                    audioframe:AudioFrameData = self.asr.output_queue.get(timeout=5.0)
+                    audioframe:AudioFrameData = self.asr.output_queue.get(timeout=2.0)
                     if audioframe.type == 0:
                         is_all_silence = False
                     audio_frames.append(audioframe)
@@ -445,7 +473,10 @@ class BaseAvatar:
             if is_all_silence: #全为静音数据，只需要取fullimg，不需要推理
                 for i in range(self.batch_size):
                     idx = mirror_index(length, index)
-                    self.res_frame_queue.put((None, audio_frames[i*2:i*2+2], idx))
+                    try:
+                        self.res_frame_queue.put((None, audio_frames[i*2:i*2+2], idx), timeout=2.0)
+                    except queue.Full:
+                        logger.warning('res_frame_queue full (silence), dropping frame')
                     index = index + 1
             else:
                 if current_speaking and not last_speaking and self.custom_index.get(1) is not None: #从静音到说话切换,并且有自定义静态视频
@@ -459,7 +490,10 @@ class BaseAvatar:
                     # Put silence frames to keep pipeline alive
                     for i in range(self.batch_size):
                         idx = mirror_index(length, index)
-                        self.res_frame_queue.put((None, audio_frames[i*2:i*2+2], idx))
+                        try:
+                            self.res_frame_queue.put((None, audio_frames[i*2:i*2+2], idx), timeout=2.0)
+                        except queue.Full:
+                            logger.warning('res_frame_queue full (error fallback), dropping frame')
                         index = index + 1
                     continue
 
@@ -470,7 +504,10 @@ class BaseAvatar:
                     count = 0
                     counttime = 0
                 for i, res_frame in enumerate(pred):
-                    self.res_frame_queue.put((res_frame, audio_frames[i*2:i*2+2], mirror_index(length, index)))
+                    try:
+                        self.res_frame_queue.put((res_frame, audio_frames[i*2:i*2+2], mirror_index(length, index)), timeout=2.0)
+                    except queue.Full:
+                        logger.warning('res_frame_queue full (speaking), dropping frame')
                     index = index + 1
 
             # ── F2：节拍闸门 — 推理完成后 sleep 到下一法定产出时刻 ──
@@ -566,11 +603,15 @@ class BaseAvatar:
                     combine_frame = target_frame
             else:
                 self.speaking = True
-                try:
-                    current_frame = self.paste_back_frame(res_frame,idx)
-                except Exception as e:
-                    logger.warning(f"paste_back_frame error: {e}")
-                    continue
+                if res_frame is None:
+                    # 静音帧或推理失败兜底 — 直接用完整帧，跳过口型合成
+                    current_frame = self.frame_list_cycle[idx]
+                else:
+                    try:
+                        current_frame = self.paste_back_frame(res_frame,idx)
+                    except Exception as e:
+                        logger.warning(f"paste_back_frame error: {e}")
+                        continue
                 if enable_transition:
                     # 静音→说话过渡
                     if time.time() - _transition_start < _transition_duration and _last_silent_frame is not None:
@@ -592,7 +633,8 @@ class BaseAvatar:
                     elif ud.get("status") == "end":
                         self._current_subtitle = ""
 
-            cv2.putText(combine_frame, "LiveTalking", (10, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.3, (128,128,128), 1)
+            if self._watermark_text:
+                cv2.putText(combine_frame, self._watermark_text, (10, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.3, (128,128,128), 1)
 
             # ── 叠加字幕（缓存优化：文本不变时不重绘 PIL，节省 5-10ms/帧）──
             if self._subtitle_enabled and self._current_subtitle:
@@ -602,9 +644,11 @@ class BaseAvatar:
                         h, w = combine_frame.shape[:2]
                         if txt != self._last_rendered_subtitle:
                             # 重新生成缓存层
-                            font_size = max(32, int(w * 0.065 * self._subtitle_size))
+                            font_size = max(24, int(w * 0.065 * self._subtitle_size * self._subtitle_font_scale))
                             if self._subtitle_font is None or self._subtitle_font_size != font_size:
-                                self._subtitle_font = ImageFont.truetype(_SUBTITLE_FONT_PATH, font_size)
+                                _font_path = _detect_subtitle_font(self._subtitle_font_path_override)
+                                if _font_path:
+                                    self._subtitle_font = ImageFont.truetype(_font_path, font_size)
                                 self._subtitle_font_size = font_size
                             font = self._subtitle_font
                             # 在黑色背景上绘制字幕
@@ -624,7 +668,7 @@ class BaseAvatar:
                                     else:
                                         lines.append(char)
                             total_h = len(lines) * (line_h + 4)
-                            y_start = h - int(h * 0.08) - total_h
+                            y_start = h - int(h * self._subtitle_y_ratio) - total_h
                             for i, line in enumerate(lines):
                                 tw = draw.textbbox((0, 0), line, font=font)[2] - draw.textbbox((0, 0), line, font=font)[0]
                                 x = (w - tw) // 2
@@ -724,7 +768,7 @@ class BaseAvatar:
         logger.info('Render pipeline started for session %s', self.sessionid)
 
     def stop_render(self):
-        """停止渲染管线，清理子线程。"""
+        """停止渲染管线，清理子线程和所有队列。"""
         if self._render_quit and not self._render_quit.is_set():
             logger.info('Stopping render pipeline for session %s', self.sessionid)
             self._render_quit.set()
@@ -733,6 +777,38 @@ class BaseAvatar:
             if self._render_thread.is_alive():
                 logger.warning('Render thread did not exit in time for session %s', self.sessionid)
         self._render_started = False
+        # 清空推理结果队列，防止重连时播放旧帧
+        self._drain_queue(self.res_frame_queue)
+
+    def release_resources(self):
+        """彻底释放 session 占用的 CPU/GPU 资源（TTS 连接、帧缓存等）。
+        模型和 face_gpu 由全局缓存管理，不在此释放。"""
+        self.stop_render()
+        # 关闭 TTS WebSocket 连接
+        if hasattr(self, 'tts') and self.tts is not None:
+            try:
+                if hasattr(self.tts, 'stop_tts'):
+                    self.tts.stop_tts()
+                elif hasattr(self.tts, 'close'):
+                    self.tts.close()
+            except Exception as e:
+                logger.warning(f'Error closing TTS: {e}')
+            self.tts = None
+        # 释放帧数据 numpy 数组（每 session 约 2.6GB）
+        if hasattr(self, 'frame_list_cycle'):
+            self.frame_list_cycle = None
+        if hasattr(self, 'face_list_cycle') and hasattr(self, '_face_count'):
+            self.face_list_cycle = None
+        # 清理 ASR 队列
+        if hasattr(self, 'asr') and self.asr is not None:
+            try:
+                self._drain_queue(self.asr.queue)
+                self._drain_queue(self.asr.output_queue)
+            except Exception:
+                pass
+        gc.collect()
+        torch.cuda.empty_cache()
+        logger.info('Session resources released for %s', self.sessionid)
 
     def _ensure_render_running(self):
         """按需启动渲染管线（首次输入文本/音频时自动启动，不等待 WebRTC）"""
@@ -756,6 +832,13 @@ class BaseAvatar:
         # 都标记渲染管线已启动，防止 _ensure_render_running 重复启动第二套管线
         self._render_started = True
         self.quit_event = quit_event
+
+        if not hasattr(self, 'tts') or self.tts is None:
+            logger.error('TTS module not initialized, cannot render')
+            return
+        if not hasattr(self, 'asr') or self.asr is None:
+            logger.error('ASR module not initialized, cannot render')
+            return
         
         self.init_customindex()
         self.tts.render(quit_event)
@@ -768,6 +851,8 @@ class BaseAvatar:
         process_thread = Thread(target=self.process_frames, args=(process_quit_event,))
         process_thread.start()
 
+        _gpu_cleanup_interval = 180  # 每 180 秒清理一次 GPU 缓存
+        _last_gpu_cleanup = time.perf_counter()
         while not quit_event.is_set():
             try:
                 t = time.perf_counter()
@@ -779,6 +864,14 @@ class BaseAvatar:
                 _elapsed = time.perf_counter() - t
                 if _elapsed < _target_interval:
                     time.sleep(_target_interval - _elapsed)
+
+                # 定期清理 GPU 缓存，防止长时间运行导致碎片积累
+                _now = time.perf_counter()
+                if _now - _last_gpu_cleanup > _gpu_cleanup_interval:
+                    import torch
+                    torch.cuda.empty_cache()
+                    _last_gpu_cleanup = _now
+                    logger.debug('GPU cache cleared (periodic)')
             except Exception as e:
                 logger.exception(f'Render loop error: {e}')
                 time.sleep(0.01)

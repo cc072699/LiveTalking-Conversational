@@ -162,6 +162,24 @@ async def is_speaking(request):
     })
 
 
+async def api_avatars(request):
+    """返回 data/avatars/ 下所有可用的 avatar ID"""
+    try:
+        import os as _os
+        avatars_dir = './data/avatars'
+        avatars = []
+        if _os.path.isdir(avatars_dir):
+            for d in sorted(_os.listdir(avatars_dir)):
+                if _os.path.isdir(_os.path.join(avatars_dir, d)) and _os.path.exists(_os.path.join(avatars_dir, d, 'coords.pkl')):
+                    avatars.append(d)
+        opt = request.app.get("opt")
+        default_id = getattr(opt, 'avatar_id', '') if opt else ''
+        return json_ok(data={"avatars": avatars, "default": default_id})
+    except Exception as e:
+        logger.exception('api_avatars exception:')
+        return json_error(str(e))
+
+
 async def admin_config(request):
     """Admin: 获取全局配置参数"""
     try:
@@ -212,6 +230,7 @@ def setup_routes(app):
     app.router.add_post("/record", record)
     app.router.add_post("/interrupt_talk", interrupt_talk)
     app.router.add_post("/is_speaking", is_speaking)
+    app.router.add_get("/api/avatars", api_avatars)
     app.router.add_get("/api/admin/config", admin_config)
     app.router.add_get("/api/admin/sessions", admin_sessions)
 

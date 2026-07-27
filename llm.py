@@ -1,6 +1,7 @@
 import time
 import os
 import yaml
+import httpx
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from avatars.base_avatar import BaseAvatar
@@ -32,12 +33,14 @@ def llm_response(message, avatar_session: 'BaseAvatar', datainfo: dict = {}):
             client = OpenAI(
                 api_key=os.getenv("SENSNOVA_API_KEY"),
                 base_url=os.getenv("SENSNOVA_BASE_URL", "https://token.sensenova.cn/v1"),
+                timeout=httpx.Timeout(60.0, connect=10.0),
             )
             model = os.getenv("SENSNOVA_MODEL", "sensenova-6.7-flash-lite")
         else:
             client = OpenAI(
                 api_key=os.getenv("DASHSCOPE_API_KEY"),
                 base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
+                timeout=httpx.Timeout(60.0, connect=10.0),
             )
             model = os.getenv("DASHSCOPE_MODEL", "qwen-plus")
 
@@ -68,7 +71,6 @@ def llm_response(message, avatar_session: 'BaseAvatar', datainfo: dict = {}):
                         result = result + msg[lastpos:i+1]
                         lastpos = i + 1
                         if len(result) > 10:
-                            logger.info(result)
                             avatar_session.put_msg_txt(result, datainfo)
                             result = ""
                 result = result + msg[lastpos:]

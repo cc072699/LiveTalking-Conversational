@@ -217,14 +217,10 @@
                     <div class="row g-2 align-items-end mb-3">
                         <div class="col-md-4">
                             <label class="form-label">Avatar ID</label>
-                            <input type="text" class="form-control form-control-sm" id="offerAvatar" list="avatarList" placeholder="cc3" value="cc3">
-                            <datalist id="avatarList">
-                                <option value="cc3">
-                                <option value="cc2">
-                                <option value="cc1">
-                                <option value="wav2lip256_avatar1">
-                                <option value="musetalk_avatar3">
-                            </datalist>
+                            <select class="form-select form-select-sm" id="offerAvatar">
+                                <option value="">加载中...</option>
+                            </select>
+                            <small class="text-muted" id="avatarStatus"></small>
                         </div>
                         <div class="col-md-4">
                             <label class="form-label">参考音频</label>
@@ -238,6 +234,7 @@
                     <div class="d-flex gap-2">
                         <button class="btn-primary-custom" id="btnStart" onclick="start()"><i class="bi bi-play-fill"></i> 开始连接</button>
                         <button class="btn-danger-custom" id="btnStop" onclick="stop()" style="display:none;"><i class="bi bi-stop-fill"></i> 断开连接</button>
+                        <button class="btn btn-sm btn-outline-danger ms-1" onclick="shutdownServer()" title="关闭服务器进程">⏻</button>
                     </div>
                     <div class="mt-3">
                         <div id="videoFullscreenWrapper" class="video-fs-wrapper">
@@ -426,6 +423,42 @@
 </div>
 
 <script>
+// ── 动态加载可用 Avatar 列表 ──────────────────────────────────
+async function loadAvatars() {
+    const select = document.getElementById('offerAvatar');
+    const statusEl = document.getElementById('avatarStatus');
+    try {
+        const resp = await fetch('/api/avatars');
+        const json = await resp.json();
+        if (json.code === 0 && json.data && json.data.avatars) {
+            const avatars = json.data.avatars;
+            const defaultId = json.data.default || '';
+            select.innerHTML = '';
+            if (avatars.length === 0) {
+                select.innerHTML = '<option value="">无可用形象</option>';
+                if (statusEl) statusEl.textContent = '请先创建数字人形象';
+            } else {
+                avatars.forEach(id => {
+                    const opt = document.createElement('option');
+                    opt.value = id;
+                    opt.textContent = id;
+                    if (id === defaultId) opt.selected = true;
+                    select.appendChild(opt);
+                });
+                if (statusEl) statusEl.textContent = '共 ' + avatars.length + ' 个可用形象';
+            }
+        } else {
+            select.innerHTML = '<option value="">加载失败</option>';
+            if (statusEl) statusEl.textContent = '无法获取形象列表';
+        }
+    } catch (e) {
+        console.error('Failed to load avatars:', e);
+        select.innerHTML = '<option value="">加载失败</option>';
+        if (statusEl) statusEl.textContent = '网络错误';
+    }
+}
+document.addEventListener('DOMContentLoaded', loadAvatars);
+
 let pc = null;
 let sessionid = null;
 
@@ -467,7 +500,7 @@ function negotiate() {
             sdp: offer.sdp,
             type: offer.type,
             avatar: document.getElementById('offerAvatar').value || undefined,
-            refaudio: document.getElementById('offerRefAudio').value || undefined,
+            refaudio: document.getElementById('ttsVoice').value || undefined,
             reftext: document.getElementById('offerRefText').value || undefined,
         };
         return fetch('/offer', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
@@ -536,6 +569,19 @@ function start() {
     negotiate();
     document.getElementById('btnStart').style.display = 'none';
     document.getElementById('btnStop').style.display = 'inline-block';
+}
+
+function shutdownServer() {
+    if (!confirm('确定要关闭远程服务器进程吗？\n\n关闭后需要手动在服务器端重新启动。')) return;
+    if (!confirm('再次确认：真的要关闭服务器吗？')) return;
+    fetch('/api/admin/shutdown', { method: 'POST' })
+        .then(r => r.json())
+        .then(d => {
+            alert('服务器已关闭: ' + (d.msg || 'OK'));
+        })
+        .catch(() => {
+            alert('服务器已关闭（连接已中断）');
+        });
 }
 
 function stop() {
@@ -1416,10 +1462,15 @@ function sendVoiceText(text, interrupt) {
     }, VOICE_WAITING_MAX_MS);
 
     const type = document.getElementById('txtType').value;
+    const ttsModel = document.getElementById('ttsModel').value;
+    const ttsVoice = document.getElementById('ttsVoice').value;
+    const body = { text, type, interrupt, sessionid: String(sessionid) };
+    body.tts = { model: ttsModel, ref_file: ttsVoice };
+
     fetch('/human', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text, type, interrupt, sessionid: String(sessionid) }),
+        body: JSON.stringify(body),
     }).then(r => r.json()).then(d => {
         console.log('[Voice] /human response:', d);
         if (d.code !== 0) {

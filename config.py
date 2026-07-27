@@ -19,9 +19,11 @@ def str2bool(v):
     """将字符串转换为布尔值"""
     if isinstance(v, bool):
         return v
-    if v.lower() in ('yes', 'true', 't', '1', 'True'):
+    if not v or not v.strip():
+        return False
+    if v.lower() in ('yes', 'true', 't', '1'):
         return True
-    elif v.lower() in ('no', 'false', 'f', '0', 'False'):
+    elif v.lower() in ('no', 'false', 'f', '0'):
         return False
     else:
         raise argparse.ArgumentTypeError(f'Boolean value expected, got {v}')
@@ -43,8 +45,8 @@ def parse_args():
                         default=os.environ.get('MODEL', 'wav2lip'),
                         help="avatar model: musetalk/wav2lip/ultralight")
     parser.add_argument('--avatar_id', type=str,
-                        default=os.environ.get('AVATAR_ID', 'cc3'),
-                        help="avatar id in data/avatars")
+                        default=os.environ.get('AVATAR_ID', ''),
+                        help="avatar id in data/avatars (auto-detected if not set)")
     parser.add_argument('--batch_size', type=int,
                         default=int(os.environ.get('BATCH_SIZE', 16)),
                         help="infer batch")
@@ -66,7 +68,7 @@ def parse_args():
                         default=os.environ.get('REF_FILE', 'Cherry'),
                         help="参考文件名或语音模型ID (qwentts 音色名, 如 Cherry/Ethan)")
     parser.add_argument('--REF_TEXT', type=str,
-                        default=os.environ.get('REF_TEXT', None))
+                        default=os.environ.get('REF_TEXT', ''))
     parser.add_argument('--TTS_SERVER', type=str,
                         default=os.environ.get('TTS_SERVER', 'http://127.0.0.1:9880'))
     parser.add_argument('--tts_speed', type=float,
@@ -112,10 +114,29 @@ def parse_args():
 
     opt = parser.parse_args()
 
+    # ─── 自动检测 avatar_id ────────────────────────────────────────────
+    if not opt.avatar_id:
+        avatars_dir = './data/avatars'
+        if os.path.isdir(avatars_dir):
+            for d in sorted(os.listdir(avatars_dir)):
+                if os.path.isdir(os.path.join(avatars_dir, d)) and os.path.exists(os.path.join(avatars_dir, d, 'coords.pkl')):
+                    opt.avatar_id = d
+                    print(f"[CONFIG] Auto-detected avatar_id: {opt.avatar_id}")
+                    break
+        if not opt.avatar_id:
+            print("[CONFIG] WARNING: No avatar found in ./data/avatars/. Please create one or set AVATAR_ID.")
+
+    if opt.fps != 25:
+        print(f"[CONFIG] WARNING: fps={opt.fps}, expected 25. Audio-video sync may be affected.")
+
     # ─── 后处理 ────────────────────────────────────────────────────────
     opt.customopt = []
     if opt.customvideo_config:
-        with open(opt.customvideo_config, 'r') as f:
-            opt.customopt = json.load(f)
+        try:
+            with open(opt.customvideo_config, 'r') as f:
+                opt.customopt = json.load(f)
+        except Exception as e:
+            print(f"[CONFIG] ERROR: Failed to load customvideo_config '{opt.customvideo_config}': {e}")
+            opt.customopt = []
 
     return opt

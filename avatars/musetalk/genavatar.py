@@ -46,7 +46,7 @@ def create_dir(dir_path):
         os.makedirs(dir_path)
 
 
-def generate_avatar(video_path, avatar_id, save_path='./data/avatars', bbox_shift=0, extra_margin=10, parsing_mode='jaw', version='v15', progress_callback=None):
+def generate_avatar(video_path, avatar_id, save_path='./data/avatars', bbox_shift=0, extra_margin=10, parsing_mode='jaw', version='v15', face_det_batch_size=8, progress_callback=None):
     """
     生成avatar的核心逻辑
 
@@ -58,6 +58,7 @@ def generate_avatar(video_path, avatar_id, save_path='./data/avatars', bbox_shif
         extra_margin: 额外边距
         parsing_mode: 解析模式
         version: 版本
+        face_det_batch_size: 人脸检测批处理大小 (GPU 优化)
         progress_callback: 进度回调函数，接收 0-100 的整数
     """
     avatar_save_path = os.path.join(save_path, avatar_id)
@@ -96,7 +97,7 @@ def generate_avatar(video_path, avatar_id, save_path='./data/avatars', bbox_shif
 
     input_img_list = sorted(glob.glob(os.path.join(save_full_path, '*.[jpJP][pnPN]*[gG]')))
     print("extracting landmarks...")
-    coord_list, frame_list = get_landmark_and_bbox(input_img_list, bbox_shift)
+    coord_list, frame_list = get_landmark_and_bbox(input_img_list, bbox_shift, face_det_batch_size)
 
     if progress_callback: progress_callback(50)
 
@@ -105,16 +106,23 @@ def generate_avatar(video_path, avatar_id, save_path='./data/avatars', bbox_shif
     coord_placeholder = (0.0, 0.0, 0.0, 0.0)
 
     device = torch.device(f"cuda" if torch.cuda.is_available() else "cpu")
+    torch.backends.cudnn.benchmark = True
     vae_local, unet_local, pe_local = load_all_model(device=device)
     vae_local.vae = vae_local.vae.half().to(device)
+
+    # 释放不需要的模型以节省显存
+    del unet_local, pe_local
+    torch.cuda.empty_cache()
 
     if version == "v15":
         fp_local = FaceParsing(left_cheek_width=90, right_cheek_width=90)
     else:
         fp_local = FaceParsing()
 
-    for bbox, frame in zip(coord_list, frame_list):
-        idx = idx + 1
+    # ── 阶段 1: 收集所有需要 VAE 编码的帧 ──
+    crop_frames = []
+    valid_indices = []  # 有效帧在 coord_list 中的索引
+    for idx, (bbox, frame) in enumerate(zip(coord_list, frame_list)):
         if bbox == coord_placeholder:
             continue
         x1, y1, x2, y2 = bbox
@@ -124,12 +132,24 @@ def generate_avatar(video_path, avatar_id, save_path='./data/avatars', bbox_shif
             coord_list[idx] = [x1, y1, x2, y2]
         crop_frame = frame[y1:y2, x1:x2]
         resized_crop_frame = cv2.resize(crop_frame, (256, 256), interpolation=cv2.INTER_LANCZOS4)
-        latents = vae_local.get_latents_for_unet(resized_crop_frame)
-        input_latent_list.append(latents)
+        crop_frames.append(resized_crop_frame)
+        valid_indices.append(idx)
+
+    # ── 阶段 2: GPU 批量 VAE 编码 ──
+    vae_batch_size = 4  # RTX 3060 12GB 可轻松处理 4 帧 batch
+    print(f'[GPU] Batch VAE encoding {len(crop_frames)} frames (batch_size={vae_batch_size}) ...')
+    for batch_start in tqdm(range(0, len(crop_frames), vae_batch_size), desc='VAE encoding'):
+        batch_imgs = crop_frames[batch_start:batch_start + vae_batch_size]
+        batch_latents = vae_local.get_latents_for_unet_batch(batch_imgs)
+        input_latent_list.extend(batch_latents)
 
         if progress_callback:
-            progress = 50 + int((idx + 1) / len(frame_list) * 25)
-            progress_callback(progress)
+            progress = 50 + int((batch_start + len(batch_imgs)) / len(frame_list) * 25)
+            progress_callback(min(progress, 75))
+
+    # 释放 VAE 模型显存，后续不再需要
+    del vae_local
+    torch.cuda.empty_cache()
 
     mask_coords_list_cycle = []
     mask_list_cycle = []

@@ -10,6 +10,8 @@ from avatars.wav2lip import face_detection
 
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
+if device == 'cuda':
+    torch.backends.cudnn.benchmark = True
 print('Using {} for inference.'.format(device))
 
 def osmakedirs(path_list):

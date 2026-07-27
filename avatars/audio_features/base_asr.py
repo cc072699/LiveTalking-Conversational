@@ -35,7 +35,7 @@ class BaseASR:
         self.sample_rate = 16000
         self.chunk = self.sample_rate // (opt.fps*2) # 320 samples per chunk (20ms * 16000 / 1000)
         self.queue:Queue[AudioFrameData] = Queue()
-        self.output_queue:Queue[AudioFrameData] = Queue()
+        self.output_queue:Queue[AudioFrameData] = Queue(maxsize=300)
 
         self.batch_size = opt.batch_size
 
@@ -43,7 +43,7 @@ class BaseASR:
         self.stride_left_size = opt.l
         self.stride_right_size = opt.r
         #self.context_size = 10
-        self.feat_queue = Queue(maxsize=30)
+        self.feat_queue = Queue(maxsize=60)
 
         #self.warm_up()
 
