@@ -3,214 +3,853 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LiveTalking - 数字人实时驱动</title>
+    <title>五六零科技 · 数字人展览平台 | 560 TECH · Digital Human Platform</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <style>
+        /* ── Design System ──────────────────────────────────────────── */
         :root {
-            --primary: #4361ee;
-            --primary-dark: #3f37c9;
-            --bg: #f0f4fc;
-            --card-bg: rgba(255,255,255,0.85);
+            --bg-deep: #060d1a;
+            --bg-card: rgba(10, 22, 50, 0.75);
+            --bg-card-solid: #0a1632;
+            --accent-primary: #00d4ff;
+            --accent-secondary: #f0a500;
+            --accent-glow: rgba(0, 212, 255, 0.3);
+            --text-primary: #e8f4ff;
+            --text-muted: #6b8baa;
+            --border-glow: rgba(0, 212, 255, 0.25);
+            --danger: #ff4d6d;
+            --success: #00e5a0;
             --radius: 14px;
+            --radius-sm: 8px;
         }
+
+        * { box-sizing: border-box; }
+
+        html { scroll-behavior: smooth; }
+
         body {
-            font-family: 'Inter', system-ui, -apple-system, sans-serif;
-            background: linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%);
-            color: #1e293b;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-deep);
+            color: var(--text-primary);
             min-height: 100vh;
             padding-bottom: 40px;
+            overflow-x: hidden;
+            position: relative;
         }
-        .navbar-brand { font-weight: 700; }
+
+        /* ── Animated Grid Background ───────────────────────────────── */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+            background-image:
+                linear-gradient(rgba(0, 212, 255, 0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 212, 255, 0.04) 1px, transparent 1px);
+            background-size: 60px 60px;
+        }
+
+        /* ── Scanline Overlay ───────────────────────────────────────── */
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            z-index: 1;
+            pointer-events: none;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                rgba(0, 0, 0, 0.06) 2px,
+                rgba(0, 0, 0, 0.06) 4px
+            );
+        }
+
+        /* ── Ambient Glow Orbs ──────────────────────────────────────── */
+        .bg-glow {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(80px);
+            pointer-events: none;
+            z-index: 0;
+        }
+        .bg-glow-1 {
+            width: 600px; height: 600px;
+            background: rgba(0, 212, 255, 0.06);
+            top: -200px; right: -200px;
+            animation: glowFloat 20s ease-in-out infinite;
+        }
+        .bg-glow-2 {
+            width: 400px; height: 400px;
+            background: rgba(240, 165, 0, 0.04);
+            bottom: -100px; left: -100px;
+            animation: glowFloat 25s ease-in-out infinite reverse;
+        }
+        @keyframes glowFloat {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(30px, -30px) scale(1.1); }
+            66% { transform: translate(-20px, 20px) scale(0.9); }
+        }
+
+        /* ── Navbar ─────────────────────────────────────────────────── */
+        .navbar {
+            background: linear-gradient(180deg, rgba(6, 13, 26, 0.98) 0%, rgba(6, 13, 26, 0.85) 100%);
+            border-bottom: 1px solid var(--border-glow);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            position: sticky;
+            top: 0;
+            z-index: 1050;
+            padding: 0;
+        }
+        .navbar .container-fluid {
+            padding: 10px 24px;
+        }
+        .navbar-brand {
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 700;
+            font-size: 1.4rem;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            text-decoration: none;
+        }
+        .brand-zh {
+            color: var(--accent-secondary);
+            letter-spacing: 1px;
+        }
+        .brand-en {
+            color: var(--accent-primary);
+            font-weight: 600;
+            font-size: 0.85rem;
+            opacity: 0.8;
+        }
+        .brand-sep {
+            color: rgba(255,255,255,0.15);
+            margin: 0 6px;
+        }
+        .brand-icon {
+            color: var(--accent-primary);
+            font-size: 1.6rem;
+            margin-right: 8px;
+            opacity: 0.9;
+            filter: drop-shadow(0 0 6px var(--accent-glow));
+        }
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .nav-links a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.82rem;
+            font-weight: 500;
+            padding: 4px 12px;
+            border-radius: 6px;
+            transition: all 0.2s;
+            letter-spacing: 0.3px;
+        }
+        .nav-links a:hover {
+            color: var(--accent-primary);
+            background: rgba(0, 212, 255, 0.08);
+        }
+        .nav-links .nav-sep {
+            color: rgba(255,255,255,0.1);
+            font-size: 0.7rem;
+        }
+        .nav-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        /* ── Status Badge ───────────────────────────────────────────── */
+        .session-badge {
+            font-size: 0.72rem;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-family: 'Rajdhani', sans-serif;
+            letter-spacing: 0.5px;
+            transition: all 0.3s;
+        }
+        .session-badge.connected {
+            background: rgba(0, 229, 160, 0.12);
+            color: var(--success);
+            border: 1px solid rgba(0, 229, 160, 0.3);
+            box-shadow: 0 0 12px rgba(0, 229, 160, 0.15);
+        }
+        .session-badge.disconnected {
+            background: rgba(255, 77, 109, 0.1);
+            color: var(--danger);
+            border: 1px solid rgba(255, 77, 109, 0.2);
+        }
+        .status-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 6px;
+            vertical-align: middle;
+            position: relative;
+            top: -1px;
+        }
+        .status-dot.on {
+            background: var(--success);
+            box-shadow: 0 0 8px var(--success);
+        }
+        .status-dot.off {
+            background: var(--danger);
+        }
+        #sessionIdDisplay {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            letter-spacing: 0.5px;
+        }
+
+        /* ── Glass Card ─────────────────────────────────────────────── */
         .glass-card {
-            background: var(--card-bg);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255,255,255,0.4);
+            background: var(--bg-card);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--border-glow);
             border-radius: var(--radius);
-            box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.05);
             margin-bottom: 20px;
+            transition: box-shadow 0.3s ease, border-color 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .glass-card:hover {
+            border-color: rgba(0, 212, 255, 0.4);
+            box-shadow: 0 4px 32px rgba(0, 0, 0, 0.3), 0 0 20px rgba(0, 212, 255, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+        }
+        .glass-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--accent-primary), transparent);
+            opacity: 0.3;
         }
         .card-header {
             background: transparent;
-            border-bottom: 1px solid rgba(0,0,0,0.06);
-            padding: 16px 20px;
+            border-bottom: 1px solid rgba(0, 212, 255, 0.1);
+            padding: 14px 20px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1rem;
+            letter-spacing: 0.5px;
+            color: var(--text-primary);
+        }
+        .card-header i {
+            color: var(--accent-primary);
+            font-size: 1.1rem;
+        }
+        .card-body {
+            padding: 18px 20px;
+        }
+
+        /* ── Quick Links ────────────────────────────────────────────── */
+        .quick-link {
+            text-decoration: none;
+            display: block;
+        }
+        .quick-link .glass-card {
+            text-align: center;
+            padding: 18px 12px;
+            cursor: pointer;
+            transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+            margin-bottom: 16px;
+        }
+        .quick-link:hover .glass-card {
+            transform: translateY(-5px);
+            border-color: rgba(0, 212, 255, 0.5);
+            box-shadow: 0 8px 40px rgba(0, 0, 0, 0.3), 0 0 30px rgba(0, 212, 255, 0.12);
+        }
+        .quick-link .ql-icon {
+            font-size: 1.8rem;
+            color: var(--accent-primary);
+            display: block;
+            margin-bottom: 6px;
+            transition: transform 0.3s;
+        }
+        .quick-link:hover .ql-icon {
+            transform: scale(1.15);
+        }
+        .quick-link .ql-icon.gold {
+            color: var(--accent-secondary);
+        }
+        .quick-link .ql-title {
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 700;
+            font-size: 1rem;
+            color: var(--text-primary);
+            margin-top: 2px;
+        }
+        .quick-link .ql-desc {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        /* ── Form Controls (Dark Theme) ─────────────────────────────── */
+        .form-control, .form-select {
+            background: rgba(6, 13, 26, 0.6);
+            border: 1px solid rgba(0, 212, 255, 0.15);
+            color: var(--text-primary);
+            border-radius: var(--radius-sm);
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .form-control:focus, .form-select:focus {
+            background: rgba(6, 13, 26, 0.8);
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1);
+            color: var(--text-primary);
+        }
+        .form-control::placeholder {
+            color: rgba(107, 139, 170, 0.5) !important;
+            opacity: 1;
+        }
+        .form-control:-ms-input-placeholder {
+            color: rgba(107, 139, 170, 0.5);
+        }
+        .form-control-sm, .form-select-sm {
+            font-size: 0.82rem;
+            padding: 6px 10px;
+        }
+        .form-label {
+            font-weight: 500;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+            letter-spacing: 0.3px;
+        }
+        .form-check-input {
+            background: rgba(6, 13, 26, 0.6);
+            border: 1px solid rgba(0, 212, 255, 0.2);
+        }
+        .form-check-input:checked {
+            background-color: var(--accent-primary);
+            border-color: var(--accent-primary);
+        }
+        .form-check-label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+        .param-hint {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            opacity: 0.7;
+        }
+        select option {
+            background: var(--bg-card-solid);
+            color: var(--text-primary);
+        }
+
+        /* ── Buttons ────────────────────────────────────────────────── */
+        .btn-primary-custom {
+            background: linear-gradient(135deg, #00b4d8, #0096c7);
+            border: none;
+            color: #fff;
+            font-weight: 600;
+            font-size: 0.85rem;
+            border-radius: var(--radius-sm);
+            padding: 8px 18px;
+            cursor: pointer;
+            transition: all 0.25s;
+            font-family: 'Rajdhani', sans-serif;
+            letter-spacing: 0.5px;
+            position: relative;
+            overflow: hidden;
+        }
+        .btn-primary-custom:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 20px rgba(0, 180, 216, 0.35);
+            color: #fff;
+        }
+        .btn-primary-custom:active {
+            transform: translateY(0);
+        }
+
+        .btn-danger-custom {
+            background: linear-gradient(135deg, #e63946, #c1121f);
+            border: none;
+            color: #fff;
+            font-weight: 600;
+            font-size: 0.85rem;
+            border-radius: var(--radius-sm);
+            padding: 8px 18px;
+            cursor: pointer;
+            transition: all 0.25s;
+            font-family: 'Rajdhani', sans-serif;
+            letter-spacing: 0.5px;
+        }
+        .btn-danger-custom:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 20px rgba(230, 57, 70, 0.35);
+            color: #fff;
+        }
+        .btn-danger-custom:active {
+            transform: translateY(0);
+        }
+
+        .btn-outline-custom {
+            border: 1px solid var(--accent-primary);
+            color: var(--accent-primary);
+            font-weight: 600;
+            font-size: 0.82rem;
+            border-radius: var(--radius-sm);
+            padding: 6px 14px;
+            background: transparent;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: 'Rajdhani', sans-serif;
+        }
+        .btn-outline-custom:hover {
+            background: rgba(0, 212, 255, 0.1);
+            color: var(--accent-primary);
+            box-shadow: 0 0 16px rgba(0, 212, 255, 0.15);
+        }
+        .btn-outline-custom:active {
+            transform: scale(0.97);
+        }
+
+        /* Override Bootstrap btn-danger/btn-primary for fsPttButton */
+        .btn.btn-danger {
+            background: linear-gradient(135deg, #e63946, #c1121f) !important;
+            border: none !important;
+            color: #fff !important;
+            border-radius: var(--radius-sm) !important;
+            transition: all 0.25s !important;
+        }
+        .btn.btn-danger:hover {
+            box-shadow: 0 4px 20px rgba(230, 57, 70, 0.35) !important;
+        }
+        .btn.btn-primary {
+            background: linear-gradient(135deg, #00b4d8, #0096c7) !important;
+            border: none !important;
+            color: #fff !important;
+            border-radius: var(--radius-sm) !important;
+            transition: all 0.25s !important;
+        }
+        .btn.btn-primary:hover {
+            box-shadow: 0 4px 20px rgba(0, 180, 216, 0.35) !important;
+        }
+        .btn-outline-danger {
+            border-color: var(--danger) !important;
+            color: var(--danger) !important;
+        }
+        .btn-outline-danger:hover {
+            background: rgba(255, 77, 109, 0.15) !important;
+            color: var(--danger) !important;
+        }
+
+        /* ── Video Player ───────────────────────────────────────────── */
+        video {
+            width: 100%;
+            border-radius: var(--radius-sm);
+            background: #000;
+            display: block;
+        }
+        video::-webkit-media-controls-fullscreen-button { display: none !important; }
+        video::-moz-full-screen-button { display: none !important; }
+
+        .video-fs-wrapper {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+            border-radius: var(--radius-sm);
+            overflow: hidden;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.4), 0 0 40px rgba(0, 212, 255, 0.05);
+            border: 1px solid rgba(0, 212, 255, 0.1);
+        }
+
+        .video-fs-wrapper:fullscreen,
+        .video-fs-wrapper:-webkit-full-screen {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #000;
+            width: 100vw;
+            height: 100vh;
+            border-radius: 0;
+            border: none;
+        }
+        .video-fs-wrapper:fullscreen video,
+        .video-fs-wrapper:-webkit-full-screen video {
+            max-width: 100%;
+            max-height: 100vh;
+            width: auto;
+            height: auto;
+            border-radius: 0;
+        }
+
+        .fs-trigger {
+            position: absolute;
+            bottom: 8px;
+            right: 8px;
+            background: rgba(0, 0, 0, 0.7);
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 4px;
+            padding: 4px 10px;
+            cursor: pointer;
+            font-size: 14px;
+            z-index: 10;
+            opacity: 0.6;
+            transition: opacity 0.2s, background 0.2s;
+        }
+        .fs-trigger:hover {
+            opacity: 1;
+            background: rgba(0, 212, 255, 0.2);
+            border-color: var(--accent-primary);
+        }
+
+        /* ── Fullscreen Toolbar ─────────────────────────────────────── */
+        .fs-toolbar {
+            display: none;
+            position: fixed;
+            top: 12px;
+            right: 12px;
+            z-index: 2147483647;
+            gap: 8px;
+        }
+        .video-fs-wrapper:fullscreen .fs-toolbar,
+        .video-fs-wrapper:-webkit-full-screen .fs-toolbar {
+            display: flex;
+        }
+        .fs-toolbar button {
+            background: rgba(0, 0, 0, 0.6);
+            color: var(--text-primary);
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            border-radius: 6px;
+            padding: 6px 14px;
+            cursor: pointer;
+            font-size: 13px;
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 600;
+            transition: background 0.2s, border-color 0.2s;
+        }
+        .fs-toolbar button:hover {
+            background: rgba(0, 212, 255, 0.15);
+            border-color: var(--accent-primary);
+        }
+        .fs-toolbar button.active {
+            background: rgba(0, 212, 255, 0.2);
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 12px rgba(0, 212, 255, 0.2);
+        }
+
+        /* ── Fullscreen Side Panel ──────────────────────────────────── */
+        .fs-side-panel {
+            display: none;
+        }
+        .video-fs-wrapper:fullscreen .fs-side-panel,
+        .video-fs-wrapper:-webkit-full-screen .fs-side-panel {
+            display: none;
+            flex-direction: column;
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 380px;
+            height: 100vh;
+            overflow-y: auto;
+            padding: 16px;
+            gap: 16px;
+            background: rgba(6, 13, 26, 0.95);
+            color: var(--text-primary);
+            z-index: 100;
+            border-left: 1px solid var(--border-glow);
+        }
+        .video-fs-wrapper:fullscreen.fs-panel-open .fs-side-panel,
+        .video-fs-wrapper:-webkit-full-screen.fs-panel-open .fs-side-panel {
+            display: flex;
+        }
+
+        .video-fs-wrapper:fullscreen .fs-side-panel .fs-glass-card,
+        .video-fs-wrapper:-webkit-full-screen .fs-side-panel .fs-glass-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--border-glow);
+            border-radius: var(--radius);
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+            color: var(--text-primary);
+        }
+        .video-fs-wrapper:fullscreen .fs-side-panel .fs-card-header,
+        .video-fs-wrapper:-webkit-full-screen .fs-side-panel .fs-card-header {
+            background: transparent;
+            border-bottom: 1px solid rgba(0, 212, 255, 0.1);
+            padding: 14px 18px;
             font-weight: 600;
             display: flex;
             align-items: center;
             gap: 8px;
+            font-family: 'Rajdhani', sans-serif;
+            color: var(--text-primary);
         }
-        .card-header i { color: var(--primary); }
-        .card-body { padding: 20px; }
-        .btn-primary-custom {
-            background: linear-gradient(135deg, #4361ee, #3f37c9);
-            border: none;
-            color: #fff;
-            font-weight: 600;
-            border-radius: 8px;
-            padding: 8px 16px;
-            cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
+        .video-fs-wrapper:fullscreen .fs-side-panel .fs-card-header i,
+        .video-fs-wrapper:-webkit-full-screen .fs-side-panel .fs-card-header i {
+            color: var(--accent-primary);
         }
-        .btn-primary-custom:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(67,97,238,0.3); color: #fff; }
-        .btn-primary-custom:active { transform: translateY(0); }
-        .btn-danger-custom { background: #ef4444; border: none; color: #fff; font-weight: 600; border-radius: 8px; padding: 8px 16px; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; }
-        .btn-danger-custom:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(239,68,68,0.3); }
-        .btn-danger-custom:active { transform: translateY(0); }
-        .btn-outline-custom { border: 2px solid var(--primary); color: var(--primary); font-weight: 600; border-radius: 8px; padding: 8px 16px; background: transparent; cursor: pointer; transition: all 0.2s; }
-        .btn-outline-custom:hover { background: var(--primary); color: #fff; }
-        .btn-outline-custom:active { transform: scale(0.97); }
-        video { width: 100%; border-radius: 8px; background: #000; }
-        .session-badge { font-size: 0.75rem; padding: 4px 10px; border-radius: 20px; }
-        .connected { background: #d1fae5; color: #065f46; }
-        .disconnected { background: #fee2e2; color: #991b1b; }
-        .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
-        .status-dot.on { background: #10b981; }
-        .status-dot.off { background: #ef4444; }
-        .quick-link { text-decoration: none; }
-        .quick-link .glass-card { transition: transform 0.3s, box-shadow 0.3s; cursor: pointer; }
-        .quick-link:hover .glass-card { transform: translateY(-3px); box-shadow: 0 12px 28px rgba(0,0,0,0.1); }
-        pre { background: #1e293b; color: #e2e8f0; padding: 12px; border-radius: 8px; font-size: 0.8rem; max-height: 120px; overflow-y: auto; }
-        label { font-weight: 500; font-size: 0.9rem; color: #64748b; margin-bottom: 4px; }
-        .param-hint { font-size: 0.75rem; color: #94a3b8; }
-        ::placeholder { color: #9ca3af !important; opacity: 1; }
-        :-ms-input-placeholder { color: #9ca3af; }
+        .video-fs-wrapper:fullscreen .fs-side-panel .fs-card-body,
+        .video-fs-wrapper:-webkit-full-screen .fs-side-panel .fs-card-body {
+            padding: 14px 18px;
+        }
+        .video-fs-wrapper:fullscreen .fs-side-panel .form-control,
+        .video-fs-wrapper:fullscreen .fs-side-panel .form-select {
+            background: rgba(0, 0, 0, 0.4);
+        }
+
+        /* ── Voice Transcript & Chat Log ────────────────────────────── */
         .voice-transcript {
-            background: rgba(67, 97, 238, 0.06);
-            border-radius: 8px;
+            background: rgba(0, 212, 255, 0.06);
+            border: 1px solid rgba(0, 212, 255, 0.1);
+            border-radius: var(--radius-sm);
             padding: 10px 14px;
             min-height: 40px;
-            font-size: 0.9rem;
-            color: #334155;
+            font-size: 0.85rem;
+            color: var(--text-primary);
             white-space: pre-wrap;
             word-break: break-all;
         }
         .voice-chat-log {
             max-height: 200px;
             overflow-y: auto;
-            font-size: 0.85rem;
+            font-size: 0.82rem;
             padding: 8px 0;
         }
-        .voice-chat-log .msg-user { color: var(--primary); margin-bottom: 4px; }
-        .voice-chat-log .msg-user::before { content: '🗣️ '; }
-        .voice-chat-log .msg-avatar { color: #64748b; margin-bottom: 8px; }
-        .voice-chat-log .msg-avatar::before { content: '🤖 '; }
+        .voice-chat-log .msg-user {
+            color: var(--accent-primary);
+            margin-bottom: 4px;
+            padding: 4px 8px;
+            background: rgba(0, 212, 255, 0.05);
+            border-radius: 4px;
+        }
+        .voice-chat-log .msg-user::before {
+            content: '🗣️ ';
+        }
+        .voice-chat-log .msg-avatar {
+            color: var(--text-muted);
+            margin-bottom: 8px;
+            padding: 4px 8px;
+        }
+        .voice-chat-log .msg-avatar::before {
+            content: '🤖 ';
+        }
 
-        /* Fullscreen wrapper */
-        .video-fs-wrapper { position: relative; display: inline-block; width: 100%; }
-        .video-fs-wrapper:fullscreen,
-        .video-fs-wrapper:-webkit-full-screen {
-            display: flex; align-items: center; justify-content: center;
-            background: #000; width: 100vw; height: 100vh;
+        /* ── PTT Button ─────────────────────────────────────────────── */
+        #pttButton, #fsPttButton {
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 700;
+            letter-spacing: 1px;
+            position: relative;
+            overflow: hidden;
         }
-        .video-fs-wrapper:fullscreen video,
-        .video-fs-wrapper:-webkit-full-screen video {
-            max-width: 100%; max-height: 100vh; width: auto; height: auto; border-radius: 0;
+        #pttButton:active, #fsPttButton:active {
+            transform: scale(0.98);
         }
-        /* Side panel: absolute overlay on the right */
-        .video-fs-wrapper:fullscreen .fs-side-panel,
-        .video-fs-wrapper:-webkit-full-screen .fs-side-panel {
-            display: none; flex-direction: column; position: absolute; top: 0; right: 0;
-            width: 380px; height: 100vh; overflow-y: auto; padding: 16px; gap: 16px;
-            background: #0d1117; color: #e6edf3; z-index: 100;
+
+        /* ── Status Bar ─────────────────────────────────────────────── */
+        #voiceStatusBar, #fsVoiceStatusBar {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            padding: 6px 10px;
+            background: rgba(0, 212, 255, 0.05);
+            border-radius: var(--radius-sm);
+            border: 1px solid rgba(0, 212, 255, 0.08);
         }
-        /* Panel open state */
-        .video-fs-wrapper:fullscreen.fs-panel-open .fs-side-panel,
-        .video-fs-wrapper:-webkit-full-screen.fs-panel-open .fs-side-panel {
-            display: flex;
+
+        /* ── Custom Scrollbar ───────────────────────────────────────── */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
         }
-        .video-fs-wrapper:fullscreen .fs-side-panel .fs-glass-card,
-        .video-fs-wrapper:-webkit-full-screen .fs-side-panel .fs-glass-card {
-            background: rgba(255,255,255,0.85); backdrop-filter: blur(12px);
-            border: 1px solid rgba(255,255,255,0.4); border-radius: 14px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.06); color: #1e293b;
+        ::-webkit-scrollbar-track {
+            background: rgba(6, 13, 26, 0.5);
         }
-        .video-fs-wrapper:fullscreen .fs-side-panel .fs-card-header,
-        .video-fs-wrapper:-webkit-full-screen .fs-side-panel .fs-card-header {
-            background: transparent; border-bottom: 1px solid rgba(0,0,0,0.06);
-            padding: 14px 18px; font-weight: 600; display: flex; align-items: center; gap: 8px;
+        ::-webkit-scrollbar-thumb {
+            background: rgba(0, 212, 255, 0.2);
+            border-radius: 3px;
         }
-        .video-fs-wrapper:fullscreen .fs-side-panel .fs-card-header i,
-        .video-fs-wrapper:-webkit-full-screen .fs-side-panel .fs-card-header i { color: #4361ee; }
-        .video-fs-wrapper:fullscreen .fs-side-panel .fs-card-body,
-        .video-fs-wrapper:-webkit-full-screen .fs-side-panel .fs-card-body { padding: 16px 18px; }
-        /* Hide native fullscreen button */
-        video::-webkit-media-controls-fullscreen-button { display: none !important; }
-        video::-moz-full-screen-button { display: none !important; }
-        /* Fullscreen button (normal state) */
-        .fs-trigger {
-            position: absolute; bottom: 8px; right: 8px;
-            background: rgba(0,0,0,0.6); color: #fff; border: none;
-            border-radius: 4px; padding: 4px 8px; cursor: pointer;
-            font-size: 14px; z-index: 10; opacity: 0.7; transition: opacity 0.2s;
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(0, 212, 255, 0.35);
         }
-        .fs-trigger:hover { opacity: 1; }
-        /* Toolbar in fullscreen (top-right, contains panel toggle + exit) */
-        .fs-toolbar {
-            display: none; position: fixed; top: 12px; right: 12px; z-index: 2147483647;
-            gap: 8px;
+        .voice-chat-log::-webkit-scrollbar,
+        .fs-side-panel::-webkit-scrollbar {
+            width: 4px;
         }
-        .video-fs-wrapper:fullscreen .fs-toolbar,
-        .video-fs-wrapper:-webkit-full-screen .fs-toolbar { display: flex; }
-        .fs-toolbar button {
-            background: rgba(255,255,255,0.15); color: #fff; border: 1px solid rgba(255,255,255,0.25);
-            border-radius: 6px; padding: 6px 14px; cursor: pointer; font-size: 14px;
-            transition: background 0.2s;
+
+        /* ── Utility ────────────────────────────────────────────────── */
+        .text-muted-custom {
+            color: var(--text-muted) !important;
         }
-        .fs-toolbar button:hover { background: rgba(255,255,255,0.3); }
-        .fs-toolbar button.active { background: rgba(67,97,238,0.7); border-color: rgba(67,97,238,0.9); }
-        /* Side panel hidden in normal state */
-        .fs-side-panel { display: none; }
+        .accent-glow {
+            color: var(--accent-primary);
+        }
+        .gold-glow {
+            color: var(--accent-secondary);
+        }
+        .badge-accent {
+            background: rgba(0, 212, 255, 0.1);
+            color: var(--accent-primary);
+            border: 1px solid rgba(0, 212, 255, 0.2);
+        }
+
+        /* ── Responsive ─────────────────────────────────────────────── */
+        @media (max-width: 768px) {
+            .navbar .container-fluid {
+                padding: 8px 12px;
+                flex-wrap: wrap;
+            }
+            .navbar-brand {
+                font-size: 1.1rem;
+            }
+            .brand-en {
+                display: none;
+            }
+            .nav-links a {
+                font-size: 0.75rem;
+                padding: 4px 8px;
+            }
+            .nav-right {
+                gap: 6px;
+            }
+            #sessionIdDisplay {
+                font-size: 0.7rem;
+            }
+            .session-badge {
+                font-size: 0.65rem;
+                padding: 3px 8px;
+            }
+            .card-header {
+                padding: 12px 16px;
+                font-size: 0.9rem;
+            }
+            .card-body {
+                padding: 14px 16px;
+            }
+            .quick-link .glass-card {
+                padding: 12px 8px;
+            }
+            .quick-link .ql-icon {
+                font-size: 1.4rem;
+            }
+            .video-fs-wrapper:fullscreen .fs-side-panel,
+            .video-fs-wrapper:-webkit-full-screen .fs-side-panel {
+                width: 100%;
+                height: 50vh;
+                top: auto;
+                bottom: 0;
+                border-left: none;
+                border-top: 1px solid var(--border-glow);
+            }
+        }
+
+        @media (max-width: 991px) {
+            .quick-link .glass-card {
+                margin-bottom: 12px;
+            }
+        }
+
+        @media (min-width: 992px) {
+            .container {
+                max-width: 1400px;
+            }
+        }
     </style>
 </head>
 <body>
 
-<nav class="navbar navbar-dark" style="background: linear-gradient(135deg, #4361ee, #3f37c9); box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
-    <div class="container-fluid px-4">
-        <span class="navbar-brand"><i class="bi bi-camera-video-fill me-2"></i>LiveTalking</span>
-        <a href="/index-en.html" class="text-white-50 small text-decoration-none me-2">English</a>
-        <div class="d-flex gap-2">
+<!-- Ambient Glow Orbs -->
+<div class="bg-glow bg-glow-1"></div>
+<div class="bg-glow bg-glow-2"></div>
+
+<!-- ===== NAVBAR ===== -->
+<nav class="navbar">
+    <div class="container-fluid">
+        <div class="d-flex align-items-center gap-2">
+            <span class="navbar-brand">
+                <i class="bi bi-camera-reels-fill brand-icon"></i>
+                <span class="brand-zh">五六零科技</span>
+                <span class="brand-sep">·</span>
+                <span class="brand-en">数字人展览平台</span>
+            </span>
+        </div>
+        <div class="nav-right">
+            <div class="nav-links">
+                <a href="/admin.html" target="_blank"><i class="bi bi-gear me-1"></i>管理后台</a>
+                <span class="nav-sep">|</span>
+                <a href="/tts/index.html" target="_blank"><i class="bi bi-soundwave me-1"></i>TTS管理</a>
+                <span class="nav-sep">|</span>
+                <a href="/index-en.html" class="text-muted" style="font-size:0.78rem;"><i class="bi bi-globe me-1"></i>EN</a>
+            </div>
             <span class="session-badge disconnected" id="statusBadge"><span class="status-dot off"></span>未连接</span>
-            <span class="text-white-50 small" id="sessionIdDisplay">SID: -</span>
+            <span class="text-muted" id="sessionIdDisplay">SID: -</span>
         </div>
     </div>
 </nav>
 
-<div class="container mt-4">
+<!-- ===== MAIN CONTENT ===== -->
+<div class="container mt-4" style="position:relative;z-index:2;">
+
     <!-- Quick Links -->
     <div class="row g-3 mb-2">
         <div class="col-md-3">
             <a href="/avatar.html" class="quick-link" target="_blank">
-                <div class="glass-card p-3 text-center">
-                    <i class="bi bi-person-bounding-box fs-2" style="color: #4361ee;"></i>
-                    <div class="fw-bold mt-2">Avatar 生成</div>
-                    <div class="small text-muted">创建数字人形象</div>
+                <div class="glass-card">
+                    <i class="bi bi-person-bounding-box ql-icon"></i>
+                    <div class="ql-title">Avatar 生成</div>
+                    <div class="ql-desc">创建数字人形象</div>
                 </div>
             </a>
         </div>
         <div class="col-md-3">
             <a href="/admin.html" class="quick-link" target="_blank">
-                <div class="glass-card p-3 text-center">
-                    <i class="bi bi-speedometer2 fs-2" style="color: #4361ee;"></i>
-                    <div class="fw-bold mt-2">管理后台</div>
-                    <div class="small text-muted">监控会话与配置</div>
+                <div class="glass-card">
+                    <i class="bi bi-speedometer2 ql-icon gold"></i>
+                    <div class="ql-title">管理后台</div>
+                    <div class="ql-desc">监控会话与配置</div>
                 </div>
             </a>
         </div>
         <div class="col-md-3">
             <a href="/tts/index.html" class="quick-link" target="_blank">
-                <div class="glass-card p-3 text-center">
-                    <i class="bi bi-soundwave fs-2" style="color: #4361ee;"></i>
-                    <div class="fw-bold mt-2">TTS 语音管理</div>
-                    <div class="small text-muted">语音列表 · 克隆 · 合成</div>
+                <div class="glass-card">
+                    <i class="bi bi-soundwave ql-icon"></i>
+                    <div class="ql-title">TTS 语音管理</div>
+                    <div class="ql-desc">语音列表 · 克隆 · 合成</div>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-3">
+            <a href="/dashboard.html" class="quick-link" target="_blank">
+                <div class="glass-card">
+                    <i class="bi bi-grid-1x2-fill ql-icon gold"></i>
+                    <div class="ql-title">Dashboard</div>
+                    <div class="ql-desc">数据监控与统计</div>
                 </div>
             </a>
         </div>
     </div>
 
     <div class="row">
-        <!-- Left Column: Connection + Video -->
+        <!-- ===== LEFT COLUMN: WebRTC + Video ===== -->
         <div class="col-lg-7">
-            <!-- 1. WebRTC Connection -->
+            <!-- WebRTC Connection -->
             <div class="glass-card">
                 <div class="card-header"><i class="bi bi-broadcast"></i> WebRTC 连接</div>
                 <div class="card-body">
@@ -234,23 +873,23 @@
                     <div class="d-flex gap-2">
                         <button class="btn-primary-custom" id="btnStart" onclick="start()"><i class="bi bi-play-fill"></i> 开始连接</button>
                         <button class="btn-danger-custom" id="btnStop" onclick="stop()" style="display:none;"><i class="bi bi-stop-fill"></i> 断开连接</button>
-                        <button class="btn btn-sm btn-outline-danger ms-1" onclick="shutdownServer()" title="关闭服务器进程">⏻</button>
+                        <button class="btn btn-sm btn-outline-danger ms-1" onclick="shutdownServer()" title="关闭服务器进程"><i class="bi bi-power"></i></button>
                     </div>
                     <div class="mt-3">
                         <div id="videoFullscreenWrapper" class="video-fs-wrapper">
                             <video id="video" autoplay playsinline muted controls></video>
                             <audio id="audio" autoplay></audio>
-                            <button class="fs-trigger" id="fsBtn" onclick="toggleFullscreen()" title="全屏">⛶</button>
+                            <button class="fs-trigger" id="fsBtn" onclick="toggleFullscreen()" title="全屏"><i class="bi bi-arrows-fullscreen"></i></button>
                             <div class="fs-toolbar" id="fsToolbar">
-                                <button id="fsPanelToggle" onclick="toggleFsPanel()" title="控制面板">☰ 控制</button>
-                                <button onclick="toggleFullscreen()" title="退出全屏">✕ 退出</button>
+                                <button id="fsPanelToggle" onclick="toggleFsPanel()" title="控制面板"><i class="bi bi-layout-sidebar"></i> 控制</button>
+                                <button onclick="toggleFullscreen()" title="退出全屏"><i class="bi bi-fullscreen-exit"></i> 退出</button>
                             </div>
                             <div id="fsSidePanel" class="fs-side-panel">
                                 <!-- Voice Conversation -->
                                 <div class="fs-glass-card">
                                     <div class="fs-card-header"><i class="bi bi-mic-fill"></i> 语音对话</div>
                                     <div class="fs-card-body">
-                                        <div id="fsVoiceStatusBar" class="small mb-2" style="display:none;color:#64748b;">
+                                        <div id="fsVoiceStatusBar" class="small mb-2" style="display:none;">
                                             <span id="fsVoiceStatusIcon">🎤</span>
                                             <span id="fsVoiceStatusText"></span>
                                         </div>
@@ -306,7 +945,7 @@
                                             <label class="form-label mb-0" style="white-space:nowrap;">音色</label>
                                             <select class="form-select form-select-sm" id="fsTtsVoice" style="width:120px;">
                                                 <option value="Ethan" selected>Ethan (英文男声)</option>
-                            <option value="Cherry">Cherry</option>
+                                                <option value="Cherry">Cherry</option>
                                             </select>
                                         </div>
                                     </div>
@@ -318,13 +957,13 @@
             </div>
         </div>
 
-        <!-- Right Column: Drivers + Actions -->
+        <!-- ===== RIGHT COLUMN: Drivers + Actions ===== -->
         <div class="col-lg-5">
-            <!-- 2. Voice Conversation -->
+            <!-- Voice Conversation -->
             <div class="glass-card">
                 <div class="card-header"><i class="bi bi-mic-fill"></i> 语音对话</div>
                 <div class="card-body">
-                    <div id="voiceStatusBar" class="small text-muted mb-2" style="display:none;">
+                    <div id="voiceStatusBar" class="small mb-2" style="display:none;">
                         <span id="voiceStatusIcon">🎤</span>
                         <span id="voiceStatusText">聆听中...</span>
                     </div>
@@ -344,9 +983,9 @@
                 </div>
             </div>
 
-            <!-- 3. Text Driver -->
+            <!-- Text Driver -->
             <div class="glass-card">
-                <div class="card-header"><i class="bi bi-chat-text-fill"></i> 文本驱动 (POST /human)</div>
+                <div class="card-header"><i class="bi bi-chat-text-fill"></i> 文本驱动 <span style="font-size:0.7rem;color:var(--text-muted);font-weight:400;">(POST /human)</span></div>
                 <div class="card-body">
                     <div class="mb-2">
                         <label class="form-label">输入文本 <span class="param-hint">(type: echo/chat)</span></label>
@@ -382,18 +1021,18 @@
                 </div>
             </div>
 
-            <!-- 3. Audio Upload -->
+            <!-- Audio Upload -->
             <div class="glass-card">
-                <div class="card-header"><i class="bi bi-mic-fill"></i> 音频驱动 (POST /humanaudio)</div>
+                <div class="card-header"><i class="bi bi-mic-fill"></i> 音频驱动 <span style="font-size:0.7rem;color:var(--text-muted);font-weight:400;">(POST /humanaudio)</span></div>
                 <div class="card-body">
                     <input type="file" class="form-control form-control-sm mb-2" id="audioFile" accept="audio/*">
                     <button class="btn-primary-custom btn-sm" onclick="uploadAudio()"><i class="bi bi-upload"></i> 上传并播放</button>
                 </div>
             </div>
 
-            <!-- 4. Recording -->
+            <!-- Recording -->
             <div class="glass-card">
-                <div class="card-header"><i class="bi bi-record-circle"></i> 录制控制 (POST /record)</div>
+                <div class="card-header"><i class="bi bi-record-circle"></i> 录制控制 <span style="font-size:0.7rem;color:var(--text-muted);font-weight:400;">(POST /record)</span></div>
                 <div class="card-body">
                     <div class="d-flex gap-2">
                         <button class="btn-outline-custom btn-sm" id="btnRecToggle" onclick="toggleRecord()"><i class="bi bi-record-circle"></i> 开始录制</button>
@@ -402,9 +1041,9 @@
                 </div>
             </div>
 
-            <!-- 5. Custom State -->
+            <!-- Custom State -->
             <div class="glass-card">
-                <div class="card-header"><i class="bi bi-sliders"></i> 动作编排 (POST /set_audiotype)</div>
+                <div class="card-header"><i class="bi bi-sliders"></i> 动作编排 <span style="font-size:0.7rem;color:var(--text-muted);font-weight:400;">(POST /set_audiotype)</span></div>
                 <div class="card-body">
                     <div class="row g-2 align-items-end">
                         <div class="col-6">
@@ -417,7 +1056,6 @@
                     </div>
                 </div>
             </div>
-
         </div>
     </div>
 </div>
@@ -1691,7 +2329,6 @@ showVoiceTranscript = function(text, interim) {
         el.textContent = (interim ? '...' : '✓ ') + text;
     }
 };
-
 </script>
 </body>
 </html>
