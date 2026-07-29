@@ -940,6 +940,14 @@
         .chat-messages::-webkit-scrollbar-thumb { background: rgba(0,212,255,0.25); border-radius: 4px; }
         .bubble-row { display: flex; align-items: flex-end; gap: 8px; }
         .bubble-row.user { flex-direction: row-reverse; }
+        .bubble-content {
+            max-width: 72%;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        .bubble-row.user .bubble-content { align-items: flex-end; }
         .bubble-avatar-icon {
             width: 30px; height: 30px; border-radius: 50%;
             background: linear-gradient(135deg, #00d4ff, #7b2ff7);
@@ -955,7 +963,9 @@
             box-shadow: 0 2px 8px rgba(16,185,129,0.4);
         }
         .bubble {
-            max-width: 72%; padding: 9px 13px; border-radius: 16px;
+            width: fit-content;
+            max-width: 100%;
+            padding: 9px 13px; border-radius: 16px;
             font-size: 0.86rem; line-height: 1.5; word-break: break-word;
             animation: bubbleIn 0.22s cubic-bezier(0.34,1.56,0.64,1);
         }
@@ -2814,6 +2824,7 @@ function appendChatBubble(role, text, opts) {
     icon.className = role === 'user' ? 'bubble-user-icon' : 'bubble-avatar-icon';
     icon.textContent = role === 'user' ? '🧑' : '🤖';
     const wrap = document.createElement('div');
+    wrap.className = 'bubble-content';
     const bubble = document.createElement('div');
     bubble.className = 'bubble' + (opts.interim ? ' bubble-interim' : '');
     bubble.textContent = text;
