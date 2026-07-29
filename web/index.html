@@ -571,6 +571,19 @@
         @media (min-width: 1400px) {
             #chatPanel { max-width: 520px; }
         }
+        .btn-primary-custom{background:linear-gradient(135deg,#00a8cc,#0088aa);border:none;color:#fff;font-weight:600;font-size:0.78rem;border-radius:8px;padding:7px 16px;cursor:pointer;font-family:'Rajdhani',sans-serif;letter-spacing:0.5px;transition:all 0.2s;display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+        .btn-primary-custom:hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(0,168,204,0.3)}
+        .btn-primary-custom.btn-sm{font-size:0.72rem;padding:5px 10px}
+        .btn-danger-custom{background:linear-gradient(135deg,#e63946,#c1121f);border:none;color:#fff;font-weight:600;font-size:0.78rem;border-radius:8px;padding:7px 16px;cursor:pointer;font-family:'Rajdhani',sans-serif;letter-spacing:0.5px;transition:all 0.2s;display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+        .btn-danger-custom:hover{box-shadow:0 4px 16px rgba(230,57,70,0.3)}
+        .btn-danger-custom.btn-sm{font-size:0.72rem;padding:5px 10px}
+        .btn-outline-custom{background:transparent;border:1px solid rgba(0,212,255,0.3);color:#00d4ff;font-weight:600;font-size:0.76rem;border-radius:8px;padding:6px 14px;cursor:pointer;font-family:'Rajdhani',sans-serif;letter-spacing:0.4px;transition:all 0.2s;display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+        .btn-outline-custom:hover{background:rgba(0,212,255,0.08);border-color:#00d4ff}
+        .btn-outline-custom:disabled{opacity:0.35;cursor:not-allowed}
+        .btn-outline-custom:disabled:hover{background:transparent;border-color:rgba(0,212,255,0.3)}
+        .btn-outline-custom.btn-sm{font-size:0.72rem;padding:5px 10px}
+        .btn.btn-danger{background:linear-gradient(135deg,#e63946,#c1121f)!important;border:none!important;color:#fff!important;border-radius:8px!important}
+        .btn.btn-primary{background:linear-gradient(135deg,#00a8cc,#0088aa)!important;border:none!important;color:#fff!important;border-radius:8px!important}
     </style>
 </head>
 <body>
@@ -827,20 +840,7 @@
 
 <!-- ═══════════════ SCRIPTS ══════════════════════════════════════════ -->
 <script>
-// ── Settings Drawer Toggle ─────────────────────────────────────
-function toggleSettingsDrawer() {
-    const drawer = document.getElementById('settingsDrawer');
-    const btn = document.getElementById('btnSettingsToggle');
-    const isOpen = drawer.classList.toggle('open');
-    btn.classList.toggle('active', isOpen);
-}
-
-// ── Toggle Config Panel (stub for JS compat) ───────────────────
-function toggleConfigPanel() {
-    toggleSettingsDrawer();
-}
-
-// ── Load Avatars ───────────────────────────────────────────────
+// ── 动态加载可用 Avatar 列表 ──────────────────────────────────
 async function loadAvatars() {
     const select = document.getElementById('offerAvatar');
     const statusEl = document.getElementById('avatarStatus');
@@ -858,21 +858,24 @@ async function loadAvatars() {
                 avatars.forEach(id => {
                     const opt = document.createElement('option');
                     opt.value = id;
-                    opt.textContent = (id === defaultId) ? id + ' (默认模型)' : id;
+                    opt.textContent = id;
                     if (id === defaultId) opt.selected = true;
                     select.appendChild(opt);
                 });
-                if (statusEl) statusEl.textContent = '共 ' + avatars.length + ' 个可用数字人模型';
+                if (statusEl) statusEl.textContent = '共 ' + avatars.length + ' 个可用形象';
             }
+        } else {
+            select.innerHTML = '<option value="">加载失败</option>';
+            if (statusEl) statusEl.textContent = '无法获取形象列表';
         }
     } catch (e) {
-        console.warn('Network fetch skipped for avatars, keeping pre-populated options:', e);
+        console.error('Failed to load avatars:', e);
+        select.innerHTML = '<option value="">加载失败</option>';
+        if (statusEl) statusEl.textContent = '网络错误';
     }
 }
 document.addEventListener('DOMContentLoaded', loadAvatars);
-loadAvatars();
 
-// ═══════════════ WebRTC ════════════════════════════════════════
 let pc = null;
 let sessionid = null;
 
@@ -890,17 +893,16 @@ function updateStatus(connected) {
 function setSessionId(sid) {
     sessionid = sid;
     document.getElementById('sessionIdDisplay').textContent = 'SID: ' + (sid || '-');
-    document.getElementById('sessionid').value = sid || '';
 }
 
+// ─── WebRTC ────────────────────────────────────────────────
 let _reconnectAttempts = 0;
 const RECONNECT_MAX = 3;
-const RECONNECT_BASE_DELAY = 2000;
+const RECONNECT_BASE_DELAY = 2000; // ms, exponential backoff
 
 function negotiate() {
     pc.addTransceiver('video', { direction: 'recvonly' });
     pc.addTransceiver('audio', { direction: 'recvonly' });
-    setWebRTCStep(2, '正在加载数字人模型...', '预加载 3D 形象与动态渲染', 'bi-person-badge');
     return pc.createOffer().then(offer => pc.setLocalDescription(offer)).then(() => {
         return new Promise(resolve => {
             if (pc.iceGatheringState === 'complete') resolve();
@@ -916,18 +918,17 @@ function negotiate() {
             type: offer.type,
             avatar: document.getElementById('offerAvatar').value || undefined,
             refaudio: document.getElementById('ttsVoice').value || undefined,
-            reftext: document.getElementById('offerRefText')?.value || undefined,
+            reftext: document.getElementById('offerRefText').value || undefined,
         };
-        setWebRTCStep(3, '正在初始化语音引擎...', '配置高清音轨与推流响应', 'bi-soundwave');
         return fetch('/offer', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     }).then(res => res.json()).then(answer => {
         if (answer.sessionid) setSessionId(answer.sessionid);
         return pc.setRemoteDescription(new RTCSessionDescription({ type: 'answer', sdp: answer.sdp }));
     }).then(() => {
-        _reconnectAttempts = 0;
+        _reconnectAttempts = 0; // 连接成功，重置重试计数
     }).catch(e => {
         console.error('Negotiation error:', e);
-        throw e;
+        throw e; // 向上传播，让重连逻辑捕获
     });
 }
 
@@ -936,7 +937,7 @@ function _attemptReconnect() {
         console.warn('WebRTC 重连失败，已达最大重试次数');
         updateStatus(false);
         setSessionId(null);
-        document.getElementById('btnStart').style.display = 'inline-flex';
+        document.getElementById('btnStart').style.display = 'inline-block';
         document.getElementById('btnStop').style.display = 'none';
         return;
     }
@@ -980,12 +981,11 @@ function _setupConnection() {
 }
 
 function start() {
-    setWebRTCStep(1, '正在连接数字人服务器...', '建立实时音视频通信通道', 'bi-wifi');
     _reconnectAttempts = 0;
     _setupConnection();
     negotiate();
     document.getElementById('btnStart').style.display = 'none';
-    document.getElementById('btnStop').style.display = 'inline-flex';
+    document.getElementById('btnStop').style.display = 'inline-block';
 }
 
 function shutdownServer() {
@@ -993,22 +993,26 @@ function shutdownServer() {
     if (!confirm('再次确认：真的要关闭服务器吗？')) return;
     fetch('/api/admin/shutdown', { method: 'POST' })
         .then(r => r.json())
-        .then(d => { alert('服务器已关闭: ' + (d.msg || 'OK')); })
-        .catch(() => { alert('服务器已关闭（连接已中断）'); });
+        .then(d => {
+            alert('服务器已关闭: ' + (d.msg || 'OK'));
+        })
+        .catch(() => {
+            alert('服务器已关闭（连接已中断）');
+        });
 }
 
 function stop() {
-    _reconnectAttempts = RECONNECT_MAX;
+    _reconnectAttempts = RECONNECT_MAX; // 阻止自动重连
     if (pc) { pc.close(); pc = null; }
     updateStatus(false);
     setSessionId(null);
-    document.getElementById('btnStart').style.display = 'inline-flex';
+    document.getElementById('btnStart').style.display = 'inline-block';
     document.getElementById('btnStop').style.display = 'none';
     document.getElementById('video').srcObject = null;
     document.getElementById('audio').srcObject = null;
 }
 
-// ── Text ──────────────────────────────────────────────────────
+// ─── Text ──────────────────────────────────────────────────
 function sendText() {
     const text = document.getElementById('txtMessage').value;
     const type = document.getElementById('txtType').value;
@@ -1032,7 +1036,7 @@ function sendText() {
     });
 }
 
-// ── Audio Upload ──────────────────────────────────────────────
+// ─── Audio Upload ──────────────────────────────────────────
 function uploadAudio() {
     const file = document.getElementById('audioFile').files[0];
     if (!file || !sessionid) return alert('请先连接 WebRTC 并选择音频文件');
@@ -1045,7 +1049,7 @@ function uploadAudio() {
         .then(r => r.json()).then(d => console.log('humanaudio:', d));
 }
 
-// ── Interrupt ─────────────────────────────────────────────────
+// ─── Interrupt ─────────────────────────────────────────────
 function interrupt() {
     if (!sessionid) return;
     fetch('/interrupt_talk', {
@@ -1055,7 +1059,7 @@ function interrupt() {
     }).then(r => r.json()).then(d => console.log('interrupt:', d));
 }
 
-// ── Speaking Status ───────────────────────────────────────────
+// ─── Speaking Status ───────────────────────────────────────
 function checkSpeaking() {
     if (!sessionid) return alert('请先连接 WebRTC');
     fetch('/is_speaking', {
@@ -1065,7 +1069,7 @@ function checkSpeaking() {
     }).then(r => r.json()).then(d => alert('Speaking: ' + JSON.stringify(d.data)));
 }
 
-// ── Recording ─────────────────────────────────────────────────
+// ─── Recording ─────────────────────────────────────────────
 let recording = false;
 function toggleRecord() {
     if (!sessionid) return alert('请先连接 WebRTC');
@@ -1079,11 +1083,11 @@ function toggleRecord() {
         console.log(type + ':', d);
         recording = !recording;
         if (recording) {
-            btn.className = 'btn-danger-sm';
+            btn.className = 'btn-danger-custom btn-sm';
             btn.innerHTML = '<i class="bi bi-stop-circle"></i> 停止录制';
             document.getElementById('btnDownload').disabled = true;
         } else {
-            btn.className = 'btn-ghost';
+            btn.className = 'btn-outline-custom btn-sm';
             btn.innerHTML = '<i class="bi bi-record-circle"></i> 开始录制';
             document.getElementById('btnDownload').disabled = false;
         }
@@ -1094,7 +1098,7 @@ function downloadRecord() {
     window.open('/record/' + sessionid, '_blank');
 }
 
-// ── Audiotype ─────────────────────────────────────────────────
+// ─── Audiotype ─────────────────────────────────────────────
 function setAudiotype() {
     if (!sessionid) return alert('请先连接 WebRTC');
     const val = parseInt(document.getElementById('audiotypeVal').value) || 0;
@@ -1105,7 +1109,8 @@ function setAudiotype() {
     }).then(r => r.json()).then(d => console.log('set_audiotype:', d));
 }
 
-// ═══════════════ Voice Interaction ════════════════════════════
+// ─── Voice Interaction (Free + Push-to-Talk) ─────────────────
+// State
 let voiceMode = 'off';
 let voiceRecognition = null;
 let voiceEnabled = false;
@@ -1116,28 +1121,43 @@ let voiceRestartCount = 0;
 let voiceCooldownTimer = null;
 let voiceLastSentText = '';
 let voiceWaitingTimeout = null;
-const VOICE_WAITING_MAX_MS = 60000;
-const VOICE_WAITING_START_MS = 10000;
+const VOICE_WAITING_MAX_MS = 60000;   // Max total waiting time for reply
+const VOICE_WAITING_START_MS = 10000; // Max time before avatar starts speaking
 
+// Unified local ASR state
 let localASR = {
-    ws: null, stream: null, audioCtx: null, source: null, processor: null,
-    captureActive: false, mode: null, pendingResolve: null, pendingText: '',
-    ready: false, closing: false,
-    vadSilenceMs: 0, vadSpeechDetected: false, vadStartTime: 0,
+    ws: null,
+    stream: null,
+    audioCtx: null,
+    source: null,
+    processor: null,
+    captureActive: false,    // true = sending audio frames to WebSocket
+    mode: null,              // 'free' or 'ptt'
+    pendingResolve: null,    // Promise resolve for pending result
+    pendingText: '',         // Accumulated result text
+    ready: false,            // true = WebSocket + mic are ready
+    closing: false,          // Prevent re-entrant close
+    // VAD state
+    vadSilenceMs: 0,
+    vadSpeechDetected: false,
+    vadStartTime: 0,
     vadConfig: {
-        silenceThreshold: 0.01, silenceDurationMs: 1500,
-        minSpeechMs: 300, maxCaptureMs: 30000,
+        silenceThreshold: 0.01,   // RMS amplitude below this = silence
+        silenceDurationMs: 1500,  // 1.5s silence after speech → trigger ASR
+        minSpeechMs: 300,         // ignore speech shorter than 300ms (noise)
+        maxCaptureMs: 30000,      // safety limit: 30s max capture
     },
 };
 
 const VOICE_MAX_RESTART = 3;
-const VOICE_ECHO_COOLDOWN_MS = 2000;
+const VOICE_ECHO_COOLDOWN_MS = 2000;   // 安全兜底冷却（回声检测成功时不受此限制）
 const VOICE_TEXT_MIN_LENGTH = 3;
-let _avatarSpeaking = false;
-let _avatarSpeakEndTime = 0;
-let _avatarRecentTexts = [];
-const AVATAR_TEXT_HISTORY_MAX = 10;
+let _avatarSpeaking = false;           // 数字人是否正在说话
+let _avatarSpeakEndTime = 0;           // 数字人停止说话的时间戳
+let _avatarRecentTexts = [];           // 数字人最近说的话（用于回声检测）
+const AVATAR_TEXT_HISTORY_MAX = 10;    // 最多记住最近 N 句
 
+// ─── Voice Mode Switch ──────────────────────────────────────
 function onVoiceModeChange() {
     const newMode = document.getElementById('voiceMode').value;
     if (newMode === voiceMode) return;
@@ -1168,15 +1188,17 @@ function onVoiceModeChange() {
     } else if (newMode === 'ptt') {
         showVoiceStatus(true, '⏳', '准备麦克风...');
         warmupLocalASR('ptt', () => {
-            if (voiceMode === 'ptt') { showVoiceStatus(false); }
+            if (voiceMode === 'ptt') {
+                showVoiceStatus(false);
+            }
         });
     }
 
+    // Sync fullscreen overlay voice mode
     const fsVm = document.getElementById('fsVoiceMode');
     if (fsVm) { fsVm.value = newMode; }
     const fsPttC = document.getElementById('fsPttContainer');
     if (fsPttC) { fsPttC.style.display = (newMode === 'ptt') ? 'block' : 'none'; }
-    syncMicButtons();
 }
 
 function resetVoiceMode() {
@@ -1184,10 +1206,9 @@ function resetVoiceMode() {
     voiceMode = 'off';
     document.getElementById('voiceMode').value = 'off';
     document.getElementById('pttContainer').style.display = 'none';
-    syncMicButtons();
 }
 
-// ── Free Conversation Mode ────────────────────────────────────
+// ─── Free Conversation Mode ──────────────────────────────────
 function startFreeRecognition() {
     if (!voiceEnabled || voiceWaitingForReply) return;
 
@@ -1219,9 +1240,11 @@ function startFreeRecognition() {
                 const text = finalText.trim();
                 showVoiceTranscript(text, false);
 
+                // Echo/noise rejection
                 if (!isValidVoiceInput(text)) return;
                 voiceLastFinalText = text;
 
+                // Stop recognition while processing
                 if (voiceRecognition) {
                     try { voiceRecognition.stop(); } catch(e) {}
                     voiceRecognition = null;
@@ -1251,10 +1274,14 @@ function startFreeRecognition() {
                 return;
             }
 
+            // Google service blocked (common in China) → fallback to local ASR
             if (event.error === 'network') {
                 console.log('SpeechRecognition network error, falling back to local ASR');
                 showVoiceStatus(true, '🔄', '切换到本地语音识别...');
-                if (voiceRecognition) { try { voiceRecognition.stop(); } catch(e) {} voiceRecognition = null; }
+                if (voiceRecognition) {
+                    try { voiceRecognition.stop(); } catch(e) {}
+                    voiceRecognition = null;
+                }
                 warmupLocalASR('free', () => {
                     if (voiceMode === 'free' && voiceEnabled) {
                         startCapture();
@@ -1295,6 +1322,7 @@ function startFreeRecognition() {
         voiceRecognition.start();
     } catch (e) {
         console.error('启动语音识别失败:', e);
+        // Fallback to local ASR
         warmupLocalASR('free', () => {
             if (voiceMode === 'free' && voiceEnabled) {
                 startCapture();
@@ -1304,6 +1332,7 @@ function startFreeRecognition() {
     }
 }
 
+// ─── Microphone Permission ───────────────────────────────────
 function _requestMicPermission() {
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
         return navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
@@ -1324,8 +1353,7 @@ function _requestMicPermission() {
     alert('当前浏览器不支持麦克风访问，请使用 Chrome 或 Edge 浏览器');
     return Promise.resolve(false);
 }
-
-// ── Unified Local ASR ─────────────────────────────────────────
+// ─── Unified Local ASR ──────────────────────────────────────
 function warmupLocalASR(mode, onReady) {
     if (localASR.ready && localASR.mode === mode && localASR.ws && localASR.ws.readyState === WebSocket.OPEN) {
         if (onReady) onReady();
@@ -1372,6 +1400,7 @@ function _connectLocalASR(onReady) {
                     if (data.is_final) {
                         const text = (data.text || '').trim();
 
+                        // ASR 返回空文本：VAD 检测到的不是有效语音，重启监听
                         if (!text) {
                             console.log('[ASR] result: (empty), restarting...');
                             if (localASR.mode === 'free' && voiceEnabled && !voiceWaitingForReply) {
@@ -1388,10 +1417,13 @@ function _connectLocalASR(onReady) {
                         if (!isValidVoiceInput(text)) {
                             console.log('[ASR] rejected by isValidVoiceInput');
                             if (localASR.mode === 'free' && voiceEnabled && !voiceWaitingForReply) {
+                                // Pause capture. Debounced restart prevents infinite loop
+                                // when VAD triggers on silence → ASR returns empty → restart.
                                 localASR.captureActive = false;
                                 if (text.length < VOICE_TEXT_MIN_LENGTH) {
                                     _restartAfterSilence();
                                 } else {
+                                    // 回声被拒绝：立即重新开始监听（不等冷却）
                                     console.log('[Echo] rejected, restarting listen immediately');
                                     setTimeout(() => _restartFreeListening(), 500);
                                 }
@@ -1399,27 +1431,34 @@ function _connectLocalASR(onReady) {
                             return;
                         }
 
+                        // CRITICAL: discard if waiting for reply (echo protection)
                         if (voiceWaitingForReply) {
                             console.log('[Echo] discard ASR result while waiting for reply');
                             if (localASR.mode === 'free') localASR.captureActive = false;
                             return;
                         }
 
+                        // PTT 模式：ASR 结果可能在 pttEnd() 之前到达
+                        // 先存到 pendingText，不设 voiceLastFinalText（避免 pttEnd 重复检测误杀）
+                        // 如果 pendingResolve 已设置（pttEnd 先于 ASR 结果），直接 resolve
                         if (localASR.mode === 'ptt') {
                             if (localASR.pendingResolve) {
                                 localASR.pendingResolve(text);
                                 localASR.pendingResolve = null;
                             }
+                            // 不设 voiceLastFinalText，等 sendVoiceText 统一设置
                             return;
                         }
 
                         voiceLastFinalText = text;
 
+                        // Resolve pending PTT promise (fallback, should not normally reach here)
                         if (localASR.pendingResolve) {
                             localASR.pendingResolve(text);
                             localASR.pendingResolve = null;
                         }
 
+                        // Free mode: pause capture, keep connection alive for next turn
                         if (localASR.mode === 'free') {
                             localASR.captureActive = false;
                             sendVoiceText(text, true);
@@ -1433,9 +1472,12 @@ function _connectLocalASR(onReady) {
                 if (!voiceEnabled) { resetVoiceMode(); return; }
                 showVoiceStatus(true, '⚠️', 'ASR连接错误，尝试重连...');
                 _teardownLocalASR();
+                // In free mode, auto-reconnect instead of giving up
                 if (voiceMode === 'free' && voiceEnabled) {
                     setTimeout(() => {
-                        if (voiceEnabled && voiceMode === 'free') { _restartFreeListening(); }
+                        if (voiceEnabled && voiceMode === 'free') {
+                            _restartFreeListening();
+                        }
                     }, 1000);
                 } else {
                     setTimeout(() => resetVoiceMode(), 2000);
@@ -1449,9 +1491,12 @@ function _connectLocalASR(onReady) {
                     localASR.pendingResolve('');
                     localASR.pendingResolve = null;
                 }
+                // Auto-restart in free mode if connection drops unexpectedly
                 if (voiceEnabled && voiceMode === 'free' && !voiceWaitingForReply) {
                     setTimeout(() => {
-                        if (voiceEnabled && voiceMode === 'free') { _restartFreeListening(); }
+                        if (voiceEnabled && voiceMode === 'free') {
+                            _restartFreeListening();
+                        }
                     }, 500);
                 }
             };
@@ -1465,7 +1510,11 @@ function _connectLocalASR(onReady) {
     }
 }
 
-function _setupAudioCapture(stream) { localASR.stream = stream; }
+function _setupAudioCapture(stream) {
+    // Just store the stream for later. AudioContext is created in startCapture()
+    // where we have a user gesture context (needed for AudioContext.resume()).
+    localASR.stream = stream;
+}
 
 function _ensureAudioContext() {
     if (localASR.audioCtx) return;
@@ -1476,6 +1525,8 @@ function _ensureAudioContext() {
         localASR.source = localASR.audioCtx.createMediaStreamSource(localASR.stream);
         localASR.processor = localASR.audioCtx.createScriptProcessor(4096, 1, 1);
         localASR.source.connect(localASR.processor);
+        // ScriptProcessor must be connected to destination for onaudioprocess to fire.
+        // Use a silent gain node to avoid playing mic audio through speakers.
         const silentGain = localASR.audioCtx.createGain();
         silentGain.gain.value = 0;
         localASR.processor.connect(silentGain);
@@ -1486,6 +1537,7 @@ function _ensureAudioContext() {
             if (!localASR.ws || localASR.ws.readyState !== WebSocket.OPEN) return;
             const input = e.inputBuffer.getChannelData(0);
 
+            // ── VAD: compute RMS amplitude ──
             let sum = 0;
             for (let i = 0; i < input.length; i++) sum += input[i] * input[i];
             const rms = Math.sqrt(sum / input.length);
@@ -1493,27 +1545,33 @@ function _ensureAudioContext() {
             const cfg = localASR.vadConfig;
 
             if (rms > cfg.silenceThreshold) {
+                // Speech detected
                 localASR.vadSpeechDetected = true;
                 localASR.vadSilenceMs = 0;
             } else {
+                // Silence
                 localASR.vadSilenceMs += chunkMs;
             }
 
             const elapsedMs = Date.now() - localASR.vadStartTime;
 
+            // In PTT mode, don't auto-stop — user controls stop via button release
             if (localASR.mode !== 'ptt') {
+                // Free mode: auto-stop on silence after speech, or max capture time
                 if ((localASR.vadSpeechDetected && localASR.vadSilenceMs >= cfg.silenceDurationMs && elapsedMs >= cfg.minSpeechMs) ||
                     elapsedMs >= cfg.maxCaptureMs) {
                     localASR.captureActive = false;
                     stopCapture();
-                    return;
+                    return; // Don't send this trailing silence chunk
                 }
             } else if (elapsedMs >= cfg.maxCaptureMs) {
+                // PTT mode: only auto-stop at max capture limit (30s)
                 localASR.captureActive = false;
                 stopCapture();
                 return;
             }
 
+            // Send audio to ASR server
             const pcm16 = new Int16Array(input.length);
             for (let i = 0; i < input.length; i++) {
                 pcm16[i] = Math.max(-32768, Math.min(32767, Math.round(input[i] * 32768)));
@@ -1534,7 +1592,10 @@ function _teardownLocalASR() {
     if (localASR.closing) return;
     localASR.closing = true;
     localASR.captureActive = false;
-    if (localASR.ws) { try { localASR.ws.close(); } catch(e) {} localASR.ws = null; }
+    if (localASR.ws) {
+        try { localASR.ws.close(); } catch(e) {}
+        localASR.ws = null;
+    }
     _teardownAudioCapture();
     localASR.ready = false;
     localASR.mode = null;
@@ -1543,7 +1604,12 @@ function _teardownLocalASR() {
 
 function _resumeASRSession() {
     if (localASR.ws && localASR.ws.readyState === WebSocket.OPEN) {
-        try { localASR.ws.send(JSON.stringify({ chunk_size: [5, 10, 5], wav_name: "h5", is_speaking: true, mode: "2pass", itn: true })); } catch(e) {}
+        try {
+            localASR.ws.send(JSON.stringify({
+                chunk_size: [5, 10, 5], wav_name: "h5",
+                is_speaking: true, mode: "2pass", itn: true,
+            }));
+        } catch(e) {}
     }
 }
 
@@ -1551,19 +1617,27 @@ function startCapture() {
     if (!localASR.ready || !localASR.ws || localASR.ws.readyState !== WebSocket.OPEN) return;
     if (!localASR.stream) return;
 
+    // Create AudioContext on demand (needs user gesture for resume to work)
     _ensureAudioContext();
     localASR.captureActive = true;
+
+    // Reset VAD state
     localASR.vadSilenceMs = 0;
     localASR.vadSpeechDetected = false;
     localASR.vadStartTime = Date.now();
 
-    const doStart = () => { _resumeASRSession(); };
+    const doStart = () => {
+        // Always start a fresh ASR session (server resets its buffer on each is_speaking:true)
+        _resumeASRSession();
+    };
 
+    // Resume AudioContext (Chrome suspends it when created outside user gesture)
     if (localASR.audioCtx && localASR.audioCtx.state === 'suspended') {
         localASR.audioCtx.resume().then(doStart).catch(e => {
             console.error('AudioContext resume failed:', e);
             localASR.captureActive = false;
             showVoiceStatus(true, '⚠️', '请点击页面后重试');
+            // One-time click listener to retry
             const retry = () => {
                 document.removeEventListener('click', retry);
                 if (localASR.audioCtx && localASR.audioCtx.state === 'suspended') {
@@ -1586,43 +1660,45 @@ function stopCapture() {
     }
 }
 
-// ── Push-to-Talk ──────────────────────────────────────────────
+// ─── Push-to-Talk Mode ──────────────────────────────────────
 let _pttActive = false;
 
 function pttStart() {
     if (!sessionid) return;
     _pttActive = true;
+    voiceEnabled = true;
 
     document.getElementById('pttButton').className = 'btn-danger-custom w-100 py-3 fs-5';
-    if (typeof btnDangerCustomStyle === 'undefined') {
-        document.getElementById('pttButton').style.background = 'linear-gradient(135deg, #e63946, #c1121f)';
-        document.getElementById('pttButton').style.color = '#fff';
-        document.getElementById('pttButton').style.border = 'none';
-    }
     document.getElementById('pttButton').textContent = '✋ 松开发送';
 
+    // Sync fullscreen PTT button
     const fsPttBtn = document.getElementById('fsPttButton');
     if (fsPttBtn) { fsPttBtn.className = 'btn btn-danger w-100 py-2'; fsPttBtn.textContent = '✋ 松开发送'; }
 
+    // New UI: chat panel mic buttons
     const mainPtt = document.getElementById('btnPtt');
     if (mainPtt) { mainPtt.classList.add('ptt-hold'); mainPtt.textContent = '✋'; }
-
     const fsPtt = document.getElementById('fsBtnPtt');
     if (fsPtt) { fsPtt.classList.add('ptt-hold'); fsPtt.textContent = '✋'; }
 
+    // Clear any previous waiting state so new input is not discarded
     _clearVoiceWaiting();
+
+    // 重置回声过滤状态，避免上次对话的文字阻止本次识别
     voiceLastFinalText = '';
     voiceLastSentText = '';
     localASR.pendingText = '';
-    _avatarRecentTexts = [];
 
     console.log('[PTT] start');
+
+    // Interrupt any ongoing avatar speech
     fetch('/interrupt_talk', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sessionid: String(sessionid) }),
     }).catch(() => {});
 
+    // Always use local ASR for PTT (pre-warmed, no Google SpeechRecognition issues)
     _startPTTLocal();
 }
 
@@ -1647,26 +1723,25 @@ function pttEnd() {
     _pttActive = false;
 
     document.getElementById('pttButton').className = 'btn-primary-custom w-100 py-3 fs-5';
-    if (typeof btnPrimaryCustomStyle === 'undefined') {
-        document.getElementById('pttButton').style.background = 'linear-gradient(135deg, #00b4d8, #0096c7)';
-        document.getElementById('pttButton').style.color = '#fff';
-        document.getElementById('pttButton').style.border = 'none';
-    }
     document.getElementById('pttButton').textContent = '🎤 按住说话';
 
+    // Sync fullscreen PTT button
     const fsPttBtn = document.getElementById('fsPttButton');
     if (fsPttBtn) { fsPttBtn.className = 'btn btn-primary w-100 py-2'; fsPttBtn.textContent = '🎤 按住说话'; }
 
+    // New UI: reset chat panel mic buttons
     const mainPtt = document.getElementById('btnPtt');
     if (mainPtt) { mainPtt.classList.remove('ptt-hold'); mainPtt.textContent = '🎤'; }
-
     const fsPtt = document.getElementById('fsBtnPtt');
     if (fsPtt) { fsPtt.classList.remove('ptt-hold'); fsPtt.textContent = '🎤'; }
 
     showVoiceStatus(true, '⏳', '处理中...');
 
+    // 无论 captureActive 状态如何，都停止采集并等待 ASR 结果
+    // （自由对话模式的 VAD 可能已提前将 captureActive 设为 false）
     if (localASR.ready && localASR.ws && localASR.ws.readyState === WebSocket.OPEN) {
         stopCapture();
+
         new Promise((resolve) => {
             localASR.pendingResolve = resolve;
             setTimeout(() => {
@@ -1689,21 +1764,33 @@ function pttEnd() {
         });
         return;
     }
+
     showVoiceStatus(false);
 }
 
+// Global listeners: stop PTT if mouse/touch released anywhere on the page
 document.addEventListener('mouseup', () => { if (_pttActive) pttEnd(); });
 document.addEventListener('touchend', () => { if (_pttActive) pttEnd(); });
 document.addEventListener('touchcancel', () => { if (_pttActive) pttEnd(); });
 
-// ── Shared Voice Functions ────────────────────────────────────
+// ─── Shared Voice Functions ──────────────────────────────────
 function isValidVoiceInput(text) {
     if (!text || text.length < VOICE_TEXT_MIN_LENGTH) return false;
     if (text === voiceLastFinalText) return false;
-    if (text === voiceLastSentText) { console.log('[Echo Reject] matches last sent:', text); return false; }
-    if (voiceLastSentText && isTextSimilar(text, voiceLastSentText)) { console.log('[Echo Reject] similar to last sent:', text); return false; }
+    if (text === voiceLastSentText) {
+        console.log('[Echo Reject] matches last sent:', text);
+        return false;
+    }
+    if (voiceLastSentText && isTextSimilar(text, voiceLastSentText)) {
+        console.log('[Echo Reject] similar to last sent:', text);
+        return false;
+    }
+    // 回声检测：ASR 结果与数字人最近说的话相似 → 判定为回声
     for (const avatarText of _avatarRecentTexts) {
-        if (isTextSimilar(text, avatarText)) { console.log('[Echo Reject] matches avatar speech:', text, '~', avatarText.substring(0, 30)); return false; }
+        if (isTextSimilar(text, avatarText)) {
+            console.log('[Echo Reject] matches avatar speech:', text, '~', avatarText.substring(0, 30));
+            return false;
+        }
     }
     return true;
 }
@@ -1724,15 +1811,26 @@ function startVoiceCooldown() {
     const jitter = VOICE_ECHO_COOLDOWN_MS * (0.8 + Math.random() * 0.4);
     voiceCooldownTimer = setTimeout(() => {
         voiceCooldownTimer = null;
-        if (voiceMode === 'free' && voiceEnabled && !voiceWaitingForReply) { _restartFreeListening(); }
+        if (voiceMode === 'free' && voiceEnabled && !voiceWaitingForReply) {
+            _restartFreeListening();
+        }
     }, jitter);
     showVoiceStatus(true, '🔇', '冷却中...');
 }
 
 function _restartFreeListening() {
     if (!voiceEnabled || voiceWaitingForReply) return;
+
+    // If already capturing, no action needed
     if (localASR.captureActive) return;
-    if (_avatarSpeaking) { console.log('[Voice] blocked: avatar still speaking'); setTimeout(() => _restartFreeListening(), 1000); return; }
+
+    // 数字人正在说话，不重启 ASR
+    if (_avatarSpeaking) {
+        console.log('[Voice] blocked: avatar still speaking');
+        setTimeout(() => _restartFreeListening(), 1000);
+        return;
+    }
+    // 数字人刚说完不到 2 秒，等待回声消散
     const sinceSpeak = Date.now() - _avatarSpeakEndTime;
     if (_avatarSpeakEndTime > 0 && sinceSpeak < VOICE_ECHO_COOLDOWN_MS) {
         const remain = VOICE_ECHO_COOLDOWN_MS - sinceSpeak;
@@ -1740,11 +1838,15 @@ function _restartFreeListening() {
         setTimeout(() => _restartFreeListening(), remain);
         return;
     }
+
+    // If connection is still alive, just start capture (which sends is_speaking:true)
     if (localASR.ready && localASR.ws && localASR.ws.readyState === WebSocket.OPEN) {
         showVoiceStatus(true, '🎤', '聆听中...');
         startCapture();
         return;
     }
+
+    // Connection lost — full warmup needed
     showVoiceStatus(true, '🎤', '聆听中...（重新连接）');
     warmupLocalASR('free', () => {
         if (voiceMode === 'free' && voiceEnabled && !voiceWaitingForReply) startCapture();
@@ -1753,24 +1855,32 @@ function _restartFreeListening() {
 
 let _silenceRestartTimer = null;
 function _restartAfterSilence() {
+    // Restart listening after an empty/noise ASR result.
+    // Debounced to prevent VAD→ASR→empty→restart infinite loops.
     if (!voiceEnabled || voiceMode !== 'free' || voiceWaitingForReply) return;
-    if (_silenceRestartTimer) return;
+    if (_silenceRestartTimer) return; // Already pending
     _silenceRestartTimer = setTimeout(() => {
         _silenceRestartTimer = null;
-        if (voiceEnabled && voiceMode === 'free' && !voiceWaitingForReply) { _restartFreeListening(); }
+        if (voiceEnabled && voiceMode === 'free' && !voiceWaitingForReply) {
+            _restartFreeListening();
+        }
     }, 500);
 }
 
 function sendVoiceText(text, interrupt) {
-    if (!text || !sessionid) { console.warn('[Voice] sendVoiceText blocked:', { text: !!text, sessionid }); return; }
+    if (!text || !sessionid) {
+        console.warn('[Voice] sendVoiceText blocked:', { text: !!text, sessionid });
+        return;
+    }
     voiceWaitingForReply = true;
     voiceLastSentText = text;
-    voiceLastFinalText = text;
+    voiceLastFinalText = text;  // 标记为已处理，防止重复
     console.log('[Voice] sendVoiceText:', text.substring(0, 50));
     showVoiceStatus(true, '⏳', '处理中...');
     appendVoiceChatLog('user', text);
     showVoiceTranscript('', false);
 
+    // Start total timeout — if reply never comes, recover
     if (voiceWaitingTimeout) clearTimeout(voiceWaitingTimeout);
     voiceWaitingTimeout = setTimeout(() => {
         if (voiceWaitingForReply) {
@@ -1820,27 +1930,43 @@ function pollSpeakingEnd() {
     let avatarEverSpoke = false;
 
     voicePollTimer = setInterval(() => {
-        if (!voiceEnabled || !sessionid) { _clearVoiceWaiting(); return; }
+        if (!voiceEnabled || !sessionid) {
+            _clearVoiceWaiting();
+            return;
+        }
         fetch('/is_speaking', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ sessionid: String(sessionid) }),
         }).then(r => r.json()).then(d => {
+            // Handle both old (boolean) and new (object) response format
             const speaking = typeof d.data === 'boolean' ? d.data : (d.data && d.data.speaking);
             const llmPending = d.data && typeof d.data === 'object' && d.data.llm_pending;
 
-            if (d.data && d.data.recent_texts) { _avatarRecentTexts = d.data.recent_texts; }
+            // 更新数字人最近说的话（用于回声检测）
+            if (d.data && d.data.recent_texts) {
+                _avatarRecentTexts = d.data.recent_texts;
+            }
 
-            if (speaking) { avatarEverSpoke = true; _avatarSpeaking = true; }
+            if (speaking) {
+                avatarEverSpoke = true;
+                _avatarSpeaking = true;
+            }
 
             if (!speaking) {
-                if (_avatarSpeaking) { _avatarSpeaking = false; _avatarSpeakEndTime = Date.now(); }
+                if (_avatarSpeaking) {
+                    _avatarSpeaking = false;
+                    _avatarSpeakEndTime = Date.now();
+                }
+
                 if (avatarEverSpoke) {
+                    // Avatar finished speaking — normal end
                     _clearVoiceWaiting();
                     voiceRestartCount = 0;
                     appendVoiceChatLog('avatar', '(回复完成)');
                     if (voiceMode === 'free' && voiceEnabled) startVoiceCooldown();
                 } else if (!llmPending && Date.now() - pollStartTime > VOICE_WAITING_START_MS) {
+                    // LLM finished but avatar never spoke — error
                     console.warn('[Voice] LLM done but avatar never spoke');
                     _clearVoiceWaiting();
                     appendVoiceChatLog('avatar', '(未收到回复)');
@@ -1889,13 +2015,14 @@ function stopVoiceMode() {
     showVoiceStatus(false);
 }
 
+// Override stop() to also stop voice mode
 const _origStop = stop;
 stop = function() {
     try { if (voiceMode !== 'off') resetVoiceMode(); } catch(e) { console.error('voice cleanup error:', e); }
     _origStop();
 };
 
-// ═══════════════ Fullscreen ═══════════════════════════════════
+// ─── Fullscreen Side Panel ────────────────────────────────────
 const _wrapper = document.getElementById('videoFullscreenWrapper');
 let _isFullscreen = false;
 
@@ -1916,35 +2043,23 @@ function onFullscreenChange() {
     const fsEl = document.fullscreenElement || document.webkitFullscreenElement;
     _isFullscreen = (fsEl === _wrapper);
     if (_isFullscreen) {
-        try {
-            const fsVoiceMode = document.getElementById('fsVoiceMode');
-            const voiceModeEl = document.getElementById('voiceMode');
-            if (fsVoiceMode && voiceModeEl) fsVoiceMode.value = voiceModeEl.value;
-            const fsPtt = document.getElementById('fsPttContainer');
-            if (fsPtt && voiceModeEl) { fsPtt.style.display = (voiceModeEl.value === 'ptt') ? 'block' : 'none'; }
-            const fsTxtType = document.getElementById('fsTxtType');
-            const txtTypeEl = document.getElementById('txtType');
-            if (fsTxtType && txtTypeEl) fsTxtType.value = txtTypeEl.value;
-            const fsTxtInt = document.getElementById('fsTxtInterrupt');
-            const txtIntEl = document.getElementById('txtInterrupt');
-            if (fsTxtInt && txtIntEl) fsTxtInt.checked = txtIntEl.checked;
-            const fsTtsModel = document.getElementById('fsTtsModel');
-            const ttsModelEl = document.getElementById('ttsModel');
-            if (fsTtsModel && ttsModelEl) fsTtsModel.value = ttsModelEl.value;
-            const fsTtsVoice = document.getElementById('fsTtsVoice');
-            const ttsVoiceEl = document.getElementById('ttsVoice');
-            if (fsTtsVoice && ttsVoiceEl) fsTtsVoice.value = ttsVoiceEl.value;
-            const fsLog = document.getElementById('fsVoiceChatLog');
-            const mainLog = document.getElementById('voiceChatLog');
-            if (fsLog && mainLog) { fsLog.innerHTML = mainLog.innerHTML; fsLog.scrollTop = fsLog.scrollHeight; }
-        } catch (e) { console.warn('[FullscreenSync] sync failed:', e); }
-        _wrapper.classList.add('fs-panel-open');
-        const toggleBtn = document.getElementById('fsPanelToggle');
-        if (toggleBtn) toggleBtn.classList.add('active');
+        // Sync state into side panel (ready for when user opens it)
+        document.getElementById('fsVoiceMode').value = document.getElementById('voiceMode').value;
+        document.getElementById('fsPttContainer').style.display =
+            (document.getElementById('voiceMode').value === 'ptt') ? 'block' : 'none';
+        document.getElementById('fsTxtType').value = document.getElementById('txtType').value;
+        document.getElementById('fsTxtInterrupt').checked = document.getElementById('txtInterrupt').checked;
+        document.getElementById('fsTtsModel').value = document.getElementById('ttsModel').value;
+        document.getElementById('fsTtsVoice').value = document.getElementById('ttsVoice').value;
+        const fsLog = document.getElementById('fsVoiceChatLog');
+        fsLog.innerHTML = document.getElementById('voiceChatLog').innerHTML;
+        fsLog.scrollTop = fsLog.scrollHeight;
+        // Panel starts closed
+        _wrapper.classList.remove('fs-panel-open');
+        document.getElementById('fsPanelToggle').classList.remove('active');
     } else {
         _wrapper.classList.remove('fs-panel-open');
-        const toggleBtn = document.getElementById('fsPanelToggle');
-        if (toggleBtn) toggleBtn.classList.remove('active');
+        document.getElementById('fsPanelToggle').classList.remove('active');
     }
 }
 
@@ -1953,9 +2068,11 @@ function toggleFsPanel() {
     document.getElementById('fsPanelToggle').classList.toggle('active', open);
 }
 
+// Send text from fullscreen side panel
 function sendFsText() {
     const fsInput = document.getElementById('fsTxtMessage');
     if (!fsInput.value.trim()) return;
+    // Sync to main panel
     document.getElementById('txtMessage').value = fsInput.value;
     document.getElementById('txtType').value = document.getElementById('fsTxtType').value;
     document.getElementById('txtInterrupt').checked = document.getElementById('fsTxtInterrupt').checked;
@@ -1965,6 +2082,7 @@ function sendFsText() {
     fsInput.value = '';
 }
 
+// Mirror voice chat log and status to fullscreen panel
 const _origAppendVoiceChatLog = appendVoiceChatLog;
 appendVoiceChatLog = function(role, text) {
     _origAppendVoiceChatLog(role, text);
@@ -2004,269 +2122,210 @@ showVoiceTranscript = function(text, interim) {
     }
 };
 
-// ═══════════════ WebRTC Loading Overlay ══════════════════════
-let _webrtcLoaded = false;
 
-function setWebRTCStep(step, title, subtext, icon) {
-    if (_webrtcLoaded && step < 4) return;
-    const overlay = document.getElementById('videoLoadingOverlay');
-    if (!overlay) return;
-    overlay.style.display = 'flex';
-    overlay.style.opacity = '1';
-    overlay.style.visibility = 'visible';
+// ═══════════════ Chat Panel (new UI) ═══════════════════════════════
 
-    if (title) document.getElementById('webrtcStepTitle').innerHTML = title;
-    if (subtext) document.getElementById('webrtcStepSubtext').textContent = subtext;
-    if (icon) document.getElementById('loadingIcon').className = 'bi ' + icon;
-
-    for (let i = 1; i <= 4; i++) {
-        const dot = document.getElementById('cdot' + i);
-        if (!dot) continue;
-        dot.classList.remove('active', 'done');
-        if (i < step) dot.classList.add('done');
-        else if (i === step) dot.classList.add('active');
-    }
+function syncChatToolbarLabels(){
+  var a=document.getElementById('chatTxtTypeLabel'),b=document.getElementById('chatTtsLabel'),
+      c=document.getElementById('fsChatTxtTypeLabel'),d=document.getElementById('fsChatTtsLabel'),
+      e=document.getElementById('txtType'),f=document.getElementById('ttsModel'),
+      g=e?.options[e.selectedIndex]?.text||'Echo',
+      h=(f?.options[f.selectedIndex]?.text||'').replace(' ✅','');
+  if(a&&e)a.textContent=g;if(c)c.textContent=g;
+  if(b&&f)b.textContent=h;if(d)d.textContent=h;
+  var i=document.getElementById('chatModeLabel');if(i)i.textContent=g;
+  var j=document.getElementById('fsChatModeLabel');if(j)j.textContent=g;
 }
-
-function hideWebRTCStep() {
-    _webrtcLoaded = true;
-    const overlay = document.getElementById('videoLoadingOverlay');
-    if (!overlay) return;
-    setWebRTCStep(4, '数字人连线就绪！', '正在呈现画面...', 'bi-check-lg');
-    setTimeout(() => {
-        overlay.style.opacity = '0';
-        setTimeout(() => { overlay.style.display = 'none'; overlay.style.visibility = 'hidden'; }, 300);
-    }, 200);
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-    const v = document.getElementById('video');
-    if (v) {
-        v.addEventListener('playing', hideWebRTCStep);
-        v.addEventListener('timeupdate', () => { if (v.currentTime > 0.1 && !_webrtcLoaded) hideWebRTCStep(); });
-    }
+document.addEventListener('DOMContentLoaded',function(){
+  syncChatToolbarLabels();
+  ['ttsModel','ttsVoice','txtType'].forEach(function(k){
+    var l=document.getElementById(k);if(l)l.addEventListener('change',syncChatToolbarLabels);
+  });
 });
 
-// ═══════════════ Chat Toolbar Sync ═══════════════════════════
-function syncChatToolbarLabels() {
-    const typeLabel = document.getElementById('chatTxtTypeLabel');
-    const ttsLabel = document.getElementById('chatTtsLabel');
-    const fsTypeLabel = document.getElementById('fsChatTxtTypeLabel');
-    const fsTtsLabel = document.getElementById('fsChatTtsLabel');
-    const txtTypeSel = document.getElementById('txtType');
-    const ttsModelSel = document.getElementById('ttsModel');
-    const typeText = txtTypeSel?.options[txtTypeSel.selectedIndex]?.text || 'Echo';
-    const ttsText = (ttsModelSel?.options[ttsModelSel.selectedIndex]?.text || '').replace(' ✅','');
-    if (typeLabel && txtTypeSel) typeLabel.textContent = typeText;
-    if (fsTypeLabel) fsTypeLabel.textContent = typeText;
-    if (ttsLabel && ttsModelSel) ttsLabel.textContent = ttsText;
-    if (fsTtsLabel) fsTtsLabel.textContent = ttsText;
-
-    // Also sync mode label in header
-    const modeLabel = document.getElementById('chatModeLabel');
-    if (modeLabel) modeLabel.textContent = typeText;
-    const fsModeLabel = document.getElementById('fsChatModeLabel');
-    if (fsModeLabel) fsModeLabel.textContent = typeText;
+function sendChatText(){
+  var a=document.getElementById('chatInput'),b=a.value.trim();
+  if(!b)return;if(!sessionid){showChatStatus('⚠️','请先连接 WebRTC');return}
+  appendChatBubble('user',b);a.value='';autoResizeChatInput(a);
+  var c=document.getElementById('txtType').value,d=document.getElementById('ttsModel').value,
+      e=document.getElementById('ttsVoice').value;
+  showChatStatus('⏳','发送中...');
+  fetch('/human',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({text:b,type:c,interrupt:true,sessionid:String(sessionid),
+    tts:{model:d,ref_file:e}})}).then(function(f){return f.json()}).then(function(f){
+    if(f.code!==0){showChatStatus('⚠️','发送失败');setTimeout(function(){hideChatStatus()},2000);return}
+    showChatStatus('🔊','数字人回复中...');pollChatSpeakEnd()}).catch(function(){
+    showChatStatus('⚠️','网络错误');setTimeout(function(){hideChatStatus()},2000)})
+}
+var _chatPollTimer=null;
+function pollChatSpeakEnd(){
+  if(_chatPollTimer)clearInterval(_chatPollTimer);var a=false,b=Date.now();
+  _chatPollTimer=setInterval(function(){
+    if(!sessionid){clearInterval(_chatPollTimer);return}
+    fetch('/is_speaking',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({sessionid:String(sessionid)})}).then(function(c){return c.json()})
+    .then(function(c){
+      var d=typeof c.data==='boolean'?c.data:(c.data&&c.data.speaking),
+          e=c.data&&typeof c.data==='object'&&c.data.llm_pending;
+      if(c.data&&c.data.recent_texts)_avatarRecentTexts=c.data.recent_texts;
+      if(d){a=true;_avatarSpeaking=true}
+      if(!d){
+        if(_avatarSpeaking){_avatarSpeaking=false;_avatarSpeakEndTime=Date.now()}
+        if(a){clearInterval(_chatPollTimer);hideChatStatus();appendChatBubble('avatar','✅ 回复完成')}
+        else if(!e&&Date.now()-b>15000){clearInterval(_chatPollTimer);hideChatStatus();appendChatBubble('avatar','⚠️ 未收到回复')}
+      }
+    }).catch(function(){})
+  },500)
 }
 
-document.addEventListener('DOMContentLoaded', function() {
-    syncChatToolbarLabels();
-    ['ttsModel','ttsVoice','txtType'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.addEventListener('change', syncChatToolbarLabels);
-    });
-});
-
-// ═══════════════ Chat UI ════════════════════════════════════
-function sendChatText() {
-    const input = document.getElementById('chatInput');
-    const text = input.value.trim();
-    if (!text) return;
-    if (!sessionid) { showChatStatus('⚠️', '请先连接 WebRTC'); return; }
-    appendChatBubble('user', text);
-    input.value = ''; autoResizeChatInput(input);
-    const type = document.getElementById('txtType').value;
-    const ttsModel = document.getElementById('ttsModel').value;
-    const ttsVoice = document.getElementById('ttsVoice').value;
-    showChatStatus('⏳', '发送中...');
-    fetch('/human', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text, type, interrupt: true, sessionid: String(sessionid),
-            tts: { model: ttsModel, ref_file: ttsVoice } }),
-    }).then(r => r.json()).then(d => {
-        if (d.code !== 0) { showChatStatus('⚠️', '发送失败'); setTimeout(() => hideChatStatus(), 2000); return; }
-        showChatStatus('🔊', '数字人回复中...');
-        pollChatSpeakEnd();
-    }).catch(() => { showChatStatus('⚠️', '网络错误'); setTimeout(() => hideChatStatus(), 2000); });
+function _appendBubbleTo(a,b,c,d){
+  if(!a)return;if(b==='system'){
+    var e=document.createElement('div');e.className='bubble-system-row';
+    var f=document.createElement('span');f.className='bubble-system';f.textContent=c;
+    e.appendChild(f);a.appendChild(e);a.scrollTop=a.scrollHeight;return
+  }
+  var g=document.createElement('div');g.className='bubble-row '+b;
+  if(d&&d.interim)g.dataset.interim='1';
+  var h=document.createElement('div');
+  h.className=b==='user'?'bubble-user-icon':'bubble-avatar-icon';
+  h.textContent=b==='user'?'🧑':'🤖';
+  var i=document.createElement('div');i.className='bubble-content';
+  var j=document.createElement('div');
+  j.className='bubble'+(d&&d.interim?' bubble-interim':'');
+  j.textContent=c;
+  var k=document.createElement('div');k.className='bubble-timestamp';
+  k.textContent=new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'});
+  i.appendChild(j);i.appendChild(k);g.appendChild(h);g.appendChild(i);
+  a.appendChild(g);a.scrollTop=a.scrollHeight;return g
+}
+function appendChatBubble(a,b,c){
+  c=c||{};
+  _appendBubbleTo(document.getElementById('chatMessages'),a,b,c);
+  _appendBubbleTo(document.getElementById('fsChatMessages'),a,b,c)
+}
+function escapeHtml(a){return a.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function showChatStatus(a,b){
+  var c=document.getElementById('chatStatusRow'),d=document.getElementById('chatStatusPill');
+  if(c&&d){d.innerHTML='<span>'+a+'</span>'+escapeHtml(b);c.style.display='flex'}
+  var e=document.getElementById('fsChatStatusRow'),f=document.getElementById('fsChatStatusPill');
+  if(e&&f){f.innerHTML='<span>'+a+'</span>'+escapeHtml(b);e.style.display='flex'}
+}
+function hideChatStatus(){
+  var a=document.getElementById('chatStatusRow');if(a)a.style.display='none';
+  var b=document.getElementById('fsChatStatusRow');if(b)b.style.display='none'
+}
+function autoResizeChatInput(a){a.style.height='auto';a.style.height=Math.min(a.scrollHeight,90)+'px'}
+function onChatInputKeydown(a){if(a.key==='Enter'&&!a.shiftKey){a.preventDefault();sendChatText()}}
+function onFsChatInputKeydown(a){if(a.key==='Enter'&&!a.shiftKey){a.preventDefault();sendFsChatText()}}
+function sendFsChatText(){
+  var a=document.getElementById('fsChatInput'),b=a.value.trim();
+  if(!b)return;var c=document.getElementById('chatInput');
+  if(c){c.value=b;autoResizeChatInput(c)}a.value='';autoResizeChatInput(a);sendChatText()
 }
 
-let _chatPollTimer = null;
-function pollChatSpeakEnd() {
-    if (_chatPollTimer) clearInterval(_chatPollTimer);
-    let avatarEverSpoke = false;
-    const startTime = Date.now();
-    _chatPollTimer = setInterval(() => {
-        if (!sessionid) { clearInterval(_chatPollTimer); return; }
-        fetch('/is_speaking', { method: 'POST', headers: {'Content-Type':'application/json'},
-            body: JSON.stringify({ sessionid: String(sessionid) }) })
-        .then(r => r.json()).then(d => {
-            const speaking = typeof d.data === 'boolean' ? d.data : (d.data && d.data.speaking);
-            const llmPending = d.data && typeof d.data === 'object' && d.data.llm_pending;
-            if (d.data && d.data.recent_texts) _avatarRecentTexts = d.data.recent_texts;
-            if (speaking) { avatarEverSpoke = true; _avatarSpeaking = true; }
-            if (!speaking) {
-                if (_avatarSpeaking) { _avatarSpeaking = false; _avatarSpeakEndTime = Date.now(); }
-                if (avatarEverSpoke) { clearInterval(_chatPollTimer); hideChatStatus(); appendChatBubble('avatar', '✅ 回复完成'); }
-                else if (!llmPending && Date.now() - startTime > 15000) { clearInterval(_chatPollTimer); hideChatStatus(); appendChatBubble('avatar', '⚠️ 未收到回复'); }
-            }
-        }).catch(() => {});
-    }, 500);
+// ═══════════════ Mic Buttons (new UI) ═══════════════════════════════
+function toggleFreeMode(){
+  var a=document.getElementById('voiceMode');
+  if(!sessionid){alert('请先连接 WebRTC');return}
+  if(a.value==='free'){a.value='off';onVoiceModeChange()}
+  else{
+    if(a.value!=='off'){a.value='off';onVoiceModeChange()}
+    _avatarRecentTexts=[];voiceLastFinalText='';voiceLastSentText='';
+    a.value='free';onVoiceModeChange();showChatStatus('🎙️','聆听中...')
+  }
+  syncMicButtons()
+}
+function syncMicButtons(){
+  var a=document.getElementById('voiceMode').value==='free',
+      b=document.getElementById('btnFree');
+  if(b)b.classList.toggle('free-active',a);
+  var c=document.getElementById('fsBtnFree');if(c)c.classList.toggle('free-active',a);
 }
 
-function _appendBubbleTo(container, role, text, opts) {
-    if (!container) return;
-    if (role === 'system') {
-        const row = document.createElement('div'); row.className = 'bubble-system-row';
-        const sp = document.createElement('span'); sp.className = 'bubble-system'; sp.textContent = text;
-        row.appendChild(sp); container.appendChild(row); container.scrollTop = container.scrollHeight; return;
+// ═══════════════ Bridge: voice → chat bubbles (non-override) ═══════=
+(function(){
+  var polling = false;
+  function voiceToChatBridge(){
+    // Sync voice status text to chat status
+    var vsBar = document.getElementById('voiceStatusBar');
+    if(vsBar && vsBar.style.display !== 'none'){
+      var icon = document.getElementById('voiceStatusIcon').textContent;
+      var text = document.getElementById('voiceStatusText').textContent;
+      showChatStatus(icon, text);
     }
-    const row = document.createElement('div');
-    row.className = 'bubble-row ' + role;
-    if (opts.interim) row.dataset.interim = '1';
-    const icon = document.createElement('div');
-    icon.className = role === 'user' ? 'bubble-user-icon' : 'bubble-avatar-icon';
-    icon.textContent = role === 'user' ? '🧑' : '🤖';
-    const wrap = document.createElement('div');
-    wrap.className = 'bubble-content';
-    const bubble = document.createElement('div');
-    bubble.className = 'bubble' + (opts.interim ? ' bubble-interim' : '');
-    bubble.textContent = text;
-    const ts = document.createElement('div');
-    ts.className = 'bubble-timestamp';
-    ts.textContent = new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
-    wrap.appendChild(bubble); wrap.appendChild(ts);
-    row.appendChild(icon); row.appendChild(wrap);
-    container.appendChild(row); container.scrollTop = container.scrollHeight;
-    return row;
-}
-
-function appendChatBubble(role, text, opts) {
-    opts = opts || {};
-    _appendBubbleTo(document.getElementById('chatMessages'), role, text, opts);
-    _appendBubbleTo(document.getElementById('fsChatMessages'), role, text, opts);
-}
-
-function escapeHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-
-function showChatStatus(icon, text) {
-    const row = document.getElementById('chatStatusRow');
-    const pill = document.getElementById('chatStatusPill');
-    if (row && pill) { pill.innerHTML = '<span>' + icon + '</span>' + escapeHtml(text); row.style.display = 'flex'; }
-    const fsRow = document.getElementById('fsChatStatusRow');
-    const fsPill = document.getElementById('fsChatStatusPill');
-    if (fsRow && fsPill) { fsPill.innerHTML = '<span>' + icon + '</span>' + escapeHtml(text); fsRow.style.display = 'flex'; }
-}
-
-function hideChatStatus() {
-    const row = document.getElementById('chatStatusRow');
-    if (row) row.style.display = 'none';
-    const fsRow = document.getElementById('fsChatStatusRow');
-    if (fsRow) fsRow.style.display = 'none';
-}
-
-function autoResizeChatInput(el) {
-    el.style.height = 'auto';
-    el.style.height = Math.min(el.scrollHeight, 90) + 'px';
-}
-
-function onChatInputKeydown(e) {
-    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChatText(); }
-}
-
-function onFsChatInputKeydown(e) {
-    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendFsChatText(); }
-}
-
-function sendFsChatText() {
-    const input = document.getElementById('fsChatInput');
-    const text = input.value.trim();
-    if (!text) return;
-    const mainInput = document.getElementById('chatInput');
-    if (mainInput) { mainInput.value = text; autoResizeChatInput(mainInput); }
-    input.value = ''; autoResizeChatInput(input);
-    sendChatText();
-}
-
-// ═══════════════ Mic Buttons ═════════════════════════════════
-function toggleFreeMode() {
-    const vmSel = document.getElementById('voiceMode');
-    if (!sessionid) { alert('请先连接 WebRTC'); return; }
-    if (vmSel.value === 'free') {
-        vmSel.value = 'off'; onVoiceModeChange();
+    // Sync voice transcript to chat input
+    var vt = document.getElementById('voiceTranscript');
+    var ci = document.getElementById('chatInput');
+    if(vt && ci){
+      if(vt.style.display !== 'none' && vt.textContent){
+        ci.placeholder = '🎤 ' + vt.textContent + '...';
+      }
+    }
+    // Sync voice chat log to chat bubbles
+    var vLog = document.getElementById('voiceChatLog');
+    if(vLog && polling){
+      var items = vLog.querySelectorAll('.msg-user,.msg-avatar');
+      var last = items[items.length-1];
+      if(last && !last.dataset.synced){
+        var role = last.classList.contains('msg-user')?'user':'avatar';
+        appendChatBubble(role, last.textContent);
+        last.dataset.synced = '1';
+      }
+    }
+  }
+  window._startVoiceBridge = function(){
+    if(polling) return;
+    polling = true;
+    setInterval(voiceToChatBridge, 300);
+  };
+  window._stopVoiceBridge = function(){ polling = false; };
+  // Auto-start bridge when voice mode activates
+  var orig_onVoiceModeChange = onVoiceModeChange;
+  onVoiceModeChange = function(){
+    orig_onVoiceModeChange();
+    if(document.getElementById('voiceMode').value !== 'off'){
+      window._startVoiceBridge();
     } else {
-        if (vmSel.value !== 'off') { vmSel.value = 'off'; onVoiceModeChange(); }
-        _avatarRecentTexts = [];
-        voiceLastFinalText = '';
-        voiceLastSentText = '';
-        vmSel.value = 'free'; onVoiceModeChange();
-        showChatStatus('🎙️', '聆听中...');
+      window._stopVoiceBridge();
+      hideChatStatus();
     }
-    syncMicButtons();
+  };
+})();
+
+// ═══════════════ Settings Drawer + Loading ══════════════════
+function toggleSettingsDrawer(){
+  var a=document.getElementById('settingsDrawer'),b=document.getElementById('btnSettingsToggle');
+  if(!a||!b)return;
+  var c=a.classList.toggle('open');b.classList.toggle('active',c)
 }
-
-function syncMicButtons() {
-    const isFree = document.getElementById('voiceMode').value === 'free';
-    const freeBtn = document.getElementById('btnFree');
-    if (freeBtn) freeBtn.classList.toggle('free-active', isFree);
-    const fsFreeBtn = document.getElementById('fsBtnFree');
-    if (fsFreeBtn) fsFreeBtn.classList.toggle('free-active', isFree);
-    const pttBtn = document.getElementById('btnPtt');
-    if (pttBtn) pttBtn.classList.remove('ptt-hold');
-    const fsPttBtn = document.getElementById('fsBtnPtt');
-    if (fsPttBtn) fsPttBtn.classList.remove('ptt-hold');
+function toggleConfigPanel(){toggleSettingsDrawer()}
+var _webrtcLoaded=false;
+function setWebRTCStep(a,b,c,d){
+  if(_webrtcLoaded&&a<4)return;var e=document.getElementById('videoLoadingOverlay');
+  if(!e)return;e.style.display='flex';e.style.opacity='1';e.style.visibility='visible';
+  if(b)document.getElementById('webrtcStepTitle').innerHTML=b;
+  if(c)document.getElementById('webrtcStepSubtext').textContent=c;
+  if(d)document.getElementById('loadingIcon').className='bi '+d;
+  for(var f=1;f<=4;f++){var g=document.getElementById('cdot'+f);
+    if(!g)continue;g.classList.remove('active','done');
+    if(f<a)g.classList.add('done');else if(f===a)g.classList.add('active')
+  }
 }
-
-// ═══════════════ Bridge: voice → chat bubbles ═══════════════
-const _orig2ShowVoiceStatus = showVoiceStatus;
-showVoiceStatus = function(show, icon, text) {
-    _orig2ShowVoiceStatus(show, icon, text);
-    if (show) { showChatStatus(icon, text); } else { hideChatStatus(); }
-    syncMicButtons();
-    const pttBtn = document.getElementById('btnPtt');
-    if (pttBtn) {
-        if (show && icon === '🎤' && document.getElementById('voiceMode').value === 'ptt') {
-            pttBtn.classList.add('ptt-hold');
-        } else if (!show || document.getElementById('voiceMode').value !== 'ptt') {
-            pttBtn.classList.remove('ptt-hold');
-        }
-    }
-};
-
-const _orig2ShowVoiceTranscript = showVoiceTranscript;
-showVoiceTranscript = function(text, interim) {
-    _orig2ShowVoiceTranscript(text, interim);
-    const chatInput = document.getElementById('chatInput');
-    if (!chatInput) return;
-    if (interim && text) {
-        chatInput.placeholder = '🎤 ' + text + '...';
-    } else {
-        chatInput.placeholder = '输入文本发送 / 按住🎤说话 / 点击🎙️自由对话…';
-        if (!interim && text) { chatInput.value = text; autoResizeChatInput(chatInput); }
-        else if (!interim && !text && chatInput.value) { chatInput.value = ''; autoResizeChatInput(chatInput); }
-    }
-};
-
-const _orig2AppendVoiceChatLog = appendVoiceChatLog;
-appendVoiceChatLog = function(role, text) {
-    _orig2AppendVoiceChatLog(role, text);
-    appendChatBubble(role === 'user' ? 'user' : 'avatar', text);
-};
-
-// ── Initialize ────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('btnStart').style.display = 'inline-flex';
+function hideWebRTCStep(){
+  _webrtcLoaded=true;var a=document.getElementById('videoLoadingOverlay');if(!a)return;
+  setWebRTCStep(4,'数字人连线就绪！','正在呈现画面...','bi-check-lg');
+  setTimeout(function(){a.style.opacity='0';
+    setTimeout(function(){a.style.display='none';a.style.visibility='hidden'},300)},200)
+}
+document.addEventListener('DOMContentLoaded',function(){
+  var a=document.getElementById('video');
+  if(a){a.addEventListener('playing',hideWebRTCStep);
+    a.addEventListener('timeupdate',function(){if(a.currentTime>0.1&&!_webrtcLoaded)hideWebRTCStep()})}
 });
+document.addEventListener('DOMContentLoaded',function(){
+  var a=document.getElementById('btnStart');if(a)a.style.display='inline-flex'
+});
+
 </script>
 
 </body>

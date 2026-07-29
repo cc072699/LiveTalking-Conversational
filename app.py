@@ -22,6 +22,7 @@ import re
 import os
 import numpy as np
 from threading import Thread,Event
+from concurrent.futures import ThreadPoolExecutor
 #import multiprocessing
 import torch.multiprocessing as mp
 
@@ -263,6 +264,8 @@ def main():
     def run_server(runner):
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
+        # 限制默认线程池大小，避免 futex 忙等撑高 CPU
+        loop.set_default_executor(ThreadPoolExecutor(max_workers=3))
         loop.run_until_complete(runner.setup())
         if opt.ssl:
             cert = opt.ssl_cert or f'./ssl/cert.pem'
@@ -280,6 +283,24 @@ def main():
                 if k!=0:
                     push_url = opt.push_url+str(k)
                 loop.run_until_complete(rtc_manager.handle_rtcpush(push_url, str(k)))
+        
+        # 定期内存回收：Python GC + glibc malloc_trim 归还 OS
+        import gc as _gc
+        async def _periodic_mem_cleanup():
+            while True:
+                await asyncio.sleep(45)
+                _gc.collect()
+                try:
+                    import ctypes as _ct
+                    _ct.CDLL('libc.so.6').malloc_trim(0)
+                except Exception:
+                    pass
+        
+        async def _delayed_start_mem_cleanup():
+            await asyncio.sleep(30)
+            asyncio.ensure_future(_periodic_mem_cleanup())
+        asyncio.ensure_future(_delayed_start_mem_cleanup())
+        
         loop.run_forever()    
     #Thread(target=run_server, args=(web.AppRunner(appasync),)).start()
     run_server(web.AppRunner(appasync))

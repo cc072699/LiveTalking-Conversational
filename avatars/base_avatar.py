@@ -559,6 +559,15 @@ class BaseAvatar:
                 last_speaking = current_speaking
         logger.info('baseavatar inference thread stop')
 
+    def _watermark_numpy(self):
+        """返回预渲染的水印 numpy 覆盖层（缓存复用，避免每帧 cv2.putText）"""
+        if self._watermark_text and not hasattr(self, '_watermark_cache'):
+            h, w = self._frame_h, self._frame_w
+            self._watermark_cache = np.zeros((h, w, 3), dtype=np.uint8)
+            cv2.putText(self._watermark_cache, self._watermark_text, (10, 20),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.3, (128, 128, 128), 1)
+        return getattr(self, '_watermark_cache', None)
+
     def process_frames(self,quit_event):
         enable_transition = False  # 设置为False禁用过渡效果，True启用
 
@@ -650,8 +659,12 @@ class BaseAvatar:
                     elif ud.get("status") == "end":
                         self._subtitle_reveal_ended = True
 
-            if self._watermark_text:
-                cv2.putText(combine_frame, self._watermark_text, (10, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.3, (128,128,128), 1)
+            # 水印叠加（静音帧已预渲染，只对说话帧 paste_back 新帧叠加）
+            if self._watermark_text and current_speaking:
+                wm = self._watermark_numpy()
+                if wm is not None:
+                    mask = (wm > 0).any(axis=2)
+                    combine_frame[mask] = wm[mask]
 
             # ── 叠加字幕（滑动窗口：只显示当前行 + 预加载行）──
             if self._subtitle_enabled and self._current_subtitle:
