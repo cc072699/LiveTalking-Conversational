@@ -20,7 +20,7 @@
             --success: #00e5a0;
             --danger: #ff4d6d;
             --text: #e4ecf7;
-            --text-dim: #5b7a9a;
+            --text-dim: #8a9fb8;
             --border: rgba(0, 212, 255, 0.12);
             --border-glow: rgba(0, 212, 255, 0.22);
             --radius: 12px;
@@ -154,9 +154,10 @@
         }
         #settingsDrawer.open .drawer-inner { padding: 16px 20px; }
         #settingsDrawer .section-title {
-            font-family: 'Rajdhani', sans-serif; font-weight: 600; font-size: 0.72rem;
-            color: var(--accent); text-transform: uppercase; letter-spacing: 1px;
-            margin-bottom: 8px; display: flex; align-items: center; gap: 6px;
+            font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 0.78rem;
+            color: #5dd6ff; text-transform: uppercase; letter-spacing: 1.2px;
+            margin-bottom: 10px; display: flex; align-items: center; gap: 8px;
+            padding: 4px 0;
         }
         #settingsDrawer .section-title::after {
             content: ''; flex: 1; height: 1px;
@@ -170,10 +171,10 @@
             display: flex; flex-direction: column; gap: 4px; min-width: 140px; flex: 1;
         }
         #settingsDrawer .field label {
-            font-size: 0.68rem; color: var(--text-dim); letter-spacing: 0.3px;
-            font-weight: 500; white-space: nowrap; display: flex; align-items: center; gap: 5px;
+            font-size: 0.74rem; color: #b8c7d8; letter-spacing: 0.3px;
+            font-weight: 600; white-space: nowrap; display: flex; align-items: center; gap: 5px;
         }
-        #settingsDrawer .field label i { color: var(--accent); font-size: 0.7rem; opacity: 0.7; }
+        #settingsDrawer .field label i { color: var(--accent); font-size: 0.78rem; opacity: 1; filter: drop-shadow(0 0 4px var(--accent-glow)); }
 
         /* ── Dark Select / Input ────────────────────────────────────── */
         .dark-select, .dark-input {
@@ -190,9 +191,9 @@
             border-color: var(--accent);
             box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.06);
         }
-        .dark-select option { background: #0a1632; color: var(--text); }
-        .dark-input::placeholder { color: rgba(123, 150, 180, 0.4); }
-        .field-hint { font-size: 0.65rem; color: rgba(123,150,180,0.5); margin-top: 1px; }
+        .dark-select option { background: #0a1632; color: #e4ecf7; font-weight: 500; }
+        .dark-input::placeholder { color: rgba(180, 200, 220, 0.55); font-weight: 400; }
+        .field-hint { font-size: 0.7rem; color: rgba(150,175,200,0.75); margin-top: 1px; font-weight: 400; }
 
         /* ── Buttons ────────────────────────────────────────────────── */
         .btn-accent {
@@ -475,7 +476,7 @@
             padding: 2px 12px; animation: bubbleIn 0.18s ease;
         }
         .bubble-interim { opacity: 0.5; font-style: italic; }
-        .bubble-timestamp { font-size: 0.6rem; color: #526580; margin-top: 2px; text-align: right; }
+        .bubble-timestamp { font-size: 0.65rem; color: #7889a0; margin-top: 2px; text-align: right; font-weight: 400; }
         .bubble-row.avatar .bubble-timestamp { text-align: left; }
 
         .chat-status-row { display: flex; justify-content: center; min-height: 20px; padding: 0 12px; }
@@ -489,7 +490,7 @@
             padding: 4px 14px 2px; display: flex; gap: 8px; align-items: center;
             border-top: 1px solid rgba(0,212,255,0.06); flex-wrap: wrap;
         }
-        .chat-toolbar .tool-label { font-size: 0.7rem; color: #526580; }
+        .chat-toolbar .tool-label { font-size: 0.72rem; color: #97a8bd; font-weight: 500; }
         .chat-toolbar .tool-value {
             font-size: 0.72rem; color: var(--accent);
             padding: 1px 8px; background: rgba(0,212,255,0.06); border-radius: 8px;
