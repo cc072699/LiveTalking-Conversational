@@ -6,1142 +6,630 @@
     <title>五六零科技 · 数字人展览平台 | 560 TECH · Digital Human Platform</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
     <style>
-        /* ── Design System ──────────────────────────────────────────── */
+        /* ═══════════════ Design System ─────────────────────────────── */
         :root {
-            --bg-deep: #060d1a;
-            --bg-card: rgba(10, 22, 50, 0.75);
-            --bg-card-solid: #0a1632;
-            --accent-primary: #00d4ff;
-            --accent-secondary: #f0a500;
-            --accent-glow: rgba(0, 212, 255, 0.3);
-            --text-primary: #e8f4ff;
-            --text-muted: #6b8baa;
-            --border-glow: rgba(0, 212, 255, 0.25);
-            --danger: #ff4d6d;
+            --bg-deep: #080d1a;
+            --bg-surface: rgba(12, 22, 48, 0.85);
+            --bg-elevated: rgba(16, 30, 60, 0.9);
+            --accent: #00d4ff;
+            --accent-warm: #f0a500;
+            --accent-glow: rgba(0, 212, 255, 0.25);
             --success: #00e5a0;
-            --radius: 14px;
+            --danger: #ff4d6d;
+            --text: #e4ecf7;
+            --text-dim: #5b7a9a;
+            --border: rgba(0, 212, 255, 0.12);
+            --border-glow: rgba(0, 212, 255, 0.22);
+            --radius: 12px;
             --radius-sm: 8px;
+            --radius-xs: 5px;
+            --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+            --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+            --duration-normal: 250ms;
         }
 
-        * { box-sizing: border-box; }
-
-        html { scroll-behavior: smooth; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html { scroll-behavior: smooth; height: 100%; }
 
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
             background: var(--bg-deep);
-            color: var(--text-primary);
-            min-height: 100vh;
-            padding-bottom: 40px;
-            overflow-x: hidden;
+            color: var(--text);
+            height: 100vh;
+            overflow: hidden;
             position: relative;
+            -webkit-font-smoothing: antialiased;
         }
 
-        /* ── Animated Grid Background ───────────────────────────────── */
+        /* ── Ambient Background ─────────────────────────────────────── */
         body::before {
             content: '';
-            position: fixed;
-            inset: 0;
-            z-index: 0;
-            pointer-events: none;
-            background-image:
-                linear-gradient(rgba(0, 212, 255, 0.04) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(0, 212, 255, 0.04) 1px, transparent 1px);
-            background-size: 60px 60px;
+            position: fixed; inset: 0; z-index: 0; pointer-events: none;
+            background:
+                radial-gradient(ellipse 70% 60% at 30% 60%, rgba(0, 212, 255, 0.04) 0%, transparent 70%),
+                radial-gradient(ellipse 60% 50% at 75% 30%, rgba(240, 165, 0, 0.03) 0%, transparent 70%),
+                linear-gradient(rgba(0, 212, 255, 0.025) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 212, 255, 0.025) 1px, transparent 1px);
+            background-size: 100% 100%, 100% 100%, 64px 64px, 64px 64px;
         }
 
-        /* ── Scanline Overlay ───────────────────────────────────────── */
-        body::after {
-            content: '';
-            position: fixed;
-            inset: 0;
-            z-index: 1;
-            pointer-events: none;
-            background: repeating-linear-gradient(
-                0deg,
-                transparent,
-                transparent 2px,
-                rgba(0, 0, 0, 0.06) 2px,
-                rgba(0, 0, 0, 0.06) 4px
-            );
+        /* ── App Shell ───────────────────────────────────────────────── */
+        #app {
+            position: relative; z-index: 2;
+            display: flex; flex-direction: column;
+            height: 100vh; width: 100%;
         }
 
-        /* ── Ambient Glow Orbs ──────────────────────────────────────── */
-        .bg-glow {
-            position: fixed;
-            border-radius: 50%;
-            filter: blur(80px);
-            pointer-events: none;
-            z-index: 0;
-        }
-        .bg-glow-1 {
-            width: 600px; height: 600px;
-            background: rgba(0, 212, 255, 0.06);
-            top: -200px; right: -200px;
-            animation: glowFloat 20s ease-in-out infinite;
-        }
-        .bg-glow-2 {
-            width: 400px; height: 400px;
-            background: rgba(240, 165, 0, 0.04);
-            bottom: -100px; left: -100px;
-            animation: glowFloat 25s ease-in-out infinite reverse;
-        }
-        @keyframes glowFloat {
-            0%, 100% { transform: translate(0, 0) scale(1); }
-            33% { transform: translate(30px, -30px) scale(1.1); }
-            66% { transform: translate(-20px, 20px) scale(0.9); }
-        }
-
-        /* ── Navbar ─────────────────────────────────────────────────── */
-        .navbar {
-            background: linear-gradient(180deg, rgba(6, 13, 26, 0.98) 0%, rgba(6, 13, 26, 0.85) 100%);
-            border-bottom: 1px solid var(--border-glow);
+        /* ═══════════════ Top Bar ──────────────────────────────────── */
+        #topbar {
+            height: 48px;
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 20px;
+            background: rgba(8, 13, 26, 0.95);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
-            position: sticky;
-            top: 0;
-            z-index: 1050;
-            padding: 0;
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0; z-index: 100;
         }
-        .navbar .container-fluid {
-            padding: 10px 24px;
-        }
-        .navbar-brand {
-            font-family: 'Rajdhani', sans-serif;
-            font-weight: 700;
-            font-size: 1.4rem;
-            padding: 0;
-            display: flex;
-            align-items: center;
-            gap: 4px;
+        #topbar .brand {
+            display: flex; align-items: center; gap: 10px;
+            font-family: 'Rajdhani', sans-serif; font-weight: 700;
+            font-size: 1.15rem; letter-spacing: 0.5px;
             text-decoration: none;
         }
-        .brand-zh {
-            color: var(--accent-secondary);
-            letter-spacing: 1px;
-        }
-        .brand-en {
-            color: var(--accent-primary);
-            font-weight: 600;
-            font-size: 0.85rem;
-            opacity: 0.8;
-        }
-        .brand-sep {
-            color: rgba(255,255,255,0.15);
-            margin: 0 6px;
-        }
-        .brand-icon {
-            color: var(--accent-primary);
-            font-size: 1.6rem;
-            margin-right: 8px;
-            opacity: 0.9;
+        #topbar .brand i {
+            color: var(--accent); font-size: 1.3rem;
             filter: drop-shadow(0 0 6px var(--accent-glow));
         }
-        .nav-links {
-            display: flex;
-            align-items: center;
-            gap: 4px;
+        #topbar .brand .zh { color: var(--accent-warm); }
+        #topbar .brand .en {
+            color: var(--accent); font-size: 0.7rem; font-weight: 600;
+            opacity: 0.7; margin-left: 2px;
         }
-        .nav-links a {
-            color: var(--text-muted);
-            text-decoration: none;
-            font-size: 0.82rem;
-            font-weight: 500;
-            padding: 4px 12px;
-            border-radius: 6px;
-            transition: all 0.2s;
-            letter-spacing: 0.3px;
-        }
-        .nav-links a:hover {
-            color: var(--accent-primary);
-            background: rgba(0, 212, 255, 0.08);
-        }
-        .nav-links a.nav-danger:hover {
-            color: #ff4d4f;
-            background: rgba(255, 77, 79, 0.12);
-        }
-        .nav-links .nav-sep {
-            color: rgba(255,255,255,0.1);
-            font-size: 0.7rem;
-        }
-        .nav-right {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
+        #topbar .brand .sep { color: rgba(255,255,255,0.12); margin: 0 2px; font-weight: 400; }
 
-        /* ── Status Badge ───────────────────────────────────────────── */
-        .session-badge {
-            font-size: 0.72rem;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-weight: 600;
-            font-family: 'Rajdhani', sans-serif;
-            letter-spacing: 0.5px;
+        #topbar .right-group {
+            display: flex; align-items: center; gap: 14px;
+        }
+        #topbar .session-badge {
+            font-size: 0.7rem; padding: 4px 10px; border-radius: 20px;
+            font-weight: 600; font-family: 'Rajdhani', sans-serif; letter-spacing: 0.4px;
+            display: flex; align-items: center; gap: 6px;
             transition: all 0.3s;
         }
         .session-badge.connected {
-            background: rgba(0, 229, 160, 0.12);
-            color: var(--success);
-            border: 1px solid rgba(0, 229, 160, 0.3);
-            box-shadow: 0 0 12px rgba(0, 229, 160, 0.15);
+            background: rgba(0, 229, 160, 0.1);
+            color: var(--success); border: 1px solid rgba(0, 229, 160, 0.25);
+            box-shadow: 0 0 10px rgba(0, 229, 160, 0.1);
         }
         .session-badge.disconnected {
-            background: rgba(255, 77, 109, 0.1);
-            color: var(--danger);
-            border: 1px solid rgba(255, 77, 109, 0.2);
+            background: rgba(255, 77, 109, 0.08);
+            color: var(--danger); border: 1px solid rgba(255, 77, 109, 0.15);
         }
-        .status-dot {
-            width: 7px;
-            height: 7px;
-            border-radius: 50%;
-            display: inline-block;
-            margin-right: 6px;
-            vertical-align: middle;
-            position: relative;
-            top: -1px;
-        }
-        .status-dot.on {
-            background: var(--success);
-            box-shadow: 0 0 8px var(--success);
-        }
-        .status-dot.off {
-            background: var(--danger);
-        }
+        .status-dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; }
+        .status-dot.on { background: var(--success); box-shadow: 0 0 6px var(--success); }
+        .status-dot.off { background: var(--danger); }
         #sessionIdDisplay {
-            font-family: 'Rajdhani', sans-serif;
-            font-size: 0.78rem;
-            color: var(--text-muted);
-            letter-spacing: 0.5px;
+            font-family: 'Rajdhani', sans-serif; font-size: 0.7rem;
+            color: var(--text-dim); letter-spacing: 0.3px; white-space: nowrap;
         }
+        .btn-settings {
+            width: 34px; height: 34px; border-radius: 8px;
+            background: transparent; border: 1px solid rgba(255,255,255,0.08);
+            color: var(--text-dim); cursor: pointer; display: flex;
+            align-items: center; justify-content: center;
+            font-size: 1rem; transition: all var(--duration-normal) var(--ease-out);
+        }
+        .btn-settings:hover { color: var(--accent); border-color: var(--accent); background: rgba(0,212,255,0.06); }
+        .btn-settings.active { color: var(--accent); border-color: var(--accent); background: rgba(0,212,255,0.1); }
 
-        /* ── Glass Card ─────────────────────────────────────────────── */
-        .glass-card {
-            background: var(--bg-card);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid var(--border-glow);
-            border-radius: var(--radius);
-            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.05);
-            margin-bottom: 20px;
-            transition: box-shadow 0.3s ease, border-color 0.3s ease;
-            position: relative;
+        .btn-top-link {
+            font-size: 0.73rem; color: var(--text-dim); text-decoration: none;
+            padding: 4px 8px; border-radius: 5px; transition: all 0.2s;
+            display: flex; align-items: center; gap: 4px;
+        }
+        .btn-top-link:hover { color: var(--accent); background: rgba(0,212,255,0.06); }
+        .btn-top-link.danger:hover { color: var(--danger); background: rgba(255,77,109,0.06); }
+
+        /* ═══════════════ Settings Drawer ──────────────────────────── */
+        #settingsDrawer {
+            background: rgba(12, 20, 40, 0.97);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border-bottom: 1px solid var(--border-glow);
             overflow: hidden;
+            max-height: 0;
+            transition: max-height 0.4s var(--ease-out), padding 0.4s var(--ease-out), border-color 0.4s var(--ease-out);
+            flex-shrink: 0; z-index: 99;
         }
-        .glass-card:hover {
-            border-color: rgba(0, 212, 255, 0.4);
-            box-shadow: 0 4px 32px rgba(0, 0, 0, 0.3), 0 0 20px rgba(0, 212, 255, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+        #settingsDrawer.open {
+            max-height: 340px;
+            border-bottom-color: var(--border-glow);
         }
-        .glass-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 1px;
-            background: linear-gradient(90deg, transparent, var(--accent-primary), transparent);
-            opacity: 0.3;
+        #settingsDrawer .drawer-inner {
+            padding: 0 20px; transition: padding 0.4s var(--ease-out);
         }
-        .card-header {
-            background: transparent;
-            border-bottom: 1px solid rgba(0, 212, 255, 0.1);
-            padding: 14px 20px;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-family: 'Rajdhani', sans-serif;
-            font-size: 1rem;
-            letter-spacing: 0.5px;
-            color: var(--text-primary);
+        #settingsDrawer.open .drawer-inner { padding: 16px 20px; }
+        #settingsDrawer .section-title {
+            font-family: 'Rajdhani', sans-serif; font-weight: 600; font-size: 0.72rem;
+            color: var(--accent); text-transform: uppercase; letter-spacing: 1px;
+            margin-bottom: 8px; display: flex; align-items: center; gap: 6px;
         }
-        .card-header i {
-            color: var(--accent-primary);
-            font-size: 1.1rem;
+        #settingsDrawer .section-title::after {
+            content: ''; flex: 1; height: 1px;
+            background: linear-gradient(90deg, rgba(0,212,255,0.15), transparent);
         }
-        .card-body {
-            padding: 18px 20px;
+        #settingsDrawer .config-row {
+            display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 14px;
         }
+        #settingsDrawer .config-row:last-child { margin-bottom: 4px; }
+        #settingsDrawer .field {
+            display: flex; flex-direction: column; gap: 4px; min-width: 140px; flex: 1;
+        }
+        #settingsDrawer .field label {
+            font-size: 0.68rem; color: var(--text-dim); letter-spacing: 0.3px;
+            font-weight: 500; white-space: nowrap; display: flex; align-items: center; gap: 5px;
+        }
+        #settingsDrawer .field label i { color: var(--accent); font-size: 0.7rem; opacity: 0.7; }
 
-        /* ── Quick Links ────────────────────────────────────────────── */
-        .quick-link {
-            text-decoration: none;
-            display: block;
-        }
-        .quick-link .glass-card {
-            text-align: center;
-            padding: 18px 12px;
-            cursor: pointer;
-            transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
-            margin-bottom: 16px;
-        }
-        .quick-link:hover .glass-card {
-            transform: translateY(-5px);
-            border-color: rgba(0, 212, 255, 0.5);
-            box-shadow: 0 8px 40px rgba(0, 0, 0, 0.3), 0 0 30px rgba(0, 212, 255, 0.12);
-        }
-        .quick-link .ql-icon {
-            font-size: 1.8rem;
-            color: var(--accent-primary);
-            display: block;
-            margin-bottom: 6px;
-            transition: transform 0.3s;
-        }
-        .quick-link:hover .ql-icon {
-            transform: scale(1.15);
-        }
-        .quick-link .ql-icon.gold {
-            color: var(--accent-secondary);
-        }
-        .quick-link .ql-title {
-            font-family: 'Rajdhani', sans-serif;
-            font-weight: 700;
-            font-size: 1rem;
-            color: var(--text-primary);
-            margin-top: 2px;
-        }
-        .quick-link .ql-desc {
-            font-size: 0.75rem;
-            color: var(--text-muted);
-            margin-top: 2px;
-        }
-
-        /* ── Form Controls (Dark Theme) ─────────────────────────────── */
-        .form-control, .form-select {
-            background: rgba(6, 13, 26, 0.6);
-            border: 1px solid rgba(0, 212, 255, 0.15);
-            color: var(--text-primary);
-            border-radius: var(--radius-sm);
+        /* ── Dark Select / Input ────────────────────────────────────── */
+        .dark-select, .dark-input {
+            background: rgba(6, 14, 30, 0.7);
+            border: 1px solid rgba(0, 212, 255, 0.12);
+            border-radius: var(--radius-xs);
+            color: var(--text); font-size: 0.76rem;
+            padding: 6px 10px; font-family: inherit;
             transition: border-color 0.2s, box-shadow 0.2s;
+            outline: none;
         }
-        .form-control:focus, .form-select:focus {
-            background: rgba(6, 13, 26, 0.8);
-            border-color: var(--accent-primary);
-            box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1);
-            color: var(--text-primary);
+        .dark-select:hover, .dark-input:hover { border-color: rgba(0,212,255,0.25); }
+        .dark-select:focus, .dark-input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.06);
         }
-        .form-control::placeholder {
-            color: rgba(107, 139, 170, 0.5) !important;
-            opacity: 1;
-        }
-        .form-control:-ms-input-placeholder {
-            color: rgba(107, 139, 170, 0.5);
-        }
-        .form-control-sm, .form-select-sm {
-            font-size: 0.82rem;
-            padding: 6px 10px;
-        }
-        .form-label {
-            font-weight: 500;
-            font-size: 0.8rem;
-            color: var(--text-muted);
-            margin-bottom: 4px;
-            letter-spacing: 0.3px;
-        }
-        .form-check-input {
-            background: rgba(6, 13, 26, 0.6);
-            border: 1px solid rgba(0, 212, 255, 0.2);
-        }
-        .form-check-input:checked {
-            background-color: var(--accent-primary);
-            border-color: var(--accent-primary);
-        }
-        .form-check-label {
-            font-size: 0.8rem;
-            color: var(--text-muted);
-        }
-        .param-hint {
-            font-size: 0.72rem;
-            color: var(--text-muted);
-            opacity: 0.7;
-        }
-        select option {
-            background: var(--bg-card-solid);
-            color: var(--text-primary);
-        }
+        .dark-select option { background: #0a1632; color: var(--text); }
+        .dark-input::placeholder { color: rgba(123, 150, 180, 0.4); }
+        .field-hint { font-size: 0.65rem; color: rgba(123,150,180,0.5); margin-top: 1px; }
 
         /* ── Buttons ────────────────────────────────────────────────── */
-        .btn-primary-custom {
-            background: linear-gradient(135deg, #00b4d8, #0096c7);
-            border: none;
-            color: #fff;
-            font-weight: 600;
-            font-size: 0.85rem;
-            border-radius: var(--radius-sm);
-            padding: 8px 18px;
-            cursor: pointer;
-            transition: all 0.25s;
-            font-family: 'Rajdhani', sans-serif;
-            letter-spacing: 0.5px;
-            position: relative;
-            overflow: hidden;
+        .btn-accent {
+            background: linear-gradient(135deg, #00a8cc, #0088aa);
+            border: none; color: #fff; font-weight: 600;
+            font-size: 0.78rem; border-radius: var(--radius-xs);
+            padding: 7px 16px; cursor: pointer;
+            font-family: 'Rajdhani', sans-serif; letter-spacing: 0.5px;
+            transition: all 0.2s var(--ease-out);
+            display: inline-flex; align-items: center; gap: 5px;
+            white-space: nowrap;
         }
-        .btn-primary-custom:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 20px rgba(0, 180, 216, 0.35);
-            color: #fff;
-        }
-        .btn-primary-custom:active {
-            transform: translateY(0);
-        }
-
-        .btn-danger-custom {
+        .btn-accent:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(0,168,204,0.3); }
+        .btn-accent:active { transform: translateY(0); }
+        .btn-danger-sm {
             background: linear-gradient(135deg, #e63946, #c1121f);
-            border: none;
-            color: #fff;
-            font-weight: 600;
-            font-size: 0.85rem;
-            border-radius: var(--radius-sm);
-            padding: 8px 18px;
-            cursor: pointer;
-            transition: all 0.25s;
-            font-family: 'Rajdhani', sans-serif;
-            letter-spacing: 0.5px;
+            border: none; color: #fff; font-weight: 600;
+            font-size: 0.78rem; border-radius: var(--radius-xs);
+            padding: 7px 16px; cursor: pointer;
+            font-family: 'Rajdhani', sans-serif; letter-spacing: 0.5px;
+            transition: all 0.2s; white-space: nowrap;
+            display: inline-flex; align-items: center; gap: 5px;
         }
-        .btn-danger-custom:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 20px rgba(230, 57, 70, 0.35);
-            color: #fff;
+        .btn-danger-sm:hover { box-shadow: 0 4px 16px rgba(230,57,70,0.3); }
+        .btn-ghost {
+            background: transparent; border: 1px solid rgba(0,212,255,0.3);
+            color: var(--accent); font-weight: 600; font-size: 0.76rem;
+            border-radius: var(--radius-xs); padding: 6px 14px; cursor: pointer;
+            font-family: 'Rajdhani', sans-serif; letter-spacing: 0.4px;
+            transition: all 0.2s; white-space: nowrap;
+            display: inline-flex; align-items: center; gap: 5px;
         }
-        .btn-danger-custom:active {
-            transform: translateY(0);
-        }
+        .btn-ghost:hover { background: rgba(0,212,255,0.08); border-color: var(--accent); }
+        .btn-ghost:disabled { opacity: 0.35; cursor: not-allowed; }
+        .btn-ghost:disabled:hover { background: transparent; border-color: rgba(0,212,255,0.3); }
+        .field .btn-accent, .field .btn-ghost { font-size: 0.72rem; padding: 5px 10px; }
 
-        .btn-outline-custom {
-            border: 1px solid var(--accent-primary);
-            color: var(--accent-primary);
-            font-weight: 600;
-            font-size: 0.82rem;
-            border-radius: var(--radius-sm);
-            padding: 6px 14px;
-            background: transparent;
-            cursor: pointer;
-            transition: all 0.2s;
-            font-family: 'Rajdhani', sans-serif;
+        /* ── Toggle Switch ──────────────────────────────────────────── */
+        .toggle-wrap {
+            display: inline-flex; align-items: center; gap: 7px;
+            cursor: pointer; user-select: none;
         }
-        .btn-outline-custom:hover {
-            background: rgba(0, 212, 255, 0.1);
-            color: var(--accent-primary);
-            box-shadow: 0 0 16px rgba(0, 212, 255, 0.15);
+        .toggle-wrap input { display: none; }
+        .toggle-slider {
+            position: relative; width: 38px; height: 20px;
+            background: rgba(255,255,255,0.15); border-radius: 20px;
+            transition: all 0.2s; border: 1px solid rgba(255,255,255,0.1);
         }
-        .btn-outline-custom:active {
-            transform: scale(0.97);
+        .toggle-slider::after {
+            content: ''; position: absolute; top: 2px; left: 2px;
+            width: 14px; height: 14px; background: #fff;
+            border-radius: 50%; transition: transform 0.25s var(--ease-spring);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.3);
         }
+        .toggle-wrap input:checked + .toggle-slider {
+            background: var(--accent); border-color: var(--accent);
+            box-shadow: 0 0 8px var(--accent-glow);
+        }
+        .toggle-wrap input:checked + .toggle-slider::after { transform: translateX(18px); }
+        .toggle-label { font-size: 0.72rem; color: var(--text-dim); }
 
-        /* Override Bootstrap btn-danger/btn-primary for fsPttButton */
-        .btn.btn-danger {
-            background: linear-gradient(135deg, #e63946, #c1121f) !important;
-            border: none !important;
-            color: #fff !important;
-            border-radius: var(--radius-sm) !important;
-            transition: all 0.25s !important;
-        }
-        .btn.btn-danger:hover {
-            box-shadow: 0 4px 20px rgba(230, 57, 70, 0.35) !important;
-        }
-        .btn.btn-primary {
-            background: linear-gradient(135deg, #00b4d8, #0096c7) !important;
-            border: none !important;
-            color: #fff !important;
-            border-radius: var(--radius-sm) !important;
-            transition: all 0.25s !important;
-        }
-        .btn.btn-primary:hover {
-            box-shadow: 0 4px 20px rgba(0, 180, 216, 0.35) !important;
-        }
-        .btn-outline-danger {
-            border-color: var(--danger) !important;
-            color: var(--danger) !important;
-        }
-        .btn-outline-danger:hover {
-            background: rgba(255, 77, 109, 0.15) !important;
-            color: var(--danger) !important;
-        }
-
-        /* ── Video Player ───────────────────────────────────────────── */
-        video {
-            width: 100%;
-            border-radius: var(--radius-sm);
-            background: #000;
-            display: block;
-        }
-        video::-webkit-media-controls-fullscreen-button { display: none !important; }
-        video::-moz-full-screen-button { display: none !important; }
-
-        .video-fs-wrapper {
+        /* ═══════════════ Main Split Layout ─────────────────────────── */
+        #mainContent {
+            display: flex; flex: 1; min-height: 0;
+            gap: 1px; background: var(--border);
             position: relative;
-            display: inline-block;
-            width: 100%;
-            border-radius: var(--radius-sm);
-            overflow: hidden;
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.4), 0 0 40px rgba(0, 212, 255, 0.05);
-            border: 1px solid rgba(0, 212, 255, 0.1);
         }
 
+        /* ── Video Panel ────────────────────────────────────────────── */
+        #videoPanel {
+            flex: 5; display: flex; flex-direction: column;
+            background: var(--bg-deep); position: relative;
+            min-width: 0;
+        }
+        #videoPanel .panel-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 8px 14px; background: rgba(0,0,0,0.3);
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+            flex-shrink: 0;
+        }
+        #videoPanel .panel-title {
+            font-family: 'Rajdhani', sans-serif; font-weight: 600;
+            font-size: 0.8rem; color: var(--text-dim); letter-spacing: 0.5px;
+            display: flex; align-items: center; gap: 6px;
+        }
+        #videoPanel .panel-title i { color: var(--accent); font-size: 0.85rem; }
+
+        .video-stage {
+            flex: 1; position: relative; overflow: hidden;
+            background: #000; min-height: 0;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .video-stage video {
+            width: 100%; height: 100%; object-fit: contain;
+            display: block; background: #000;
+        }
+        .video-stage audio { display: none; }
+
+        /* Fullscreen wrapper */
+        .video-fs-wrapper {
+            width: 100%; height: 100%; position: relative;
+            display: flex; align-items: center; justify-content: center;
+        }
         .video-fs-wrapper:fullscreen,
         .video-fs-wrapper:-webkit-full-screen {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: #000;
-            width: 100vw;
-            height: 100vh;
-            border-radius: 0;
-            border: none;
+            display: flex; align-items: center; justify-content: center;
+            background: #000; width: 100vw; height: 100vh;
         }
         .video-fs-wrapper:fullscreen video,
-        .video-fs-wrapper:-webkit-full-screen video {
-            max-width: 100%;
-            max-height: 100vh;
-            width: auto;
-            height: auto;
-            border-radius: 0;
-        }
+        .video-fs-wrapper:-webkit-full-screen video { max-width: 100%; max-height: 100vh; width: auto; height: auto; }
 
-        .fs-trigger {
-            position: absolute;
-            bottom: 8px;
-            right: 8px;
-            background: rgba(0, 0, 0, 0.7);
-            color: #fff;
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            border-radius: 4px;
-            padding: 4px 10px;
-            cursor: pointer;
-            font-size: 14px;
-            z-index: 10;
-            opacity: 0.6;
-            transition: opacity 0.2s, background 0.2s;
-        }
-        .fs-trigger:hover {
-            opacity: 1;
-            background: rgba(0, 212, 255, 0.2);
-            border-color: var(--accent-primary);
-        }
-        /* 全屏模式下始终显示，便于用户找到退出按钮 */
-        .video-fs-wrapper:fullscreen .fs-trigger,
-        .video-fs-wrapper:-webkit-full-screen .fs-trigger {
-            opacity: 0.85;
-        }
-
-        /* ── Fullscreen Toolbar ─────────────────────────────────────── */
-        .fs-toolbar {
-            display: none;
-            position: fixed;
-            top: 12px;
-            right: 12px;
-            z-index: 2147483647;
-            gap: 8px;
-            align-items: center;
-        }
-        .video-fs-wrapper:fullscreen .fs-toolbar,
-        .video-fs-wrapper:-webkit-full-screen .fs-toolbar {
-            display: flex;
-        }
-        .fs-toolbar button {
-            background: rgba(0, 0, 0, 0.75);
-            color: var(--text-primary);
-            border: 1px solid rgba(0, 212, 255, 0.35);
-            border-radius: 6px;
-            padding: 8px 16px;
-            cursor: pointer;
-            font-size: 14px;
-            font-family: 'Rajdhani', sans-serif;
-            font-weight: 600;
-            transition: background 0.2s, border-color 0.2s;
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-        }
-        .fs-toolbar button:hover {
-            background: rgba(0, 212, 255, 0.15);
-            border-color: var(--accent-primary);
-        }
-        .fs-toolbar button.active {
-            background: rgba(0, 212, 255, 0.2);
-            border-color: var(--accent-primary);
-            box-shadow: 0 0 12px rgba(0, 212, 255, 0.2);
-        }
-
-        /* ── Fullscreen Side Panel ──────────────────────────────────── */
-        .fs-side-panel {
-            display: none;
-        }
-        .video-fs-wrapper:fullscreen .fs-side-panel,
-        .video-fs-wrapper:-webkit-full-screen .fs-side-panel {
-            display: none;
-            flex-direction: column;
-            position: absolute;
-            top: 0;
-            right: 0;
-            width: 380px;
-            height: 100vh;
-            overflow-y: auto;
-            padding: 16px;
-            gap: 16px;
-            background: rgba(6, 13, 26, 0.95);
-            color: var(--text-primary);
-            z-index: 100;
-            border-left: 1px solid var(--border-glow);
-        }
-        .video-fs-wrapper:fullscreen.fs-panel-open .fs-side-panel,
-        .video-fs-wrapper:-webkit-full-screen.fs-panel-open .fs-side-panel {
-            display: flex;
-        }
-
-        .video-fs-wrapper:fullscreen .fs-side-panel .fs-glass-card,
-        .video-fs-wrapper:-webkit-full-screen .fs-side-panel .fs-glass-card {
-            background: var(--bg-card);
-            backdrop-filter: blur(16px);
-            border: 1px solid var(--border-glow);
-            border-radius: var(--radius);
-            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
-            color: var(--text-primary);
-        }
-        .video-fs-wrapper:fullscreen .fs-side-panel .fs-card-header,
-        .video-fs-wrapper:-webkit-full-screen .fs-side-panel .fs-card-header {
-            background: transparent;
-            border-bottom: 1px solid rgba(0, 212, 255, 0.1);
-            padding: 14px 18px;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-family: 'Rajdhani', sans-serif;
-            color: var(--text-primary);
-        }
-        .video-fs-wrapper:fullscreen .fs-side-panel .fs-card-header i,
-        .video-fs-wrapper:-webkit-full-screen .fs-side-panel .fs-card-header i {
-            color: var(--accent-primary);
-        }
-        .video-fs-wrapper:fullscreen .fs-side-panel .fs-card-body,
-        .video-fs-wrapper:-webkit-full-screen .fs-side-panel .fs-card-body {
-            padding: 14px 18px;
-        }
-        .video-fs-wrapper:fullscreen .fs-side-panel .form-control,
-        .video-fs-wrapper:fullscreen .fs-side-panel .form-select {
-            background: rgba(0, 0, 0, 0.4);
-        }
-
-        /* ── Voice Transcript & Chat Log ────────────────────────────── */
-        .voice-transcript {
-            background: rgba(0, 212, 255, 0.06);
-            border: 1px solid rgba(0, 212, 255, 0.1);
-            border-radius: var(--radius-sm);
-            padding: 10px 14px;
-            min-height: 40px;
-            font-size: 0.85rem;
-            color: var(--text-primary);
-            white-space: pre-wrap;
-            word-break: break-all;
-        }
-        .voice-chat-log {
-            max-height: 200px;
-            overflow-y: auto;
-            font-size: 0.82rem;
-            padding: 8px 0;
-        }
-        .voice-chat-log .msg-user {
-            color: var(--accent-primary);
-            margin-bottom: 4px;
-            padding: 4px 8px;
-            background: rgba(0, 212, 255, 0.05);
-            border-radius: 4px;
-        }
-        .voice-chat-log .msg-user::before {
-            content: '🗣️ ';
-        }
-        .voice-chat-log .msg-avatar {
-            color: var(--text-muted);
-            margin-bottom: 8px;
-            padding: 4px 8px;
-        }
-        .voice-chat-log .msg-avatar::before {
-            content: '🤖 ';
-        }
-
-        /* ── PTT Button ─────────────────────────────────────────────── */
-        #pttButton, #fsPttButton {
-            font-family: 'Rajdhani', sans-serif;
-            font-weight: 700;
-            letter-spacing: 1px;
-            position: relative;
-            overflow: hidden;
-        }
-        #pttButton:active, #fsPttButton:active {
-            transform: scale(0.98);
-        }
-
-        /* ── Status Bar ─────────────────────────────────────────────── */
-        #voiceStatusBar, #fsVoiceStatusBar {
-            font-size: 0.8rem;
-            color: var(--text-muted);
-            padding: 6px 10px;
-            background: rgba(0, 212, 255, 0.05);
-            border-radius: var(--radius-sm);
-            border: 1px solid rgba(0, 212, 255, 0.08);
-        }
-
-        /* ── Custom Scrollbar ───────────────────────────────────────── */
-        ::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
-        }
-        ::-webkit-scrollbar-track {
-            background: rgba(6, 13, 26, 0.5);
-        }
-        ::-webkit-scrollbar-thumb {
-            background: rgba(0, 212, 255, 0.2);
-            border-radius: 3px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: rgba(0, 212, 255, 0.35);
-        }
-        .voice-chat-log::-webkit-scrollbar,
-        .fs-side-panel::-webkit-scrollbar {
-            width: 4px;
-        }
-
-        /* ── Utility ────────────────────────────────────────────────── */
-        .text-muted-custom {
-            color: var(--text-muted) !important;
-        }
-        .accent-glow {
-            color: var(--accent-primary);
-        }
-        .gold-glow {
-            color: var(--accent-secondary);
-        }
-        .badge-accent {
-            background: rgba(0, 212, 255, 0.1);
-            color: var(--accent-primary);
-            border: 1px solid rgba(0, 212, 255, 0.2);
-        }
-
-        /* ── Responsive ─────────────────────────────────────────────── */
-        @media (max-width: 768px) {
-            .navbar .container-fluid {
-                padding: 8px 12px;
-                flex-wrap: wrap;
-            }
-            .navbar-brand {
-                font-size: 1.1rem;
-            }
-            .brand-en {
-                display: none;
-            }
-            .nav-links a {
-                font-size: 0.75rem;
-                padding: 4px 8px;
-            }
-            .nav-right {
-                gap: 6px;
-            }
-            #sessionIdDisplay {
-                font-size: 0.7rem;
-            }
-            .session-badge {
-                font-size: 0.65rem;
-                padding: 3px 8px;
-            }
-            .card-header {
-                padding: 12px 16px;
-                font-size: 0.9rem;
-            }
-            .card-body {
-                padding: 14px 16px;
-            }
-            .quick-link .glass-card {
-                padding: 12px 8px;
-            }
-            .quick-link .ql-icon {
-                font-size: 1.4rem;
-            }
-            .video-fs-wrapper:fullscreen .fs-side-panel,
-            .video-fs-wrapper:-webkit-full-screen .fs-side-panel {
-                width: 100%;
-                height: 50vh;
-                top: auto;
-                bottom: 0;
-                border-left: none;
-                border-top: 1px solid var(--border-glow);
-            }
-        }
-
-        @media (max-width: 991px) {
-            .quick-link .glass-card {
-                margin-bottom: 12px;
-            }
-        }
-
-        @media (min-width: 992px) {
-            .container {
-                max-width: 1400px;
-            }
-        }
-    
-        /* ── Modern Custom Sliding Toggle Switch ─────────────────────── */
-        .custom-switch-wrap {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            cursor: pointer;
-            user-select: none;
-        }
-        .custom-switch-input {
-            display: none !important;
-        }
-        .custom-switch-slider {
-            position: relative;
-            width: 44px;
-            height: 22px;
-            background-color: rgba(255, 255, 255, 0.2);
-            border-radius: 20px;
-            transition: all 0.25s ease;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            display: inline-block;
-            vertical-align: middle;
-        }
-        .custom-switch-slider::after {
-            content: "";
-            position: absolute;
-            top: 2px;
-            left: 2px;
-            width: 16px;
-            height: 16px;
-            background-color: #ffffff;
-            border-radius: 50%;
-            transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-        }
-        .custom-switch-input:checked + .custom-switch-slider {
-            background-color: #00d4ff;
-            border-color: #00d4ff;
-            box-shadow: 0 0 8px rgba(0, 212, 255, 0.4);
-        }
-        .custom-switch-input:checked + .custom-switch-slider::after {
-            transform: translateX(22px);
-        }
-        .custom-switch-label {
-            font-size: 0.82rem;
-            color: var(--text-color, #e0e0e0);
-        }
-
-
-        /* ── Collapsible Panel Animation ───────────────────────────── */
-        .panel-collapse-content {
-            overflow: hidden;
-            transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease, margin-top 0.3s ease;
-            max-height: 500px;
-            opacity: 1;
-            margin-top: 8px;
-        }
-        .panel-collapse-content.collapsed {
-            display: none !important;
-        }
-
-
-        
-        /* ── Customer-Facing WebRTC Loading Overlay ─────────────────────── */
-        .video-fs-wrapper {
-            min-height: 450px;
-            background: #080c18;
-            position: relative;
-        }
+        /* ── Loading Overlay ────────────────────────────────────────── */
         .video-loading-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(8, 12, 24, 0.82);
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-            z-index: 30;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: opacity 0.3s ease, visibility 0.3s ease;
-            border-radius: 12px;
-            padding: 15px;
+            position: absolute; inset: 0; z-index: 30;
+            background: rgba(6, 12, 24, 0.8);
+            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            display: flex; align-items: center; justify-content: center;
+            transition: opacity 0.3s, visibility 0.3s;
+            border-radius: 4px;
         }
-        .loading-box-customer {
-            background: rgba(18, 26, 46, 0.9);
-            border: 1px solid rgba(0, 212, 255, 0.3);
-            border-radius: 14px;
-            padding: 20px 24px;
-            width: 100%;
-            max-width: 380px;
-            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6);
-            text-align: center;
+        .loading-box {
+            background: rgba(14, 24, 44, 0.9);
+            border: 1px solid rgba(0,212,255,0.25);
+            border-radius: var(--radius); padding: 22px 28px;
+            max-width: 360px; width: 100%; text-align: center;
+            box-shadow: 0 12px 32px rgba(0,0,0,0.5);
         }
-        .loading-pulse-icon {
-            width: 48px;
-            height: 48px;
-            margin: 0 auto 12px;
-            border-radius: 50%;
-            background: rgba(0, 212, 255, 0.12);
-            border: 2px solid #00d4ff;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.4rem;
-            color: #00d4ff;
+        .loading-pulse {
+            width: 44px; height: 44px; margin: 0 auto 12px; border-radius: 50%;
+            background: rgba(0,212,255,0.1); border: 2px solid var(--accent);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.2rem; color: var(--accent);
             animation: pulseGlow 1.5s infinite ease-in-out;
         }
         @keyframes pulseGlow {
-            0% { box-shadow: 0 0 0 0 rgba(0, 212, 255, 0.4); transform: scale(1); }
-            70% { box-shadow: 0 0 0 14px rgba(0, 212, 255, 0); transform: scale(1.05); }
-            100% { box-shadow: 0 0 0 0 rgba(0, 212, 255, 0); transform: scale(1); }
+            0% { box-shadow: 0 0 0 0 rgba(0,212,255,0.35); transform: scale(1); }
+            70% { box-shadow: 0 0 0 14px rgba(0,212,255,0); transform: scale(1.04); }
+            100% { box-shadow: 0 0 0 0 rgba(0,212,255,0); transform: scale(1); }
         }
-        .loading-status-text {
-            font-size: 0.95rem;
-            font-weight: 600;
-            color: #ffffff;
-            margin-bottom: 4px;
+        .loading-title { font-size: 0.9rem; font-weight: 600; color: #fff; margin-bottom: 3px; }
+        .loading-sub { font-size: 0.72rem; color: rgba(255,255,255,0.5); margin-bottom: 12px; }
+        .step-dots { display: flex; justify-content: center; gap: 8px; }
+        .step-dots .c-dot {
+            width: 7px; height: 7px; border-radius: 50%;
+            background: rgba(255,255,255,0.15); transition: all 0.3s;
         }
-        .loading-status-sub {
-            font-size: 0.78rem;
-            color: rgba(255, 255, 255, 0.6);
-            margin-bottom: 14px;
+        .step-dots .c-dot.active { background: var(--accent); box-shadow: 0 0 8px var(--accent); transform: scale(1.3); }
+        .step-dots .c-dot.done { background: var(--success); }
+
+        /* ── Fullscreen Triggers ────────────────────────────────────── */
+        .fs-trigger {
+            position: absolute; bottom: 8px; right: 8px;
+            background: rgba(0,0,0,0.65); color: rgba(255,255,255,0.7);
+            border: 1px solid rgba(255,255,255,0.1); border-radius: 4px;
+            padding: 4px 10px; cursor: pointer; font-size: 14px; z-index: 10;
+            opacity: 0.5; transition: opacity 0.2s, background 0.2s;
         }
-        .customer-step-dots {
-            display: flex;
-            justify-content: center;
-            gap: 8px;
+        .fs-trigger:hover { opacity: 1; background: rgba(0,212,255,0.15); border-color: var(--accent); }
+        .video-fs-wrapper:fullscreen .fs-trigger,
+        .video-fs-wrapper:-webkit-full-screen .fs-trigger { opacity: 0.85; }
+
+        .fs-toolbar {
+            display: none; position: fixed; top: 12px; right: 12px;
+            z-index: 2147483647; gap: 8px; align-items: center;
         }
-        .c-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.2);
-            transition: all 0.3s ease;
+        .video-fs-wrapper:fullscreen .fs-toolbar,
+        .video-fs-wrapper:-webkit-full-screen .fs-toolbar { display: flex; }
+        .fs-toolbar button {
+            background: rgba(0,0,0,0.7); color: var(--text);
+            border: 1px solid rgba(0,212,255,0.3); border-radius: 6px;
+            padding: 7px 14px; cursor: pointer; font-size: 13px;
+            font-family: 'Rajdhani', sans-serif; font-weight: 600;
+            backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+            transition: all 0.2s;
         }
-        .c-dot.active {
-            background: #00d4ff;
-            box-shadow: 0 0 8px #00d4ff;
-            transform: scale(1.3);
+        .fs-toolbar button:hover { background: rgba(0,212,255,0.15); border-color: var(--accent); }
+        .fs-toolbar button.active { background: rgba(0,212,255,0.2); border-color: var(--accent); box-shadow: 0 0 10px rgba(0,212,255,0.15); }
+
+        /* ── Fullscreen Side Panel ──────────────────────────────────── */
+        .fs-side-panel { display: none; }
+        .video-fs-wrapper:fullscreen .fs-side-panel,
+        .video-fs-wrapper:-webkit-full-screen .fs-side-panel {
+            display: none; flex-direction: column; position: absolute;
+            top: 0; right: 0; width: 380px; height: 100vh;
+            overflow-y: auto; padding: 14px; gap: 14px;
+            background: rgba(6,13,26,0.95); color: var(--text); z-index: 100;
+            border-left: 1px solid var(--border-glow);
         }
-        .c-dot.done {
-            background: #52c41a;
+        .video-fs-wrapper:fullscreen.fs-panel-open .fs-side-panel,
+        .video-fs-wrapper:-webkit-full-screen.fs-panel-open .fs-side-panel { display: flex; }
+        .video-fs-wrapper:fullscreen.fs-panel-open .fs-toolbar,
+        .video-fs-wrapper:-webkit-full-screen.fs-panel-open .fs-toolbar {
+            right: auto; left: 12px;
         }
 
+        .fs-glass-card {
+            background: rgba(10,22,50,0.85); backdrop-filter: blur(16px);
+            border: 1px solid var(--border-glow); border-radius: var(--radius);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+        .fs-card-header {
+            padding: 12px 16px; font-weight: 600;
+            font-family: 'Rajdhani', sans-serif; color: var(--text);
+            border-bottom: 1px solid rgba(0,212,255,0.1);
+            display: flex; align-items: center; gap: 6px;
+        }
+        .fs-card-header i { color: var(--accent); }
+        .fs-card-body { padding: 12px 16px; }
+        .fs-side-panel .chat-panel { height: auto; flex: 1; min-height: 0; }
+        .fs-side-panel .dark-select, .fs-side-panel .dark-input { background: rgba(0,0,0,0.35); }
 
-        /* ─── Unified Chat Panel ───────────────────────────────── */
-        .chat-panel { display: flex; flex-direction: column; height: 500px; }
+        /* ═══════════════ Chat Panel ────────────────────────────────── */
+        #chatPanel {
+            flex: 4; display: flex; flex-direction: column;
+            background: var(--bg-surface);
+            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            border-left: 1px solid var(--border);
+            min-width: 360px; max-width: 480px;
+        }
+        #chatPanel .panel-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 8px 14px; flex-shrink: 0;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+            background: rgba(0,0,0,0.2);
+        }
+        #chatPanel .panel-title {
+            font-family: 'Rajdhani', sans-serif; font-weight: 600;
+            font-size: 0.8rem; color: var(--text-dim); letter-spacing: 0.5px;
+            display: flex; align-items: center; gap: 6px;
+        }
+        #chatPanel .panel-title i { color: var(--accent); font-size: 0.85rem; }
+
+        .chat-panel { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+
         .chat-messages {
-            flex: 1; overflow-y: auto; padding: 14px 12px 6px;
-            display: flex; flex-direction: column; gap: 10px; scroll-behavior: smooth;
+            flex: 1; overflow-y: auto; padding: 12px 14px 6px;
+            display: flex; flex-direction: column; gap: 8px; scroll-behavior: smooth;
         }
         .chat-messages::-webkit-scrollbar { width: 4px; }
-        .chat-messages::-webkit-scrollbar-thumb { background: rgba(0,212,255,0.25); border-radius: 4px; }
+        .chat-messages::-webkit-scrollbar-thumb { background: rgba(0,212,255,0.2); border-radius: 4px; }
+
         .bubble-row { display: flex; align-items: flex-end; gap: 8px; }
         .bubble-row.user { flex-direction: row-reverse; }
-        .bubble-content {
-            max-width: 72%;
-            min-width: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: flex-start;
-        }
+        .bubble-content { max-width: 75%; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; }
         .bubble-row.user .bubble-content { align-items: flex-end; }
         .bubble-avatar-icon {
-            width: 30px; height: 30px; border-radius: 50%;
-            background: linear-gradient(135deg, #00d4ff, #7b2ff7);
+            width: 28px; height: 28px; border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent), #7b2ff7);
             display: flex; align-items: center; justify-content: center;
-            font-size: 14px; flex-shrink: 0; color: #fff;
-            box-shadow: 0 2px 8px rgba(0,212,255,0.4);
+            font-size: 13px; flex-shrink: 0; color: #fff;
+            box-shadow: 0 2px 8px rgba(0,212,255,0.35);
         }
         .bubble-user-icon {
-            width: 30px; height: 30px; border-radius: 50%;
+            width: 28px; height: 28px; border-radius: 50%;
             background: linear-gradient(135deg, #10b981, #059669);
             display: flex; align-items: center; justify-content: center;
-            font-size: 14px; flex-shrink: 0; color: #fff;
-            box-shadow: 0 2px 8px rgba(16,185,129,0.4);
+            font-size: 13px; flex-shrink: 0; color: #fff;
+            box-shadow: 0 2px 8px rgba(16,185,129,0.35);
         }
         .bubble {
-            width: fit-content;
-            max-width: 100%;
-            padding: 9px 13px; border-radius: 16px;
-            font-size: 0.86rem; line-height: 1.5; word-break: break-word;
-            animation: bubbleIn 0.22s cubic-bezier(0.34,1.56,0.64,1);
+            padding: 8px 13px; border-radius: 16px;
+            font-size: 0.84rem; line-height: 1.5; word-break: break-word;
+            animation: bubbleIn 0.22s var(--ease-spring);
+            width: fit-content; max-width: 100%;
         }
-        @keyframes bubbleIn {
-            from { opacity: 0; transform: scale(0.85) translateY(6px); }
-            to   { opacity: 1; transform: scale(1) translateY(0); }
-        }
+        @keyframes bubbleIn { from { opacity: 0; transform: scale(0.85) translateY(6px); } to { opacity: 1; transform: scale(1) translateY(0); } }
         .bubble-row.avatar .bubble {
-            background: rgba(0,212,255,0.08);
-            border: 1px solid rgba(0,212,255,0.2);
-            border-bottom-left-radius: 4px;
-            color: var(--text-primary, #e2e8f0);
+            background: rgba(0,212,255,0.06); border: 1px solid rgba(0,212,255,0.15);
+            border-bottom-left-radius: 4px; color: var(--text);
         }
         .bubble-row.user .bubble {
-            background: linear-gradient(135deg, rgba(0,212,255,0.25), rgba(0,150,200,0.3));
-            border: 1px solid rgba(0,212,255,0.35);
-            color: #fff; border-bottom-right-radius: 4px;
-            box-shadow: 0 2px 12px rgba(0,212,255,0.2);
+            background: linear-gradient(135deg, rgba(0,212,255,0.22), rgba(0,150,200,0.25));
+            border: 1px solid rgba(0,212,255,0.3); color: #fff;
+            border-bottom-right-radius: 4px; box-shadow: 0 2px 10px rgba(0,212,255,0.15);
         }
         .bubble-system-row { display: flex; justify-content: center; }
         .bubble-system {
-            font-size: 0.73rem; color: #64748b;
-            background: rgba(255,255,255,0.05);
-            border-radius: 20px; padding: 3px 12px;
-            animation: bubbleIn 0.18s ease;
+            font-size: 0.7rem; color: #526580;
+            background: rgba(255,255,255,0.03); border-radius: 20px;
+            padding: 2px 12px; animation: bubbleIn 0.18s ease;
         }
         .bubble-interim { opacity: 0.5; font-style: italic; }
-        .bubble-timestamp { font-size: 0.62rem; color: #64748b; margin-top: 3px; text-align: right; }
+        .bubble-timestamp { font-size: 0.6rem; color: #526580; margin-top: 2px; text-align: right; }
         .bubble-row.avatar .bubble-timestamp { text-align: left; }
-        .chat-toolbar {
-            padding: 5px 12px 3px; display: flex; gap: 6px; align-items: center;
-            border-top: 1px solid rgba(0,212,255,0.1); flex-wrap: wrap;
-        }
-        .chat-toolbar select { font-size: 0.76rem; }
-        .chat-input-bar { padding: 6px 12px 12px; display: flex; gap: 7px; align-items: flex-end; }
-        .chat-input-bar textarea {
-            flex: 1; resize: none; border-radius: 18px;
-            border: 1.5px solid rgba(0,212,255,0.25); padding: 8px 13px;
-            font-size: 0.86rem; line-height: 1.4; min-height: 38px; max-height: 96px;
-            transition: border-color 0.2s, box-shadow 0.2s;
-            background: rgba(0,212,255,0.05); color: #e2e8f0;
-        }
-        .chat-input-bar textarea:focus {
-            outline: none; border-color: var(--accent-primary, #00d4ff);
-            box-shadow: 0 0 0 3px rgba(0,212,255,0.12);
-        }
-        .chat-input-bar textarea::placeholder { color: #4a5568; }
-        .btn-send-chat {
-            width: 38px; height: 38px; border-radius: 50%;
-            background: linear-gradient(135deg, #00d4ff, #0099cc);
-            border: none; color: #060d1a; cursor: pointer;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 15px; flex-shrink: 0;
-            transition: transform 0.2s, box-shadow 0.2s;
-            box-shadow: 0 3px 10px rgba(0,212,255,0.4);
-        }
-        .btn-send-chat:hover { transform: scale(1.1); box-shadow: 0 5px 16px rgba(0,212,255,0.55); }
-        .btn-send-chat:active { transform: scale(0.93); }
-        .btn-mic-chat {
-            width: 38px; height: 38px; border-radius: 50%;
-            border: 1.5px solid rgba(0,212,255,0.4); background: transparent;
-            color: var(--accent-primary, #00d4ff); cursor: pointer;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 16px; flex-shrink: 0; transition: all 0.2s;
-        }
-        .btn-mic-chat:hover { background: rgba(0,212,255,0.1); }
-        .btn-mic-chat.active {
-            background: #ef4444; border-color: #ef4444; color: #fff;
-            animation: micPulseChat 1.2s infinite;
-        }
-        .btn-mic-chat.ptt-hold { background: #f59e0b; border-color: #f59e0b; color: #fff; }
-        /* 自由对话按钮：开启后绿色呼吸光 */
-        .btn-free-chat.active {
-            background: #10b981; border-color: #10b981; color: #fff;
-            animation: freePulseChat 1.4s infinite;
-        }
-        @keyframes freePulseChat {
-            0%   { box-shadow: 0 0 0 0   rgba(16,185,129,0.6); }
-            70%  { box-shadow: 0 0 0 12px rgba(16,185,129,0); }
-            100% { box-shadow: 0 0 0 0   rgba(16,185,129,0); }
-        }
-        @keyframes micPulseChat {
-            0%   { box-shadow: 0 0 0 0   rgba(239,68,68,0.6); }
-            70%  { box-shadow: 0 0 0 10px rgba(239,68,68,0); }
-            100% { box-shadow: 0 0 0 0   rgba(239,68,68,0); }
-        }
+
         .chat-status-row { display: flex; justify-content: center; min-height: 20px; padding: 0 12px; }
         .chat-status-pill {
-            font-size: 0.7rem; padding: 2px 10px;
-            background: rgba(0,212,255,0.1); color: var(--accent-primary,#00d4ff);
+            font-size: 0.68rem; padding: 2px 10px;
+            background: rgba(0,212,255,0.08); color: var(--accent);
             border-radius: 20px; display: inline-flex; align-items: center; gap: 4px;
         }
 
+        .chat-toolbar {
+            padding: 4px 14px 2px; display: flex; gap: 8px; align-items: center;
+            border-top: 1px solid rgba(0,212,255,0.06); flex-wrap: wrap;
+        }
+        .chat-toolbar .tool-label { font-size: 0.7rem; color: #526580; }
+        .chat-toolbar .tool-value {
+            font-size: 0.72rem; color: var(--accent);
+            padding: 1px 8px; background: rgba(0,212,255,0.06); border-radius: 8px;
+            max-width: 130px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+        }
+
+        .chat-input-bar { padding: 4px 10px 10px; display: flex; gap: 6px; align-items: flex-end; }
+        .chat-input-bar textarea {
+            flex: 1; resize: none; border-radius: 18px;
+            border: 1.5px solid rgba(0,212,255,0.18); padding: 7px 12px;
+            font-size: 0.84rem; line-height: 1.4; min-height: 36px; max-height: 90px;
+            background: rgba(0,212,255,0.04); color: var(--text);
+            transition: border-color 0.2s, box-shadow 0.2s; outline: none;
+            font-family: inherit;
+        }
+        .chat-input-bar textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0,212,255,0.08); }
+        .chat-input-bar textarea::placeholder { color: #3a4a5e; }
+
+        .btn-send {
+            width: 36px; height: 36px; border-radius: 50%;
+            background: linear-gradient(135deg, #00c8ee, #0088bb);
+            border: none; color: #060d1a; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 14px; flex-shrink: 0;
+            transition: all 0.2s var(--ease-spring);
+            box-shadow: 0 3px 10px rgba(0,200,238,0.35);
+        }
+        .btn-send:hover { transform: scale(1.12); box-shadow: 0 5px 16px rgba(0,200,238,0.5); }
+        .btn-send:active { transform: scale(0.93); }
+
+        .btn-mic {
+            width: 36px; height: 36px; border-radius: 50%;
+            border: 1.5px solid rgba(0,212,255,0.35);
+            background: transparent; color: var(--accent); cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 15px; flex-shrink: 0; transition: all 0.2s;
+        }
+        .btn-mic:hover { background: rgba(0,212,255,0.08); }
+        .btn-mic.free-active {
+            background: #10b981; border-color: #10b981; color: #fff;
+            animation: freePulse 1.4s infinite;
+        }
+        @keyframes freePulse {
+            0% { box-shadow: 0 0 0 0 rgba(16,185,129,0.5); }
+            70% { box-shadow: 0 0 0 10px rgba(16,185,129,0); }
+            100% { box-shadow: 0 0 0 0 rgba(16,185,129,0); }
+        }
+        .btn-mic.ptt-hold {
+            background: #f59e0b; border-color: #f59e0b; color: #fff;
+            animation: micPulse 1.2s infinite;
+        }
+        @keyframes micPulse {
+            0% { box-shadow: 0 0 0 0 rgba(239,68,68,0.5); }
+            70% { box-shadow: 0 0 0 10px rgba(239,68,68,0); }
+            100% { box-shadow: 0 0 0 0 rgba(239,68,68,0); }
+        }
+
+        /* ═══════════════ Scrollbar ─────────────────────────────────── */
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(0,212,255,0.15); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(0,212,255,0.28); }
+
+        /* ═══════════════ Responsive ────────────────────────────────── */
+        @media (max-width: 768px) {
+            #mainContent { flex-direction: column; }
+            #videoPanel { flex: none; height: 45vh; }
+            #chatPanel { flex: 1; max-width: none; min-width: 0; border-left: none; border-top: 1px solid var(--border); }
+            #topbar .brand .en { display: none; }
+            #settingsDrawer.open { max-height: 500px; }
+            #settingsDrawer .config-row { flex-direction: column; }
+            .video-fs-wrapper:fullscreen .fs-side-panel,
+            .video-fs-wrapper:-webkit-full-screen .fs-side-panel {
+                width: 100%; height: 50vh; top: auto; bottom: 0;
+                border-left: none; border-top: 1px solid var(--border-glow);
+            }
+        }
+
+        @media (min-width: 1400px) {
+            #chatPanel { max-width: 520px; }
+        }
     </style>
 </head>
 <body>
 
-<!-- Ambient Glow Orbs -->
-<div class="bg-glow bg-glow-1"></div>
-<div class="bg-glow bg-glow-2"></div>
+<!-- ═══════════════ APP SHELL ═══════════════════════════════════════ -->
+<div id="app">
 
-<!-- ===== NAVBAR ===== -->
-<nav class="navbar">
-    <div class="container-fluid">
-        <div class="d-flex align-items-center gap-2">
-            <span class="navbar-brand">
-                <i class="bi bi-camera-reels-fill brand-icon"></i>
-                <span class="brand-zh">五六零科技</span>
-                <span class="brand-sep">·</span>
-                <span class="brand-en">数字人展览平台</span>
+    <!-- ═══ TOP BAR ══════════════════════════════════════════════════ -->
+    <header id="topbar">
+        <a class="brand" href="/">
+            <i class="bi bi-camera-reels-fill"></i>
+            <span class="zh">五六零科技</span>
+            <span class="sep">·</span>
+            <span class="en">数字人展览平台</span>
+        </a>
+        <div class="right-group">
+            <a href="/avatar.html" target="_blank" class="btn-top-link"><i class="bi bi-person-bounding-box"></i>Avatar</a>
+            <a href="/admin.html" target="_blank" class="btn-top-link"><i class="bi bi-gear"></i>管理</a>
+            <a href="javascript:void(0)" onclick="shutdownServer()" class="btn-top-link danger"><i class="bi bi-power"></i></a>
+            <span class="session-badge disconnected" id="statusBadge">
+                <span class="status-dot off"></span>未连接
             </span>
-        </div>
-        <div class="nav-right">
-            <div class="nav-links">
-                <a href="/avatar.html" target="_blank"><i class="bi bi-person-bounding-box me-1"></i>Avatar生成</a>
-                <span class="nav-sep">|</span>
-                <a href="/admin.html" target="_blank"><i class="bi bi-gear me-1"></i>管理后台</a>
-                <span class="nav-sep">|</span>
-                <a href="/tts/index.html" target="_blank"><i class="bi bi-soundwave me-1"></i>TTS管理</a>
-                <span class="nav-sep">|</span>
-                <a href="javascript:void(0)" onclick="shutdownServer()" class="nav-danger"><i class="bi bi-power me-1"></i>关闭服务</a>
-                <span class="nav-sep">|</span>
-                <a href="/index-en.html" class="text-muted" style="font-size:0.78rem;"><i class="bi bi-globe me-1"></i>EN</a>
-            </div>
-            <span class="session-badge disconnected" id="statusBadge"><span class="status-dot off"></span>未连接</span>
-            <span class="text-muted" id="sessionIdDisplay">SID: -</span>
-        </div>
-    </div>
-</nav>
-
-<!-- ===== MAIN CONTENT ===== -->
-<div class="container mt-4" style="position:relative;z-index:2;">
-
-                            <!-- 核心功能配置面板 (可收起/展开模式) -->
-    <div class="glass-card mb-3 p-3">
-        <!-- 头部点击收起/展开控制条 -->
-        <div class="d-flex align-items-center justify-content-between cursor-pointer" onclick="toggleConfigPanel()" style="cursor:pointer; user-select:none;">
-            <div class="d-flex align-items-center gap-2" style="font-size:0.88rem; color:#00d4ff; font-weight:600;">
+            <span id="sessionIdDisplay">SID: -</span>
+            <button class="btn-settings" id="btnSettingsToggle" onclick="toggleSettingsDrawer()" title="配置面板">
                 <i class="bi bi-sliders"></i>
-                <span>核心参数配置面板</span>
-                <span class="badge bg-dark-subtle text-muted fw-normal" style="font-size:0.72rem; border:1px solid rgba(255,255,255,0.1); padding:3px 8px;">点击折叠/展开</span>
-            </div>
-            <div class="text-muted small d-flex align-items-center gap-1" style="font-size:0.8rem;">
-                <span id="panelToggleText">收起配置</span>
-                <i class="bi bi-chevron-up" id="panelToggleIcon" style="transition: transform 0.3s ease;"></i>
-            </div>
+            </button>
         </div>
+    </header>
 
-        <!-- 可折叠配置正文 -->
-        <div id="configPanelContent" class="panel-collapse-content">
-            <!-- Row 1: 数字人与 TTS 基础配置 -->
-            <div class="row g-3 align-items-center mb-2">
-                <div class="col-md-2">
-                    <label class="form-label small mb-1"><i class="bi bi-person-bounding-box me-1"></i>数字人模型</label>
-                    <select class="form-select form-select-sm" id="offerAvatar">
+    <!-- ═══ SETTINGS DRAWER ═══════════════════════════════════════════ -->
+    <div id="settingsDrawer">
+        <div class="drawer-inner">
+            <!-- Row 1: 数字人 & TTS -->
+            <div class="section-title"><i class="bi bi-person-bounding-box"></i> 数字人与语音</div>
+            <div class="config-row">
+                <div class="field">
+                    <label><i class="bi bi-person-bounding-box"></i>数字人模型</label>
+                    <select class="dark-select" id="offerAvatar">
                         <option value="zxw560" selected>zxw560 (默认模型)</option>
                         <option value="cc3">cc3</option>
                         <option value="zxw560-1">zxw560-1</option>
                         <option value="zxw560-2">zxw560-2</option>
                     </select>
-                    <small class="text-muted" id="avatarStatus"></small>
+                    <span class="field-hint" id="avatarStatus"></span>
                 </div>
-                <div class="col-md-2">
-                    <label class="form-label small mb-1"><i class="bi bi-file-earmark-music me-1"></i>参考音频</label>
-                    <input type="text" class="form-control form-control-sm" id="offerRefAudio" placeholder="zh-CN-YunxiaNeural">
+                <div class="field">
+                    <label><i class="bi bi-file-earmark-music"></i>参考音频</label>
+                    <input type="text" class="dark-input" id="offerRefAudio" placeholder="zh-CN-YunxiaNeural">
                 </div>
-                <div class="col-md-2">
-                    <label class="form-label small mb-1"><i class="bi bi-chat-left-quote me-1"></i>驱动模式</label>
-                    <select class="form-select form-select-sm" id="txtType">
+                <div class="field">
+                    <label><i class="bi bi-chat-left-quote"></i>驱动模式</label>
+                    <select class="dark-select" id="txtType">
                         <option value="echo">Echo 复读</option>
                         <option value="chat">Chat LLM</option>
                     </select>
                 </div>
-                <div class="col-md-3">
-                    <label class="form-label small mb-1"><i class="bi bi-cpu me-1"></i>TTS 模型</label>
-                    <select class="form-select form-select-sm" id="ttsModel">
+                <div class="field">
+                    <label><i class="bi bi-cpu"></i>TTS 模型</label>
+                    <select class="dark-select" id="ttsModel">
                         <option value="qwen-tts-realtime-latest" selected>qwen-tts-realtime-latest</option>
                         <option value="qwen-tts-realtime-2025-07-15">qwen-tts-realtime-2025-07-15</option>
                         <option value="qwen-tts-2025-05-22">qwen-tts-2025-05-22</option>
@@ -1149,226 +637,210 @@
                         <option value="qwen3-tts-flash-realtime" disabled>qwen3-tts-flash-realtime (额度不足)</option>
                     </select>
                 </div>
-                <div class="col-md-3">
-                    <label class="form-label small mb-1"><i class="bi bi-soundwave me-1"></i>音色</label>
-                    <select class="form-select form-select-sm" id="ttsVoice">
+                <div class="field">
+                    <label><i class="bi bi-soundwave"></i>音色</label>
+                    <select class="dark-select" id="ttsVoice">
                         <option value="Ethan" selected>Ethan (英文男声)</option>
                         <option value="Cherry">Cherry (英文女声)</option>
                     </select>
                 </div>
             </div>
 
-            <!-- Row 2: 驱动与录制控制 -->
-            <div class="row g-3 align-items-center pt-2" style="border-top:1px dashed rgba(255,255,255,0.08);">
-                <!-- 1. 音频驱动 -->
-                <div class="col-md-5">
-                    <label class="form-label small mb-1"><i class="bi bi-mic-fill me-1"></i>音频驱动 <span style="font-size:0.7rem;color:var(--text-muted);">(POST /humanaudio)</span></label>
-                    <div class="input-group input-group-sm">
-                        <input type="file" class="form-control form-control-sm" id="audioFile" accept="audio/*">
-                        <button class="btn btn-primary-custom btn-sm px-3" onclick="uploadAudio()"><i class="bi bi-upload me-1"></i>上传播放</button>
+            <!-- Row 2: 音频驱动 & 录制 & 打断 -->
+            <div class="section-title"><i class="bi bi-mic-fill"></i> 驱动与录制</div>
+            <div class="config-row">
+                <div class="field" style="flex:2; min-width:240px;">
+                    <label><i class="bi bi-upload"></i>音频驱动 (POST /humanaudio)</label>
+                    <div style="display:flex; gap:6px;">
+                        <input type="file" class="dark-input" id="audioFile" accept="audio/*" style="flex:1;">
+                        <button class="btn-accent" onclick="uploadAudio()" style="flex-shrink:0;"><i class="bi bi-play-fill"></i>上传播放</button>
                     </div>
                 </div>
-
-                <!-- 2. 录制控制 -->
-                <div class="col-md-4">
-                    <label class="form-label small mb-1"><i class="bi bi-record-circle me-1"></i>录制控制 <span style="font-size:0.7rem;color:var(--text-muted);">(POST /record)</span></label>
-                    <div class="d-flex gap-2">
-                        <button class="btn btn-sm btn-outline-custom flex-fill" id="btnRecToggle" onclick="toggleRecord()"><i class="bi bi-record-circle me-1"></i>开始录制</button>
-                        <button class="btn btn-sm btn-outline-custom flex-fill" id="btnDownload" onclick="downloadRecord()" disabled><i class="bi bi-download me-1"></i>下载录像</button>
+                <div class="field" style="flex:1; min-width:180px;">
+                    <label><i class="bi bi-record-circle"></i>录制控制 (POST /record)</label>
+                    <div style="display:flex; gap:6px;">
+                        <button class="btn-ghost" id="btnRecToggle" onclick="toggleRecord()"><i class="bi bi-record-circle"></i>开始录制</button>
+                        <button class="btn-ghost" id="btnDownload" onclick="downloadRecord()" disabled><i class="bi bi-download"></i>下载</button>
                     </div>
                 </div>
-
-                <!-- 3. 自动打断 -->
-                <div class="col-md-3 d-flex align-items-center pt-3">
-                    <label class="custom-switch-wrap mb-0">
-                        <input type="checkbox" id="txtInterrupt" checked class="custom-switch-input">
-                        <span class="custom-switch-slider"></span>
-                        <span class="custom-switch-label text-nowrap">播报自动打断</span>
+                <div class="field" style="flex:0 0 auto; min-width:0; justify-content:flex-end; padding-top:18px;">
+                    <label class="toggle-wrap">
+                        <input type="checkbox" id="txtInterrupt" checked>
+                        <span class="toggle-slider"></span>
+                        <span class="toggle-label">播报自动打断</span>
                     </label>
                 </div>
             </div>
         </div>
     </div>
 
-<div class="row">
-        <!-- ===== LEFT COLUMN: WebRTC + Video ===== -->
-        <div class="col-lg-7">
-            <!-- WebRTC Connection -->
-            <div class="glass-card">
-                <div class="card-header d-flex align-items-center justify-content-between py-2 px-3">
-                    <div class="d-flex align-items-center gap-2">
-                        <i class="bi bi-broadcast"></i> WebRTC 连接
-                    </div>
-                    <div class="d-flex align-items-center gap-2">
-                        <button class="btn-primary-custom py-1 px-3" id="btnStart" onclick="start()" style="font-size:0.85rem;"><i class="bi bi-play-fill"></i> 开始连接</button>
-                        <button class="btn-danger-custom py-1 px-3" id="btnStop" onclick="stop()" style="display:none; font-size:0.85rem;"><i class="bi bi-stop-fill"></i> 断开连接</button>
-                    </div>
-                </div>
-                <div class="card-body p-2">
-                    <div>
-                        <div id="videoFullscreenWrapper" class="video-fs-wrapper">
-                            <video id="video" autoplay playsinline muted controls></video>
-                            <audio id="audio" autoplay></audio>
+    <!-- ═══ MAIN CONTENT ══════════════════════════════════════════════ -->
+    <div id="mainContent">
 
-                            <!-- WebRTC 客户向简易加载蒙层 (覆盖在 video 之上) -->
-                            <div id="videoLoadingOverlay" class="video-loading-overlay" style="display:none;">
-                                <div class="loading-box-customer">
-                                    <div class="loading-pulse-icon">
-                                        <i class="bi bi-robot" id="loadingIcon"></i>
-                                    </div>
-                                    <div class="loading-status-text" id="webrtcStepTitle">正在连接数字人服务器...</div>
-                                    <div class="loading-status-sub" id="webrtcStepSubtext">准备初始化数字人推流通道</div>
-                                    <div class="customer-step-dots">
-                                        <span class="c-dot active" id="cdot1"></span>
-                                        <span class="c-dot" id="cdot2"></span>
-                                        <span class="c-dot" id="cdot3"></span>
-                                        <span class="c-dot" id="cdot4"></span>
-                                    </div>
+        <!-- ── VIDEO PANEL ──────────────────────────────────────────── -->
+        <section id="videoPanel">
+            <div class="panel-header">
+                <span class="panel-title"><i class="bi bi-broadcast"></i>WebRTC 实时视频</span>
+                <div style="display:flex; gap:8px;">
+                    <button class="btn-accent" id="btnStart" onclick="start()" style="font-size:0.74rem; padding:5px 14px;">
+                        <i class="bi bi-play-fill"></i> 开始连接
+                    </button>
+                    <button class="btn-danger-sm" id="btnStop" onclick="stop()" style="display:none; font-size:0.74rem; padding:5px 14px;">
+                        <i class="bi bi-stop-fill"></i> 断开连接
+                    </button>
+                </div>
+            </div>
+            <div class="video-stage">
+                <div id="videoFullscreenWrapper" class="video-fs-wrapper">
+                    <video id="video" autoplay playsinline muted controls></video>
+                    <audio id="audio" autoplay></audio>
+
+                    <!-- Loading Overlay -->
+                    <div id="videoLoadingOverlay" class="video-loading-overlay" style="display:none;">
+                        <div class="loading-box">
+                            <div class="loading-pulse"><i class="bi bi-robot" id="loadingIcon"></i></div>
+                            <div class="loading-title" id="webrtcStepTitle">正在连接数字人服务器...</div>
+                            <div class="loading-sub" id="webrtcStepSubtext">准备初始化数字人推流通道</div>
+                            <div class="step-dots">
+                                <span class="c-dot active" id="cdot1"></span>
+                                <span class="c-dot" id="cdot2"></span>
+                                <span class="c-dot" id="cdot3"></span>
+                                <span class="c-dot" id="cdot4"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button class="fs-trigger" onclick="toggleFullscreen()" title="全屏"><i class="bi bi-arrows-fullscreen"></i></button>
+
+                    <div class="fs-toolbar" id="fsToolbar">
+                        <button id="fsPanelToggle" onclick="toggleFsPanel()" title="控制面板"><i class="bi bi-layout-sidebar"></i> 控制</button>
+                        <button onclick="toggleFullscreen()" title="退出全屏"><i class="bi bi-fullscreen-exit"></i> 退出</button>
+                    </div>
+
+                    <div id="fsSidePanel" class="fs-side-panel">
+                        <div class="fs-glass-card" style="height:100%;display:flex;flex-direction:column;">
+                            <div class="fs-card-header">
+                                <i class="bi bi-chat-dots-fill"></i> 对话
+                                <div style="margin-left:auto;display:flex;gap:6px;align-items:center;">
+                                    <span id="fsChatModeLabel" style="font-size:0.7rem;color:var(--accent);padding:2px 6px;background:rgba(0,212,255,0.06);border-radius:6px;">Echo</span>
+                                    <button class="btn-ghost btn-sm" onclick="interrupt()" style="font-size:0.7rem;padding:4px 10px;">
+                                        <i class="bi bi-stop-circle"></i> 打断
+                                    </button>
                                 </div>
                             </div>
-                            <button class="fs-trigger" id="fsBtn" onclick="toggleFullscreen()" title="全屏"><i class="bi bi-arrows-fullscreen"></i></button>
-                            <div class="fs-toolbar" id="fsToolbar">
-                                <button id="fsPanelToggle" onclick="toggleFsPanel()" title="控制面板"><i class="bi bi-layout-sidebar"></i> 控制</button>
-                                <button onclick="toggleFullscreen()" title="退出全屏"><i class="bi bi-fullscreen-exit"></i> 退出</button>
-                            </div>
-                            <div id="fsSidePanel" class="fs-side-panel">
-                                <!-- Voice Conversation -->
-                                <div class="fs-glass-card">
-                                    <div class="fs-card-header"><i class="bi bi-mic-fill"></i> 语音对话</div>
-                                    <div class="fs-card-body">
-                                        <div id="fsVoiceStatusBar" class="small mb-2" style="display:none;">
-                                            <span id="fsVoiceStatusIcon">🎤</span>
-                                            <span id="fsVoiceStatusText"></span>
-                                        </div>
-                                        <div class="d-flex gap-2 align-items-center mb-2">
-                                            <select class="form-select form-select-sm" id="fsVoiceMode"
-                                                onchange="document.getElementById('voiceMode').value=this.value; onVoiceModeChange();"
-                                                style="width:130px;">
-                                                <option value="off">🎙️ 关闭</option>
-                                                <option value="free">💬 自由对话</option>
-                                                <option value="ptt">🎤 按住说话</option>
-                                            </select>
-                                            <button class="btn-outline-custom btn-sm" onclick="interrupt()"><i class="bi bi-stop-circle"></i> 打断</button>
-                                        </div>
-                                        <div id="fsPttContainer" style="display:none;" class="mb-2">
-                                            <button id="fsPttButton" class="btn-primary-custom w-100 py-3 fs-5"
-                                                onmousedown="pttStart()" onmouseup="pttEnd()" ontouchstart="pttStart()" ontouchend="pttEnd()">
-                                                🎤 按住说话
-                                            </button>
-                                        </div>
-                                        <div id="fsVoiceTranscript" class="voice-transcript mb-2" style="display:none;"></div>
-                                        <div id="fsVoiceChatLog" class="voice-chat-log"></div>
-                                    </div>
+                            <div class="chat-panel">
+                                <div class="chat-messages" id="fsChatMessages">
+                                    <div class="bubble-system-row"><span class="bubble-system">💡 连接 WebRTC 后开始对话</span></div>
                                 </div>
-                                <!-- Text Driver -->
-                                <div class="fs-glass-card">
-                                    <div class="fs-card-header"><i class="bi bi-chat-text-fill"></i> 文本驱动</div>
-                                    <div class="fs-card-body">
-                                        <div class="mb-2">
-                                            <label class="form-label">输入文本 <span class="param-hint">(type: echo/chat)</span></label>
-                                            <textarea class="form-control form-control-sm" id="fsTxtMessage" rows="2" placeholder="输入要播报的文本..."></textarea>
-                                        </div>
-                                        <div class="d-flex gap-2 align-items-end mb-2">
-                                            <select class="form-select form-select-sm" style="width:120px;" id="fsTxtType">
-                                                <option value="echo">Echo 复读</option>
-                                                <option value="chat">Chat LLM</option>
-                                            </select>
-                                            <select class="form-select form-select-sm" style="width:auto; flex:0 0 auto;" id="fsTtsModel">
-                                                <option value="qwen-tts-realtime-latest">qwen-tts-realtime-latest</option>
-                                                <option value="qwen-tts-realtime-2025-07-15">qwen-tts-realtime-2025-07-15</option>
-                                                <option value="qwen-tts-2025-05-22">qwen-tts-2025-05-22</option>
-                                                <option value="qwen-tts-latest">qwen-tts-latest</option>
-                                            </select>
-                                            <select class="form-select form-select-sm" style="width:auto; flex:0 0 auto;" id="fsTtsVoice">
-                                                <option value="Ethan">Ethan (英文男声)</option>
-                                                <option value="Cherry">Cherry (英文女声)</option>
-                                            </select>
-                                            <label class="custom-switch-wrap mb-0">
-                                                <input type="checkbox" id="fsTxtInterrupt" checked class="custom-switch-input">
-                                                <span class="custom-switch-slider"></span>
-                                                <span class="custom-switch-label text-nowrap">打断</span>
-                                            </label>
-                                            <button class="btn-primary-custom btn-sm ms-auto" onclick="sendFsText()"><i class="bi bi-send"></i> 发送</button>
-                                            <button class="btn-outline-custom btn-sm" onclick="interrupt()"><i class="bi bi-stop-circle"></i> 打断</button>
-                                        </div>
+                                <div class="chat-status-row" id="fsChatStatusRow" style="display:none;">
+                                    <span class="chat-status-pill" id="fsChatStatusPill"></span>
+                                </div>
+                                <div class="chat-toolbar">
+                                    <span class="tool-label">模式</span>
+                                    <span class="tool-value" id="fsChatTxtTypeLabel">Echo</span>
+                                    <span class="tool-label">TTS</span>
+                                    <span class="tool-value" id="fsChatTtsLabel">loading...</span>
+                                </div>
+                                <div class="chat-input-bar">
+                                    <textarea id="fsChatInput" placeholder="输入文本发送 / 按住🎤说话 / 点击🎙️自由对话…" rows="1"
+                                        onkeydown="onFsChatInputKeydown(event)" oninput="autoResizeChatInput(this)"></textarea>
+                                    <button class="btn-mic" id="fsBtnFree" title="自由对话" onclick="toggleFreeMode()">🎙️</button>
+                                    <button class="btn-mic" id="fsBtnPtt" title="按住说话"
+                                        onmousedown="pttStart()" onmouseup="pttEnd()" ontouchstart="pttStart()" ontouchend="pttEnd()">🎤</button>
+                                    <button class="btn-send" onclick="sendFsChatText()" title="发送"><i class="bi bi-send-fill"></i></button>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
+        </section>
 
-        <!-- ===== RIGHT COLUMN: Drivers + Actions ===== -->
-        </div><!-- /col-lg-7 -->
-
-        <div class="col-lg-5">
-            <!-- Unified Chat Panel -->
-            <div class="glass-card">
-                <div class="card-header d-flex align-items-center" style="gap:8px;">
-                    <i class="bi bi-chat-dots-fill"></i> 对话
-                    <div class="ms-auto d-flex gap-2 align-items-center">
-                        <span id="chatModeLabel" style="font-size:0.76rem;color:var(--accent-primary,#00d4ff);padding:2px 8px;background:rgba(0,212,255,0.08);border-radius:8px;cursor:pointer;" onclick="document.getElementById('txtType').focus()" title="在顶部配置面板切换模式">Echo</span>
-                        <button class="btn-outline-custom btn-sm" onclick="interrupt()" style="white-space:nowrap;">
-                            <i class="bi bi-stop-circle"></i> 打断
-                        </button>
-                    </div>
-                </div>
-                <div class="chat-panel">
-                    <div class="chat-messages" id="chatMessages">
-                        <div class="bubble-system-row">
-                            <span class="bubble-system">💡 连接 WebRTC 后开始对话</span>
-                        </div>
-                    </div>
-                    <div class="chat-status-row" id="chatStatusRow" style="display:none;">
-                        <span class="chat-status-pill" id="chatStatusPill"></span>
-                    </div>
-                    <div class="chat-toolbar">
-                        <label style="font-size:0.76rem;color:#64748b;margin:0;">模式</label>
-                        <!-- txtType already exists in top config panel — read from there -->
-                        <span id="chatTxtTypeLabel" style="font-size:0.76rem;color:var(--accent-primary,#00d4ff);padding:2px 8px;background:rgba(0,212,255,0.08);border-radius:8px;">Echo</span>
-                        <label style="font-size:0.76rem;color:#64748b;margin:0;margin-left:4px;">TTS</label>
-                        <span id="chatTtsLabel" style="font-size:0.76rem;color:var(--accent-primary,#00d4ff);padding:2px 8px;background:rgba(0,212,255,0.08);border-radius:8px;max-width:130px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">loading...</span>
-                        <select class="form-select form-select-sm" id="voiceMode" onchange="onVoiceModeChange()" style="display:none;">
-                            <option value="off">关闭</option>
-                            <option value="free">自由对话</option>
-                            <option value="ptt">按住说话</option>
-                        </select>
-                    </div>
-                    <div class="chat-input-bar">
-                        <textarea id="chatInput" placeholder="输入文本发送 / 按住🎤说话 / 点击🎙️自由对话…" rows="1"
-                            onkeydown="onChatInputKeydown(event)"
-                            oninput="autoResizeChatInput(this)"></textarea>
-                        <button class="btn-mic-chat btn-free-chat" id="btnFree" title="点击切换 自由对话" onclick="toggleFreeMode()">🎙️</button>
-                        <button class="btn-mic-chat" id="btnPtt" title="按住说话"
-                            onmousedown="pttStart()" onmouseup="pttEnd()" ontouchstart="pttStart()" ontouchend="pttEnd()">🎤</button>
-                        <button class="btn-send-chat" onclick="sendChatText()" title="发送">
-                            <i class="bi bi-send-fill"></i>
-                        </button>
-                    </div>
+        <!-- ── CHAT PANEL ───────────────────────────────────────────── -->
+        <section id="chatPanel">
+            <div class="panel-header">
+                <span class="panel-title"><i class="bi bi-chat-dots-fill"></i>对话</span>
+                <div style="display:flex; gap:8px; align-items:center;">
+                    <span id="chatModeLabel" style="font-size:0.7rem;color:var(--accent);padding:2px 8px;background:rgba(0,212,255,0.06);border-radius:6px;cursor:pointer;" title="在顶部配置面板切换模式">Echo</span>
+                    <button class="btn-ghost" onclick="interrupt()" style="font-size:0.72rem;padding:4px 10px;">
+                        <i class="bi bi-stop-circle"></i> 打断
+                    </button>
                 </div>
             </div>
-
-            <!-- Legacy DOM elements (JS compat — 必须不在 display:none 父容器内，否则 JS show/hide 无效) -->
-            <div style="position:absolute; left:0; top:0; visibility:hidden; pointer-events:none; width:0; height:0; overflow:hidden;">
-                <textarea id="txtMessage"></textarea>
-                <div id="voiceStatusBar"><span id="voiceStatusIcon"></span><span id="voiceStatusText"></span></div>
-                <div id="pttContainer"><button id="pttButton"></button></div>
-                <div id="voiceTranscript"></div>
-                <div id="voiceChatLog"></div>
-            </div>
-
-            
-
-            
-            </div>
-
-            
+            <div class="chat-panel">
+                <div class="chat-messages" id="chatMessages">
+                    <div class="bubble-system-row"><span class="bubble-system">💡 连接 WebRTC 后开始对话</span></div>
+                </div>
+                <div class="chat-status-row" id="chatStatusRow" style="display:none;">
+                    <span class="chat-status-pill" id="chatStatusPill"></span>
+                </div>
+                <div class="chat-toolbar">
+                    <span class="tool-label">模式</span>
+                    <span class="tool-value" id="chatTxtTypeLabel">Echo</span>
+                    <span class="tool-label">TTS</span>
+                    <span class="tool-value" id="chatTtsLabel">loading...</span>
+                    <select class="dark-select" id="voiceMode" onchange="onVoiceModeChange()" style="display:none; font-size:0.7rem; padding:2px 6px;">
+                        <option value="off">关闭</option>
+                        <option value="free">自由对话</option>
+                        <option value="ptt">按住说话</option>
+                    </select>
+                </div>
+                <div class="chat-input-bar">
+                    <textarea id="chatInput" placeholder="输入文本发送 / 按住🎤说话 / 点击🎙️自由对话…" rows="1"
+                        onkeydown="onChatInputKeydown(event)" oninput="autoResizeChatInput(this)"></textarea>
+                    <button class="btn-mic" id="btnFree" title="自由对话" onclick="toggleFreeMode()">🎙️</button>
+                    <button class="btn-mic" id="btnPtt" title="按住说话"
+                        onmousedown="pttStart()" onmouseup="pttEnd()" ontouchstart="pttStart()" ontouchend="pttEnd()">🎤</button>
+                    <button class="btn-send" onclick="sendChatText()" title="发送"><i class="bi bi-send-fill"></i></button>
                 </div>
             </div>
+        </section>
 
+    </div>
+
+</div>
+
+<!-- ═══════════════ Legacy DOM (JS compat - hidden) ══════════════════ -->
+<div style="position:absolute; left:0; top:0; visibility:hidden; pointer-events:none; width:0; height:0; overflow:hidden;">
+    <textarea id="txtMessage"></textarea>
+    <div id="voiceStatusBar"><span id="voiceStatusIcon"></span><span id="voiceStatusText"></span></div>
+    <div id="pttContainer"><button id="pttButton">🎤 按住说话</button></div>
+    <div id="voiceTranscript"></div>
+    <div id="voiceChatLog"></div>
+    <div id="configPanelContent" class="panel-collapse-content"></div>
+    <span id="panelToggleIcon"></span>
+    <span id="panelToggleText"></span>
+    <input type="text" id="offerRefText">
+    <input type="text" id="audiotypeVal" value="0">
+    <select id="fsVoiceMode"><option value="off">关闭</option></select>
+    <div id="fsPttContainer"><button id="fsPttButton"></button></div>
+    <div id="fsVoiceStatusBar"><span id="fsVoiceStatusIcon"></span><span id="fsVoiceStatusText"></span></div>
+    <div id="fsVoiceTranscript"></div>
+    <div id="fsVoiceChatLog"></div>
+    <textarea id="fsTxtMessage"></textarea>
+    <select id="fsTxtType"><option value="echo">Echo</option></select>
+    <input type="checkbox" id="fsTxtInterrupt">
+    <select id="fsTtsModel"></select>
+    <select id="fsTtsVoice"></select>
+    <input type="text" id="sessionid">
+</div>
+
+<!-- ═══════════════ SCRIPTS ══════════════════════════════════════════ -->
 <script>
-// ── 动态加载可用 Avatar 列表 ──────────────────────────────────
+// ── Settings Drawer Toggle ─────────────────────────────────────
+function toggleSettingsDrawer() {
+    const drawer = document.getElementById('settingsDrawer');
+    const btn = document.getElementById('btnSettingsToggle');
+    const isOpen = drawer.classList.toggle('open');
+    btn.classList.toggle('active', isOpen);
+}
+
+// ── Toggle Config Panel (stub for JS compat) ───────────────────
+function toggleConfigPanel() {
+    toggleSettingsDrawer();
+}
+
+// ── Load Avatars ───────────────────────────────────────────────
 async function loadAvatars() {
     const select = document.getElementById('offerAvatar');
     const statusEl = document.getElementById('avatarStatus');
@@ -1393,15 +865,14 @@ async function loadAvatars() {
                 if (statusEl) statusEl.textContent = '共 ' + avatars.length + ' 个可用数字人模型';
             }
         }
-
     } catch (e) {
         console.warn('Network fetch skipped for avatars, keeping pre-populated options:', e);
-        // 保留预置可用数字人模型，绝不清空
     }
 }
 document.addEventListener('DOMContentLoaded', loadAvatars);
-loadAvatars(); // 立即执行，防止已错失 DOMContentLoaded 事件
+loadAvatars();
 
+// ═══════════════ WebRTC ════════════════════════════════════════
 let pc = null;
 let sessionid = null;
 
@@ -1419,12 +890,12 @@ function updateStatus(connected) {
 function setSessionId(sid) {
     sessionid = sid;
     document.getElementById('sessionIdDisplay').textContent = 'SID: ' + (sid || '-');
+    document.getElementById('sessionid').value = sid || '';
 }
 
-// ─── WebRTC ────────────────────────────────────────────────
 let _reconnectAttempts = 0;
 const RECONNECT_MAX = 3;
-const RECONNECT_BASE_DELAY = 2000; // ms, exponential backoff
+const RECONNECT_BASE_DELAY = 2000;
 
 function negotiate() {
     pc.addTransceiver('video', { direction: 'recvonly' });
@@ -1453,10 +924,10 @@ function negotiate() {
         if (answer.sessionid) setSessionId(answer.sessionid);
         return pc.setRemoteDescription(new RTCSessionDescription({ type: 'answer', sdp: answer.sdp }));
     }).then(() => {
-        _reconnectAttempts = 0; // 连接成功，重置重试计数
+        _reconnectAttempts = 0;
     }).catch(e => {
         console.error('Negotiation error:', e);
-        throw e; // 向上传播，让重连逻辑捕获
+        throw e;
     });
 }
 
@@ -1465,7 +936,7 @@ function _attemptReconnect() {
         console.warn('WebRTC 重连失败，已达最大重试次数');
         updateStatus(false);
         setSessionId(null);
-        document.getElementById('btnStart').style.display = 'inline-block';
+        document.getElementById('btnStart').style.display = 'inline-flex';
         document.getElementById('btnStop').style.display = 'none';
         return;
     }
@@ -1514,7 +985,7 @@ function start() {
     _setupConnection();
     negotiate();
     document.getElementById('btnStart').style.display = 'none';
-    document.getElementById('btnStop').style.display = 'inline-block';
+    document.getElementById('btnStop').style.display = 'inline-flex';
 }
 
 function shutdownServer() {
@@ -1522,26 +993,22 @@ function shutdownServer() {
     if (!confirm('再次确认：真的要关闭服务器吗？')) return;
     fetch('/api/admin/shutdown', { method: 'POST' })
         .then(r => r.json())
-        .then(d => {
-            alert('服务器已关闭: ' + (d.msg || 'OK'));
-        })
-        .catch(() => {
-            alert('服务器已关闭（连接已中断）');
-        });
+        .then(d => { alert('服务器已关闭: ' + (d.msg || 'OK')); })
+        .catch(() => { alert('服务器已关闭（连接已中断）'); });
 }
 
 function stop() {
-    _reconnectAttempts = RECONNECT_MAX; // 阻止自动重连
+    _reconnectAttempts = RECONNECT_MAX;
     if (pc) { pc.close(); pc = null; }
     updateStatus(false);
     setSessionId(null);
-    document.getElementById('btnStart').style.display = 'inline-block';
+    document.getElementById('btnStart').style.display = 'inline-flex';
     document.getElementById('btnStop').style.display = 'none';
     document.getElementById('video').srcObject = null;
     document.getElementById('audio').srcObject = null;
 }
 
-// ─── Text ──────────────────────────────────────────────────
+// ── Text ──────────────────────────────────────────────────────
 function sendText() {
     const text = document.getElementById('txtMessage').value;
     const type = document.getElementById('txtType').value;
@@ -1565,7 +1032,7 @@ function sendText() {
     });
 }
 
-// ─── Audio Upload ──────────────────────────────────────────
+// ── Audio Upload ──────────────────────────────────────────────
 function uploadAudio() {
     const file = document.getElementById('audioFile').files[0];
     if (!file || !sessionid) return alert('请先连接 WebRTC 并选择音频文件');
@@ -1578,7 +1045,7 @@ function uploadAudio() {
         .then(r => r.json()).then(d => console.log('humanaudio:', d));
 }
 
-// ─── Interrupt ─────────────────────────────────────────────
+// ── Interrupt ─────────────────────────────────────────────────
 function interrupt() {
     if (!sessionid) return;
     fetch('/interrupt_talk', {
@@ -1588,7 +1055,7 @@ function interrupt() {
     }).then(r => r.json()).then(d => console.log('interrupt:', d));
 }
 
-// ─── Speaking Status ───────────────────────────────────────
+// ── Speaking Status ───────────────────────────────────────────
 function checkSpeaking() {
     if (!sessionid) return alert('请先连接 WebRTC');
     fetch('/is_speaking', {
@@ -1598,7 +1065,7 @@ function checkSpeaking() {
     }).then(r => r.json()).then(d => alert('Speaking: ' + JSON.stringify(d.data)));
 }
 
-// ─── Recording ─────────────────────────────────────────────
+// ── Recording ─────────────────────────────────────────────────
 let recording = false;
 function toggleRecord() {
     if (!sessionid) return alert('请先连接 WebRTC');
@@ -1612,11 +1079,11 @@ function toggleRecord() {
         console.log(type + ':', d);
         recording = !recording;
         if (recording) {
-            btn.className = 'btn-danger-custom btn-sm';
+            btn.className = 'btn-danger-sm';
             btn.innerHTML = '<i class="bi bi-stop-circle"></i> 停止录制';
             document.getElementById('btnDownload').disabled = true;
         } else {
-            btn.className = 'btn-outline-custom btn-sm';
+            btn.className = 'btn-ghost';
             btn.innerHTML = '<i class="bi bi-record-circle"></i> 开始录制';
             document.getElementById('btnDownload').disabled = false;
         }
@@ -1627,7 +1094,7 @@ function downloadRecord() {
     window.open('/record/' + sessionid, '_blank');
 }
 
-// ─── Audiotype ─────────────────────────────────────────────
+// ── Audiotype ─────────────────────────────────────────────────
 function setAudiotype() {
     if (!sessionid) return alert('请先连接 WebRTC');
     const val = parseInt(document.getElementById('audiotypeVal').value) || 0;
@@ -1638,8 +1105,7 @@ function setAudiotype() {
     }).then(r => r.json()).then(d => console.log('set_audiotype:', d));
 }
 
-// ─── Voice Interaction (Free + Push-to-Talk) ─────────────────
-// State
+// ═══════════════ Voice Interaction ════════════════════════════
 let voiceMode = 'off';
 let voiceRecognition = null;
 let voiceEnabled = false;
@@ -1650,43 +1116,28 @@ let voiceRestartCount = 0;
 let voiceCooldownTimer = null;
 let voiceLastSentText = '';
 let voiceWaitingTimeout = null;
-const VOICE_WAITING_MAX_MS = 60000;   // Max total waiting time for reply
-const VOICE_WAITING_START_MS = 10000; // Max time before avatar starts speaking
+const VOICE_WAITING_MAX_MS = 60000;
+const VOICE_WAITING_START_MS = 10000;
 
-// Unified local ASR state
 let localASR = {
-    ws: null,
-    stream: null,
-    audioCtx: null,
-    source: null,
-    processor: null,
-    captureActive: false,    // true = sending audio frames to WebSocket
-    mode: null,              // 'free' or 'ptt'
-    pendingResolve: null,    // Promise resolve for pending result
-    pendingText: '',         // Accumulated result text
-    ready: false,            // true = WebSocket + mic are ready
-    closing: false,          // Prevent re-entrant close
-    // VAD state
-    vadSilenceMs: 0,
-    vadSpeechDetected: false,
-    vadStartTime: 0,
+    ws: null, stream: null, audioCtx: null, source: null, processor: null,
+    captureActive: false, mode: null, pendingResolve: null, pendingText: '',
+    ready: false, closing: false,
+    vadSilenceMs: 0, vadSpeechDetected: false, vadStartTime: 0,
     vadConfig: {
-        silenceThreshold: 0.01,   // RMS amplitude below this = silence
-        silenceDurationMs: 1500,  // 1.5s silence after speech → trigger ASR
-        minSpeechMs: 300,         // ignore speech shorter than 300ms (noise)
-        maxCaptureMs: 30000,      // safety limit: 30s max capture
+        silenceThreshold: 0.01, silenceDurationMs: 1500,
+        minSpeechMs: 300, maxCaptureMs: 30000,
     },
 };
 
 const VOICE_MAX_RESTART = 3;
-const VOICE_ECHO_COOLDOWN_MS = 2000;   // 安全兜底冷却（回声检测成功时不受此限制）
+const VOICE_ECHO_COOLDOWN_MS = 2000;
 const VOICE_TEXT_MIN_LENGTH = 3;
-let _avatarSpeaking = false;           // 数字人是否正在说话
-let _avatarSpeakEndTime = 0;           // 数字人停止说话的时间戳
-let _avatarRecentTexts = [];           // 数字人最近说的话（用于回声检测）
-const AVATAR_TEXT_HISTORY_MAX = 10;    // 最多记住最近 N 句
+let _avatarSpeaking = false;
+let _avatarSpeakEndTime = 0;
+let _avatarRecentTexts = [];
+const AVATAR_TEXT_HISTORY_MAX = 10;
 
-// ─── Voice Mode Switch ──────────────────────────────────────
 function onVoiceModeChange() {
     const newMode = document.getElementById('voiceMode').value;
     if (newMode === voiceMode) return;
@@ -1717,17 +1168,15 @@ function onVoiceModeChange() {
     } else if (newMode === 'ptt') {
         showVoiceStatus(true, '⏳', '准备麦克风...');
         warmupLocalASR('ptt', () => {
-            if (voiceMode === 'ptt') {
-                showVoiceStatus(false);
-            }
+            if (voiceMode === 'ptt') { showVoiceStatus(false); }
         });
     }
 
-    // Sync fullscreen overlay voice mode
     const fsVm = document.getElementById('fsVoiceMode');
     if (fsVm) { fsVm.value = newMode; }
     const fsPttC = document.getElementById('fsPttContainer');
     if (fsPttC) { fsPttC.style.display = (newMode === 'ptt') ? 'block' : 'none'; }
+    syncMicButtons();
 }
 
 function resetVoiceMode() {
@@ -1735,9 +1184,10 @@ function resetVoiceMode() {
     voiceMode = 'off';
     document.getElementById('voiceMode').value = 'off';
     document.getElementById('pttContainer').style.display = 'none';
+    syncMicButtons();
 }
 
-// ─── Free Conversation Mode ──────────────────────────────────
+// ── Free Conversation Mode ────────────────────────────────────
 function startFreeRecognition() {
     if (!voiceEnabled || voiceWaitingForReply) return;
 
@@ -1769,11 +1219,9 @@ function startFreeRecognition() {
                 const text = finalText.trim();
                 showVoiceTranscript(text, false);
 
-                // Echo/noise rejection
                 if (!isValidVoiceInput(text)) return;
                 voiceLastFinalText = text;
 
-                // Stop recognition while processing
                 if (voiceRecognition) {
                     try { voiceRecognition.stop(); } catch(e) {}
                     voiceRecognition = null;
@@ -1803,14 +1251,10 @@ function startFreeRecognition() {
                 return;
             }
 
-            // Google service blocked (common in China) → fallback to local ASR
             if (event.error === 'network') {
                 console.log('SpeechRecognition network error, falling back to local ASR');
                 showVoiceStatus(true, '🔄', '切换到本地语音识别...');
-                if (voiceRecognition) {
-                    try { voiceRecognition.stop(); } catch(e) {}
-                    voiceRecognition = null;
-                }
+                if (voiceRecognition) { try { voiceRecognition.stop(); } catch(e) {} voiceRecognition = null; }
                 warmupLocalASR('free', () => {
                     if (voiceMode === 'free' && voiceEnabled) {
                         startCapture();
@@ -1851,7 +1295,6 @@ function startFreeRecognition() {
         voiceRecognition.start();
     } catch (e) {
         console.error('启动语音识别失败:', e);
-        // Fallback to local ASR
         warmupLocalASR('free', () => {
             if (voiceMode === 'free' && voiceEnabled) {
                 startCapture();
@@ -1861,7 +1304,6 @@ function startFreeRecognition() {
     }
 }
 
-// ─── Microphone Permission ───────────────────────────────────
 function _requestMicPermission() {
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
         return navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
@@ -1882,7 +1324,8 @@ function _requestMicPermission() {
     alert('当前浏览器不支持麦克风访问，请使用 Chrome 或 Edge 浏览器');
     return Promise.resolve(false);
 }
-// ─── Unified Local ASR ──────────────────────────────────────
+
+// ── Unified Local ASR ─────────────────────────────────────────
 function warmupLocalASR(mode, onReady) {
     if (localASR.ready && localASR.mode === mode && localASR.ws && localASR.ws.readyState === WebSocket.OPEN) {
         if (onReady) onReady();
@@ -1929,7 +1372,6 @@ function _connectLocalASR(onReady) {
                     if (data.is_final) {
                         const text = (data.text || '').trim();
 
-                        // ASR 返回空文本：VAD 检测到的不是有效语音，重启监听
                         if (!text) {
                             console.log('[ASR] result: (empty), restarting...');
                             if (localASR.mode === 'free' && voiceEnabled && !voiceWaitingForReply) {
@@ -1946,13 +1388,10 @@ function _connectLocalASR(onReady) {
                         if (!isValidVoiceInput(text)) {
                             console.log('[ASR] rejected by isValidVoiceInput');
                             if (localASR.mode === 'free' && voiceEnabled && !voiceWaitingForReply) {
-                                // Pause capture. Debounced restart prevents infinite loop
-                                // when VAD triggers on silence → ASR returns empty → restart.
                                 localASR.captureActive = false;
                                 if (text.length < VOICE_TEXT_MIN_LENGTH) {
                                     _restartAfterSilence();
                                 } else {
-                                    // 回声被拒绝：立即重新开始监听（不等冷却）
                                     console.log('[Echo] rejected, restarting listen immediately');
                                     setTimeout(() => _restartFreeListening(), 500);
                                 }
@@ -1960,34 +1399,27 @@ function _connectLocalASR(onReady) {
                             return;
                         }
 
-                        // CRITICAL: discard if waiting for reply (echo protection)
                         if (voiceWaitingForReply) {
                             console.log('[Echo] discard ASR result while waiting for reply');
                             if (localASR.mode === 'free') localASR.captureActive = false;
                             return;
                         }
 
-                        // PTT 模式：ASR 结果可能在 pttEnd() 之前到达
-                        // 先存到 pendingText，不设 voiceLastFinalText（避免 pttEnd 重复检测误杀）
-                        // 如果 pendingResolve 已设置（pttEnd 先于 ASR 结果），直接 resolve
                         if (localASR.mode === 'ptt') {
                             if (localASR.pendingResolve) {
                                 localASR.pendingResolve(text);
                                 localASR.pendingResolve = null;
                             }
-                            // 不设 voiceLastFinalText，等 sendVoiceText 统一设置
                             return;
                         }
 
                         voiceLastFinalText = text;
 
-                        // Resolve pending PTT promise (fallback, should not normally reach here)
                         if (localASR.pendingResolve) {
                             localASR.pendingResolve(text);
                             localASR.pendingResolve = null;
                         }
 
-                        // Free mode: pause capture, keep connection alive for next turn
                         if (localASR.mode === 'free') {
                             localASR.captureActive = false;
                             sendVoiceText(text, true);
@@ -2001,12 +1433,9 @@ function _connectLocalASR(onReady) {
                 if (!voiceEnabled) { resetVoiceMode(); return; }
                 showVoiceStatus(true, '⚠️', 'ASR连接错误，尝试重连...');
                 _teardownLocalASR();
-                // In free mode, auto-reconnect instead of giving up
                 if (voiceMode === 'free' && voiceEnabled) {
                     setTimeout(() => {
-                        if (voiceEnabled && voiceMode === 'free') {
-                            _restartFreeListening();
-                        }
+                        if (voiceEnabled && voiceMode === 'free') { _restartFreeListening(); }
                     }, 1000);
                 } else {
                     setTimeout(() => resetVoiceMode(), 2000);
@@ -2020,12 +1449,9 @@ function _connectLocalASR(onReady) {
                     localASR.pendingResolve('');
                     localASR.pendingResolve = null;
                 }
-                // Auto-restart in free mode if connection drops unexpectedly
                 if (voiceEnabled && voiceMode === 'free' && !voiceWaitingForReply) {
                     setTimeout(() => {
-                        if (voiceEnabled && voiceMode === 'free') {
-                            _restartFreeListening();
-                        }
+                        if (voiceEnabled && voiceMode === 'free') { _restartFreeListening(); }
                     }, 500);
                 }
             };
@@ -2039,11 +1465,7 @@ function _connectLocalASR(onReady) {
     }
 }
 
-function _setupAudioCapture(stream) {
-    // Just store the stream for later. AudioContext is created in startCapture()
-    // where we have a user gesture context (needed for AudioContext.resume()).
-    localASR.stream = stream;
-}
+function _setupAudioCapture(stream) { localASR.stream = stream; }
 
 function _ensureAudioContext() {
     if (localASR.audioCtx) return;
@@ -2054,8 +1476,6 @@ function _ensureAudioContext() {
         localASR.source = localASR.audioCtx.createMediaStreamSource(localASR.stream);
         localASR.processor = localASR.audioCtx.createScriptProcessor(4096, 1, 1);
         localASR.source.connect(localASR.processor);
-        // ScriptProcessor must be connected to destination for onaudioprocess to fire.
-        // Use a silent gain node to avoid playing mic audio through speakers.
         const silentGain = localASR.audioCtx.createGain();
         silentGain.gain.value = 0;
         localASR.processor.connect(silentGain);
@@ -2066,7 +1486,6 @@ function _ensureAudioContext() {
             if (!localASR.ws || localASR.ws.readyState !== WebSocket.OPEN) return;
             const input = e.inputBuffer.getChannelData(0);
 
-            // ── VAD: compute RMS amplitude ──
             let sum = 0;
             for (let i = 0; i < input.length; i++) sum += input[i] * input[i];
             const rms = Math.sqrt(sum / input.length);
@@ -2074,33 +1493,27 @@ function _ensureAudioContext() {
             const cfg = localASR.vadConfig;
 
             if (rms > cfg.silenceThreshold) {
-                // Speech detected
                 localASR.vadSpeechDetected = true;
                 localASR.vadSilenceMs = 0;
             } else {
-                // Silence
                 localASR.vadSilenceMs += chunkMs;
             }
 
             const elapsedMs = Date.now() - localASR.vadStartTime;
 
-            // In PTT mode, don't auto-stop — user controls stop via button release
             if (localASR.mode !== 'ptt') {
-                // Free mode: auto-stop on silence after speech, or max capture time
                 if ((localASR.vadSpeechDetected && localASR.vadSilenceMs >= cfg.silenceDurationMs && elapsedMs >= cfg.minSpeechMs) ||
                     elapsedMs >= cfg.maxCaptureMs) {
                     localASR.captureActive = false;
                     stopCapture();
-                    return; // Don't send this trailing silence chunk
+                    return;
                 }
             } else if (elapsedMs >= cfg.maxCaptureMs) {
-                // PTT mode: only auto-stop at max capture limit (30s)
                 localASR.captureActive = false;
                 stopCapture();
                 return;
             }
 
-            // Send audio to ASR server
             const pcm16 = new Int16Array(input.length);
             for (let i = 0; i < input.length; i++) {
                 pcm16[i] = Math.max(-32768, Math.min(32767, Math.round(input[i] * 32768)));
@@ -2121,10 +1534,7 @@ function _teardownLocalASR() {
     if (localASR.closing) return;
     localASR.closing = true;
     localASR.captureActive = false;
-    if (localASR.ws) {
-        try { localASR.ws.close(); } catch(e) {}
-        localASR.ws = null;
-    }
+    if (localASR.ws) { try { localASR.ws.close(); } catch(e) {} localASR.ws = null; }
     _teardownAudioCapture();
     localASR.ready = false;
     localASR.mode = null;
@@ -2133,12 +1543,7 @@ function _teardownLocalASR() {
 
 function _resumeASRSession() {
     if (localASR.ws && localASR.ws.readyState === WebSocket.OPEN) {
-        try {
-            localASR.ws.send(JSON.stringify({
-                chunk_size: [5, 10, 5], wav_name: "h5",
-                is_speaking: true, mode: "2pass", itn: true,
-            }));
-        } catch(e) {}
+        try { localASR.ws.send(JSON.stringify({ chunk_size: [5, 10, 5], wav_name: "h5", is_speaking: true, mode: "2pass", itn: true })); } catch(e) {}
     }
 }
 
@@ -2146,27 +1551,19 @@ function startCapture() {
     if (!localASR.ready || !localASR.ws || localASR.ws.readyState !== WebSocket.OPEN) return;
     if (!localASR.stream) return;
 
-    // Create AudioContext on demand (needs user gesture for resume to work)
     _ensureAudioContext();
     localASR.captureActive = true;
-
-    // Reset VAD state
     localASR.vadSilenceMs = 0;
     localASR.vadSpeechDetected = false;
     localASR.vadStartTime = Date.now();
 
-    const doStart = () => {
-        // Always start a fresh ASR session (server resets its buffer on each is_speaking:true)
-        _resumeASRSession();
-    };
+    const doStart = () => { _resumeASRSession(); };
 
-    // Resume AudioContext (Chrome suspends it when created outside user gesture)
     if (localASR.audioCtx && localASR.audioCtx.state === 'suspended') {
         localASR.audioCtx.resume().then(doStart).catch(e => {
             console.error('AudioContext resume failed:', e);
             localASR.captureActive = false;
             showVoiceStatus(true, '⚠️', '请点击页面后重试');
-            // One-time click listener to retry
             const retry = () => {
                 document.removeEventListener('click', retry);
                 if (localASR.audioCtx && localASR.audioCtx.state === 'suspended') {
@@ -2189,7 +1586,7 @@ function stopCapture() {
     }
 }
 
-// ─── Push-to-Talk Mode ──────────────────────────────────────
+// ── Push-to-Talk ──────────────────────────────────────────────
 let _pttActive = false;
 
 function pttStart() {
@@ -2197,35 +1594,35 @@ function pttStart() {
     _pttActive = true;
 
     document.getElementById('pttButton').className = 'btn-danger-custom w-100 py-3 fs-5';
+    if (typeof btnDangerCustomStyle === 'undefined') {
+        document.getElementById('pttButton').style.background = 'linear-gradient(135deg, #e63946, #c1121f)';
+        document.getElementById('pttButton').style.color = '#fff';
+        document.getElementById('pttButton').style.border = 'none';
+    }
     document.getElementById('pttButton').textContent = '✋ 松开发送';
 
-    // Sync fullscreen PTT button
     const fsPttBtn = document.getElementById('fsPttButton');
     if (fsPttBtn) { fsPttBtn.className = 'btn btn-danger w-100 py-2'; fsPttBtn.textContent = '✋ 松开发送'; }
 
-    // Sync main chat panel PTT button
     const mainPtt = document.getElementById('btnPtt');
     if (mainPtt) { mainPtt.classList.add('ptt-hold'); mainPtt.textContent = '✋'; }
 
-    // Clear any previous waiting state so new input is not discarded
-    _clearVoiceWaiting();
+    const fsPtt = document.getElementById('fsBtnPtt');
+    if (fsPtt) { fsPtt.classList.add('ptt-hold'); fsPtt.textContent = '✋'; }
 
-    // 重置回声过滤状态，避免上次对话的文字阻止本次识别
+    _clearVoiceWaiting();
     voiceLastFinalText = '';
     voiceLastSentText = '';
     localASR.pendingText = '';
     _avatarRecentTexts = [];
 
     console.log('[PTT] start');
-
-    // Interrupt any ongoing avatar speech
     fetch('/interrupt_talk', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sessionid: String(sessionid) }),
     }).catch(() => {});
 
-    // Always use local ASR for PTT (pre-warmed, no Google SpeechRecognition issues)
     _startPTTLocal();
 }
 
@@ -2250,23 +1647,26 @@ function pttEnd() {
     _pttActive = false;
 
     document.getElementById('pttButton').className = 'btn-primary-custom w-100 py-3 fs-5';
+    if (typeof btnPrimaryCustomStyle === 'undefined') {
+        document.getElementById('pttButton').style.background = 'linear-gradient(135deg, #00b4d8, #0096c7)';
+        document.getElementById('pttButton').style.color = '#fff';
+        document.getElementById('pttButton').style.border = 'none';
+    }
     document.getElementById('pttButton').textContent = '🎤 按住说话';
 
-    // Sync fullscreen PTT button
     const fsPttBtn = document.getElementById('fsPttButton');
     if (fsPttBtn) { fsPttBtn.className = 'btn btn-primary w-100 py-2'; fsPttBtn.textContent = '🎤 按住说话'; }
 
-    // Sync main chat panel PTT button
     const mainPtt = document.getElementById('btnPtt');
     if (mainPtt) { mainPtt.classList.remove('ptt-hold'); mainPtt.textContent = '🎤'; }
 
+    const fsPtt = document.getElementById('fsBtnPtt');
+    if (fsPtt) { fsPtt.classList.remove('ptt-hold'); fsPtt.textContent = '🎤'; }
+
     showVoiceStatus(true, '⏳', '处理中...');
 
-    // 无论 captureActive 状态如何，都停止采集并等待 ASR 结果
-    // （自由对话模式的 VAD 可能已提前将 captureActive 设为 false）
     if (localASR.ready && localASR.ws && localASR.ws.readyState === WebSocket.OPEN) {
         stopCapture();
-
         new Promise((resolve) => {
             localASR.pendingResolve = resolve;
             setTimeout(() => {
@@ -2289,33 +1689,21 @@ function pttEnd() {
         });
         return;
     }
-
     showVoiceStatus(false);
 }
 
-// Global listeners: stop PTT if mouse/touch released anywhere on the page
 document.addEventListener('mouseup', () => { if (_pttActive) pttEnd(); });
 document.addEventListener('touchend', () => { if (_pttActive) pttEnd(); });
 document.addEventListener('touchcancel', () => { if (_pttActive) pttEnd(); });
 
-// ─── Shared Voice Functions ──────────────────────────────────
+// ── Shared Voice Functions ────────────────────────────────────
 function isValidVoiceInput(text) {
     if (!text || text.length < VOICE_TEXT_MIN_LENGTH) return false;
     if (text === voiceLastFinalText) return false;
-    if (text === voiceLastSentText) {
-        console.log('[Echo Reject] matches last sent:', text);
-        return false;
-    }
-    if (voiceLastSentText && isTextSimilar(text, voiceLastSentText)) {
-        console.log('[Echo Reject] similar to last sent:', text);
-        return false;
-    }
-    // 回声检测：ASR 结果与数字人最近说的话相似 → 判定为回声
+    if (text === voiceLastSentText) { console.log('[Echo Reject] matches last sent:', text); return false; }
+    if (voiceLastSentText && isTextSimilar(text, voiceLastSentText)) { console.log('[Echo Reject] similar to last sent:', text); return false; }
     for (const avatarText of _avatarRecentTexts) {
-        if (isTextSimilar(text, avatarText)) {
-            console.log('[Echo Reject] matches avatar speech:', text, '~', avatarText.substring(0, 30));
-            return false;
-        }
+        if (isTextSimilar(text, avatarText)) { console.log('[Echo Reject] matches avatar speech:', text, '~', avatarText.substring(0, 30)); return false; }
     }
     return true;
 }
@@ -2336,26 +1724,15 @@ function startVoiceCooldown() {
     const jitter = VOICE_ECHO_COOLDOWN_MS * (0.8 + Math.random() * 0.4);
     voiceCooldownTimer = setTimeout(() => {
         voiceCooldownTimer = null;
-        if (voiceMode === 'free' && voiceEnabled && !voiceWaitingForReply) {
-            _restartFreeListening();
-        }
+        if (voiceMode === 'free' && voiceEnabled && !voiceWaitingForReply) { _restartFreeListening(); }
     }, jitter);
     showVoiceStatus(true, '🔇', '冷却中...');
 }
 
 function _restartFreeListening() {
     if (!voiceEnabled || voiceWaitingForReply) return;
-
-    // If already capturing, no action needed
     if (localASR.captureActive) return;
-
-    // 数字人正在说话，不重启 ASR
-    if (_avatarSpeaking) {
-        console.log('[Voice] blocked: avatar still speaking');
-        setTimeout(() => _restartFreeListening(), 1000);
-        return;
-    }
-    // 数字人刚说完不到 2 秒，等待回声消散
+    if (_avatarSpeaking) { console.log('[Voice] blocked: avatar still speaking'); setTimeout(() => _restartFreeListening(), 1000); return; }
     const sinceSpeak = Date.now() - _avatarSpeakEndTime;
     if (_avatarSpeakEndTime > 0 && sinceSpeak < VOICE_ECHO_COOLDOWN_MS) {
         const remain = VOICE_ECHO_COOLDOWN_MS - sinceSpeak;
@@ -2363,15 +1740,11 @@ function _restartFreeListening() {
         setTimeout(() => _restartFreeListening(), remain);
         return;
     }
-
-    // If connection is still alive, just start capture (which sends is_speaking:true)
     if (localASR.ready && localASR.ws && localASR.ws.readyState === WebSocket.OPEN) {
         showVoiceStatus(true, '🎤', '聆听中...');
         startCapture();
         return;
     }
-
-    // Connection lost — full warmup needed
     showVoiceStatus(true, '🎤', '聆听中...（重新连接）');
     warmupLocalASR('free', () => {
         if (voiceMode === 'free' && voiceEnabled && !voiceWaitingForReply) startCapture();
@@ -2380,32 +1753,24 @@ function _restartFreeListening() {
 
 let _silenceRestartTimer = null;
 function _restartAfterSilence() {
-    // Restart listening after an empty/noise ASR result.
-    // Debounced to prevent VAD→ASR→empty→restart infinite loops.
     if (!voiceEnabled || voiceMode !== 'free' || voiceWaitingForReply) return;
-    if (_silenceRestartTimer) return; // Already pending
+    if (_silenceRestartTimer) return;
     _silenceRestartTimer = setTimeout(() => {
         _silenceRestartTimer = null;
-        if (voiceEnabled && voiceMode === 'free' && !voiceWaitingForReply) {
-            _restartFreeListening();
-        }
+        if (voiceEnabled && voiceMode === 'free' && !voiceWaitingForReply) { _restartFreeListening(); }
     }, 500);
 }
 
 function sendVoiceText(text, interrupt) {
-    if (!text || !sessionid) {
-        console.warn('[Voice] sendVoiceText blocked:', { text: !!text, sessionid });
-        return;
-    }
+    if (!text || !sessionid) { console.warn('[Voice] sendVoiceText blocked:', { text: !!text, sessionid }); return; }
     voiceWaitingForReply = true;
     voiceLastSentText = text;
-    voiceLastFinalText = text;  // 标记为已处理，防止重复
+    voiceLastFinalText = text;
     console.log('[Voice] sendVoiceText:', text.substring(0, 50));
     showVoiceStatus(true, '⏳', '处理中...');
     appendVoiceChatLog('user', text);
     showVoiceTranscript('', false);
 
-    // Start total timeout — if reply never comes, recover
     if (voiceWaitingTimeout) clearTimeout(voiceWaitingTimeout);
     voiceWaitingTimeout = setTimeout(() => {
         if (voiceWaitingForReply) {
@@ -2455,43 +1820,27 @@ function pollSpeakingEnd() {
     let avatarEverSpoke = false;
 
     voicePollTimer = setInterval(() => {
-        if (!voiceEnabled || !sessionid) {
-            _clearVoiceWaiting();
-            return;
-        }
+        if (!voiceEnabled || !sessionid) { _clearVoiceWaiting(); return; }
         fetch('/is_speaking', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ sessionid: String(sessionid) }),
         }).then(r => r.json()).then(d => {
-            // Handle both old (boolean) and new (object) response format
             const speaking = typeof d.data === 'boolean' ? d.data : (d.data && d.data.speaking);
             const llmPending = d.data && typeof d.data === 'object' && d.data.llm_pending;
 
-            // 更新数字人最近说的话（用于回声检测）
-            if (d.data && d.data.recent_texts) {
-                _avatarRecentTexts = d.data.recent_texts;
-            }
+            if (d.data && d.data.recent_texts) { _avatarRecentTexts = d.data.recent_texts; }
 
-            if (speaking) {
-                avatarEverSpoke = true;
-                _avatarSpeaking = true;
-            }
+            if (speaking) { avatarEverSpoke = true; _avatarSpeaking = true; }
 
             if (!speaking) {
-                if (_avatarSpeaking) {
-                    _avatarSpeaking = false;
-                    _avatarSpeakEndTime = Date.now();
-                }
-
+                if (_avatarSpeaking) { _avatarSpeaking = false; _avatarSpeakEndTime = Date.now(); }
                 if (avatarEverSpoke) {
-                    // Avatar finished speaking — normal end
                     _clearVoiceWaiting();
                     voiceRestartCount = 0;
                     appendVoiceChatLog('avatar', '(回复完成)');
                     if (voiceMode === 'free' && voiceEnabled) startVoiceCooldown();
                 } else if (!llmPending && Date.now() - pollStartTime > VOICE_WAITING_START_MS) {
-                    // LLM finished but avatar never spoke — error
                     console.warn('[Voice] LLM done but avatar never spoke');
                     _clearVoiceWaiting();
                     appendVoiceChatLog('avatar', '(未收到回复)');
@@ -2540,14 +1889,13 @@ function stopVoiceMode() {
     showVoiceStatus(false);
 }
 
-// Override stop() to also stop voice mode
 const _origStop = stop;
 stop = function() {
     try { if (voiceMode !== 'off') resetVoiceMode(); } catch(e) { console.error('voice cleanup error:', e); }
     _origStop();
 };
 
-// ─── Fullscreen Side Panel ────────────────────────────────────
+// ═══════════════ Fullscreen ═══════════════════════════════════
 const _wrapper = document.getElementById('videoFullscreenWrapper');
 let _isFullscreen = false;
 
@@ -2568,15 +1916,12 @@ function onFullscreenChange() {
     const fsEl = document.fullscreenElement || document.webkitFullscreenElement;
     _isFullscreen = (fsEl === _wrapper);
     if (_isFullscreen) {
-        // Sync state into side panel（防御性：每个赋值都做空检查，避免因元素缺失导致整段崩溃）
         try {
             const fsVoiceMode = document.getElementById('fsVoiceMode');
             const voiceModeEl = document.getElementById('voiceMode');
             if (fsVoiceMode && voiceModeEl) fsVoiceMode.value = voiceModeEl.value;
             const fsPtt = document.getElementById('fsPttContainer');
-            if (fsPtt && voiceModeEl) {
-                fsPtt.style.display = (voiceModeEl.value === 'ptt') ? 'block' : 'none';
-            }
+            if (fsPtt && voiceModeEl) { fsPtt.style.display = (voiceModeEl.value === 'ptt') ? 'block' : 'none'; }
             const fsTxtType = document.getElementById('fsTxtType');
             const txtTypeEl = document.getElementById('txtType');
             if (fsTxtType && txtTypeEl) fsTxtType.value = txtTypeEl.value;
@@ -2591,14 +1936,8 @@ function onFullscreenChange() {
             if (fsTtsVoice && ttsVoiceEl) fsTtsVoice.value = ttsVoiceEl.value;
             const fsLog = document.getElementById('fsVoiceChatLog');
             const mainLog = document.getElementById('voiceChatLog');
-            if (fsLog && mainLog) {
-                fsLog.innerHTML = mainLog.innerHTML;
-                fsLog.scrollTop = fsLog.scrollHeight;
-            }
-        } catch (e) {
-            console.warn('[FullscreenSync] sync failed:', e);
-        }
-        // 进入全屏自动展开侧边控制面板（避免用户找不到入口）
+            if (fsLog && mainLog) { fsLog.innerHTML = mainLog.innerHTML; fsLog.scrollTop = fsLog.scrollHeight; }
+        } catch (e) { console.warn('[FullscreenSync] sync failed:', e); }
         _wrapper.classList.add('fs-panel-open');
         const toggleBtn = document.getElementById('fsPanelToggle');
         if (toggleBtn) toggleBtn.classList.add('active');
@@ -2614,11 +1953,9 @@ function toggleFsPanel() {
     document.getElementById('fsPanelToggle').classList.toggle('active', open);
 }
 
-// Send text from fullscreen side panel
 function sendFsText() {
     const fsInput = document.getElementById('fsTxtMessage');
     if (!fsInput.value.trim()) return;
-    // Sync to main panel
     document.getElementById('txtMessage').value = fsInput.value;
     document.getElementById('txtType').value = document.getElementById('fsTxtType').value;
     document.getElementById('txtInterrupt').checked = document.getElementById('fsTxtInterrupt').checked;
@@ -2628,7 +1965,6 @@ function sendFsText() {
     fsInput.value = '';
 }
 
-// Mirror voice chat log and status to fullscreen panel
 const _origAppendVoiceChatLog = appendVoiceChatLog;
 appendVoiceChatLog = function(role, text) {
     _origAppendVoiceChatLog(role, text);
@@ -2668,30 +2004,11 @@ showVoiceTranscript = function(text, interim) {
     }
 };
 
-function toggleConfigPanel() {
-    var content = document.getElementById("configPanelContent");
-    var icon = document.getElementById("panelToggleIcon");
-    var text = document.getElementById("panelToggleText");
-    if (!content) return;
-    var isCollapsed = content.classList.contains("collapsed");
-    if (isCollapsed) {
-        content.classList.remove("collapsed");
-        content.style.display = "";
-        if (icon) icon.className = "bi bi-chevron-up";
-        if (text) text.innerText = "收起配置";
-    } else {
-        content.classList.add("collapsed");
-        if (icon) icon.className = "bi bi-chevron-down";
-        if (text) text.innerText = "展开配置";
-    }
-}
-
-
-
+// ═══════════════ WebRTC Loading Overlay ══════════════════════
 let _webrtcLoaded = false;
 
 function setWebRTCStep(step, title, subtext, icon) {
-    if (_webrtcLoaded && step < 4) return; // 如果视频已播放，忽略滞后的中间步骤
+    if (_webrtcLoaded && step < 4) return;
     const overlay = document.getElementById('videoLoadingOverlay');
     if (!overlay) return;
     overlay.style.display = 'flex';
@@ -2718,39 +2035,40 @@ function hideWebRTCStep() {
     setWebRTCStep(4, '数字人连线就绪！', '正在呈现画面...', 'bi-check-lg');
     setTimeout(() => {
         overlay.style.opacity = '0';
-        setTimeout(() => {
-            overlay.style.display = 'none';
-            overlay.style.visibility = 'hidden';
-        }, 300);
+        setTimeout(() => { overlay.style.display = 'none'; overlay.style.visibility = 'hidden'; }, 300);
     }, 200);
 }
 
-// 绑定视频元素的播放事件，保证画面一出立即关闭遮罩
 document.addEventListener('DOMContentLoaded', () => {
     const v = document.getElementById('video');
     if (v) {
         v.addEventListener('playing', hideWebRTCStep);
-        v.addEventListener('timeupdate', () => {
-            if (v.currentTime > 0.1 && !_webrtcLoaded) hideWebRTCStep();
-        });
+        v.addEventListener('timeupdate', () => { if (v.currentTime > 0.1 && !_webrtcLoaded) hideWebRTCStep(); });
     }
 });
 
-
-
-// Sync chat toolbar labels from main config selects
+// ═══════════════ Chat Toolbar Sync ═══════════════════════════
 function syncChatToolbarLabels() {
     const typeLabel = document.getElementById('chatTxtTypeLabel');
     const ttsLabel = document.getElementById('chatTtsLabel');
+    const fsTypeLabel = document.getElementById('fsChatTxtTypeLabel');
+    const fsTtsLabel = document.getElementById('fsChatTtsLabel');
     const txtTypeSel = document.getElementById('txtType');
     const ttsModelSel = document.getElementById('ttsModel');
-    if (typeLabel && txtTypeSel) typeLabel.textContent = txtTypeSel.options[txtTypeSel.selectedIndex]?.text || 'Echo';
-    if (ttsLabel && ttsModelSel) {
-        const t = ttsModelSel.options[ttsModelSel.selectedIndex]?.text || '';
-        ttsLabel.textContent = t.replace(' ✅','');
-    }
+    const typeText = txtTypeSel?.options[txtTypeSel.selectedIndex]?.text || 'Echo';
+    const ttsText = (ttsModelSel?.options[ttsModelSel.selectedIndex]?.text || '').replace(' ✅','');
+    if (typeLabel && txtTypeSel) typeLabel.textContent = typeText;
+    if (fsTypeLabel) fsTypeLabel.textContent = typeText;
+    if (ttsLabel && ttsModelSel) ttsLabel.textContent = ttsText;
+    if (fsTtsLabel) fsTtsLabel.textContent = ttsText;
+
+    // Also sync mode label in header
+    const modeLabel = document.getElementById('chatModeLabel');
+    if (modeLabel) modeLabel.textContent = typeText;
+    const fsModeLabel = document.getElementById('fsChatModeLabel');
+    if (fsModeLabel) fsModeLabel.textContent = typeText;
 }
-// Run on load and whenever selects change
+
 document.addEventListener('DOMContentLoaded', function() {
     syncChatToolbarLabels();
     ['ttsModel','ttsVoice','txtType'].forEach(id => {
@@ -2759,8 +2077,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-
-// ═══ Chat UI: unified send ════════════════════════════════════════
+// ═══════════════ Chat UI ════════════════════════════════════
 function sendChatText() {
     const input = document.getElementById('chatInput');
     const text = input.value.trim();
@@ -2807,10 +2124,7 @@ function pollChatSpeakEnd() {
     }, 500);
 }
 
-// ═══ Chat UI: bubble rendering ════════════════════════════════════
-function appendChatBubble(role, text, opts) {
-    opts = opts || {};
-    const container = document.getElementById('chatMessages');
+function _appendBubbleTo(container, role, text, opts) {
     if (!container) return;
     if (role === 'system') {
         const row = document.createElement('div'); row.className = 'bubble-system-row';
@@ -2836,41 +2150,62 @@ function appendChatBubble(role, text, opts) {
     container.appendChild(row); container.scrollTop = container.scrollHeight;
     return row;
 }
+
+function appendChatBubble(role, text, opts) {
+    opts = opts || {};
+    _appendBubbleTo(document.getElementById('chatMessages'), role, text, opts);
+    _appendBubbleTo(document.getElementById('fsChatMessages'), role, text, opts);
+}
+
 function escapeHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
-// ═══ Chat status pill ═════════════════════════════════════════════
 function showChatStatus(icon, text) {
     const row = document.getElementById('chatStatusRow');
     const pill = document.getElementById('chatStatusPill');
-    if (!row || !pill) return;
-    pill.innerHTML = '<span>' + icon + '</span>' + escapeHtml(text);
-    row.style.display = 'flex';
+    if (row && pill) { pill.innerHTML = '<span>' + icon + '</span>' + escapeHtml(text); row.style.display = 'flex'; }
+    const fsRow = document.getElementById('fsChatStatusRow');
+    const fsPill = document.getElementById('fsChatStatusPill');
+    if (fsRow && fsPill) { fsPill.innerHTML = '<span>' + icon + '</span>' + escapeHtml(text); fsRow.style.display = 'flex'; }
 }
+
 function hideChatStatus() {
     const row = document.getElementById('chatStatusRow');
     if (row) row.style.display = 'none';
+    const fsRow = document.getElementById('fsChatStatusRow');
+    if (fsRow) fsRow.style.display = 'none';
 }
 
-// ═══ Chat input helpers ═══════════════════════════════════════════
 function autoResizeChatInput(el) {
     el.style.height = 'auto';
-    el.style.height = Math.min(el.scrollHeight, 96) + 'px';
+    el.style.height = Math.min(el.scrollHeight, 90) + 'px';
 }
+
 function onChatInputKeydown(e) {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChatText(); }
 }
 
-// ═══ Mic buttons (自由对话 + 按住说话) ════════════════════════════
-// 自由对话：点击切换 on/off
+function onFsChatInputKeydown(e) {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendFsChatText(); }
+}
+
+function sendFsChatText() {
+    const input = document.getElementById('fsChatInput');
+    const text = input.value.trim();
+    if (!text) return;
+    const mainInput = document.getElementById('chatInput');
+    if (mainInput) { mainInput.value = text; autoResizeChatInput(mainInput); }
+    input.value = ''; autoResizeChatInput(input);
+    sendChatText();
+}
+
+// ═══════════════ Mic Buttons ═════════════════════════════════
 function toggleFreeMode() {
     const vmSel = document.getElementById('voiceMode');
     if (!sessionid) { alert('请先连接 WebRTC'); return; }
     if (vmSel.value === 'free') {
         vmSel.value = 'off'; onVoiceModeChange();
     } else {
-        // 切换前先关闭其他模式
         if (vmSel.value !== 'off') { vmSel.value = 'off'; onVoiceModeChange(); }
-        // 清理跨会话残留状态，避免 chat 文本发送后的回声误判
         _avatarRecentTexts = [];
         voiceLastFinalText = '';
         voiceLastSentText = '';
@@ -2880,22 +2215,24 @@ function toggleFreeMode() {
     syncMicButtons();
 }
 
-// 同步 UI：根据 voiceMode 状态更新按钮
 function syncMicButtons() {
+    const isFree = document.getElementById('voiceMode').value === 'free';
     const freeBtn = document.getElementById('btnFree');
-    if (freeBtn) freeBtn.classList.toggle('active', document.getElementById('voiceMode').value === 'free');
+    if (freeBtn) freeBtn.classList.toggle('free-active', isFree);
+    const fsFreeBtn = document.getElementById('fsBtnFree');
+    if (fsFreeBtn) fsFreeBtn.classList.toggle('free-active', isFree);
     const pttBtn = document.getElementById('btnPtt');
     if (pttBtn) pttBtn.classList.remove('ptt-hold');
+    const fsPttBtn = document.getElementById('fsBtnPtt');
+    if (fsPttBtn) fsPttBtn.classList.remove('ptt-hold');
 }
 
-// ═══ Bridge: voice UI → chat bubbles ════════════════════════════
+// ═══════════════ Bridge: voice → chat bubbles ═══════════════
 const _orig2ShowVoiceStatus = showVoiceStatus;
 showVoiceStatus = function(show, icon, text) {
     _orig2ShowVoiceStatus(show, icon, text);
     if (show) { showChatStatus(icon, text); } else { hideChatStatus(); }
-    // 同步麦克风按钮状态
     syncMicButtons();
-    // PTT 按钮：仅在按住期间高亮
     const pttBtn = document.getElementById('btnPtt');
     if (pttBtn) {
         if (show && icon === '🎤' && document.getElementById('voiceMode').value === 'ptt') {
@@ -2915,15 +2252,8 @@ showVoiceTranscript = function(text, interim) {
         chatInput.placeholder = '🎤 ' + text + '...';
     } else {
         chatInput.placeholder = '输入文本发送 / 按住🎤说话 / 点击🎙️自由对话…';
-        if (!interim && text) {
-            // ASR 最终结果：填入输入框
-            chatInput.value = text;
-            autoResizeChatInput(chatInput);
-        } else if (!interim && !text && chatInput.value) {
-            // ASR 发送完成：清空输入框（避免残留文字）
-            chatInput.value = '';
-            autoResizeChatInput(chatInput);
-        }
+        if (!interim && text) { chatInput.value = text; autoResizeChatInput(chatInput); }
+        else if (!interim && !text && chatInput.value) { chatInput.value = ''; autoResizeChatInput(chatInput); }
     }
 };
 
@@ -2933,6 +2263,11 @@ appendVoiceChatLog = function(role, text) {
     appendChatBubble(role === 'user' ? 'user' : 'avatar', text);
 };
 
+// ── Initialize ────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('btnStart').style.display = 'inline-flex';
+});
 </script>
+
 </body>
 </html>
