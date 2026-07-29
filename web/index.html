@@ -932,6 +932,7 @@ const RECONNECT_BASE_DELAY = 2000; // ms, exponential backoff
 function negotiate() {
     pc.addTransceiver('video', { direction: 'recvonly' });
     pc.addTransceiver('audio', { direction: 'recvonly' });
+    setWebRTCStep(2, '正在加载数字人模型...', '预加载 3D 形象与动态渲染', 'bi-person-badge');
     return pc.createOffer().then(offer => pc.setLocalDescription(offer)).then(() => {
         return new Promise(resolve => {
             if (pc.iceGatheringState === 'complete') resolve();
@@ -950,6 +951,7 @@ function negotiate() {
             reftext: document.getElementById('offerRefText').value || undefined,
             prompt: document.getElementById('promptType')?.value || undefined,
         };
+        setWebRTCStep(3, '正在初始化语音引擎...', '配置高清音轨与推流响应', 'bi-soundwave');
         return fetch('/offer', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     }).then(res => res.json()).then(answer => {
         if (answer.sessionid) setSessionId(answer.sessionid);
@@ -1012,6 +1014,15 @@ function _setupConnection() {
 
 function start() {
     _reconnectAttempts = 0;
+    // 强制重置 loading overlay 状态
+    _webrtcLoaded = false;
+    const overlay = document.getElementById('videoLoadingOverlay');
+    if (overlay) {
+        overlay.style.display = 'flex';
+        overlay.style.opacity = '1';
+        overlay.style.visibility = 'visible';
+    }
+    setWebRTCStep(1, '正在连接数字人服务器...', '建立实时音视频通信通道', 'bi-wifi');
     _setupConnection();
     negotiate();
     document.getElementById('btnStart').style.display = 'none';
