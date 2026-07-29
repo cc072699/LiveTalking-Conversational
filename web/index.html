@@ -657,6 +657,11 @@
                         <option value="Cherry">Cherry (英文女声)</option>
                     </select>
                 </div>
+                <div class="field">
+                    <label><i class="bi bi-person-badge"></i>Persona 人设</label>
+                    <select class="dark-select" id="promptType"></select>
+                    <span class="field-hint" id="promptHint">控制数字人性格与回答风格</span>
+                </div>
             </div>
 
             <!-- Row 2: 音频驱动 & 录制 & 打断 -->
@@ -875,6 +880,30 @@ async function loadAvatars() {
     }
 }
 document.addEventListener('DOMContentLoaded', loadAvatars);
+// ── 动态加载 Persona 列表 ────────────────────────────────
+async function loadPrompts() {
+  const sel = document.getElementById('promptType');
+  if (!sel) return;
+  try {
+    const resp = await fetch('/api/prompts');
+    const json = await resp.json();
+    if (json.code === 0 && json.data && Array.isArray(json.data.prompts)) {
+      sel.innerHTML = '';
+      const items = json.data.prompts;
+      const defaultKey = json.data.default || '';
+      items.forEach(p => {
+        const opt = document.createElement('option');
+        opt.value = p.key;
+        opt.textContent = p.name + (p.key === defaultKey ? ' (默认)' : '');
+        if (p.key === defaultKey) opt.selected = true;
+        sel.appendChild(opt);
+      });
+    }
+  } catch (e) { console.error('loadPrompts:', e); }
+}
+document.addEventListener('DOMContentLoaded', loadPrompts);
+loadPrompts();
+
 
 let pc = null;
 let sessionid = null;
@@ -919,6 +948,7 @@ function negotiate() {
             avatar: document.getElementById('offerAvatar').value || undefined,
             refaudio: document.getElementById('ttsVoice').value || undefined,
             reftext: document.getElementById('offerRefText').value || undefined,
+            prompt: document.getElementById('promptType')?.value || undefined,
         };
         return fetch('/offer', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     }).then(res => res.json()).then(answer => {
@@ -1960,11 +1990,15 @@ function pollSpeakingEnd() {
                 }
 
                 if (avatarEverSpoke) {
-                    // Avatar finished speaking — normal end
+                    // Avatar finished speaking — 延迟 400ms 避免最后一字被截断
+                    avatarEverSpoke = false; // 防止重复触发
                     _clearVoiceWaiting();
                     voiceRestartCount = 0;
-                    appendVoiceChatLog('avatar', '(回复完成)');
-                    if (voiceMode === 'free' && voiceEnabled) startVoiceCooldown();
+                    if (voicePollTimer) { clearInterval(voicePollTimer); voicePollTimer = null; }
+                    setTimeout(() => {
+                        appendVoiceChatLog('avatar', '(回复完成)');
+                        if (voiceMode === 'free' && voiceEnabled) startVoiceCooldown();
+                    }, 400);
                 } else if (!llmPending && Date.now() - pollStartTime > VOICE_WAITING_START_MS) {
                     // LLM finished but avatar never spoke — error
                     console.warn('[Voice] LLM done but avatar never spoke');
