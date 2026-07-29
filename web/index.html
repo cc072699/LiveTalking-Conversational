@@ -34,7 +34,7 @@
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        html { scroll-behavior: smooth; height: 100%; font-size: 25px; }
+        html { scroll-behavior: smooth; height: 100%; font-size: 20px; }
 
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -131,7 +131,7 @@
             font-weight: 600; white-space: nowrap; display: flex; align-items: center; gap: 6px;
         }
         #settingsDrawer .field label i { color: var(--accent); font-size: 1rem; }
-        .field-hint { font-size: 0.72rem; color: var(--text-muted); margin-top: 1px; }
+        .field-hint { font-size: 0.75rem; color: var(--text-muted); margin-top: 1px; }
         .dark-select, .dark-input {
             background: rgba(5,8,18,0.7); border: 1px solid rgba(0,229,255,0.1);
             border-radius: var(--radius-xs); color: var(--text); font-size: 1rem;
@@ -224,7 +224,7 @@
             position: absolute; bottom: 10px; right: 10px;
             background: rgba(0,0,0,0.6); color: rgba(255,255,255,0.6);
             border: 1px solid rgba(255,255,255,0.1); border-radius: 5px;
-            padding: 4px 12px; cursor: pointer; font-size: 25px; z-index: 10;
+            padding: 4px 12px; cursor: pointer; font-size: 20px; z-index: 10;
             opacity: 0.4; transition: opacity 0.2s;
         }
         .fs-trigger:hover { opacity: 1; background: rgba(0,229,255,0.1); border-color: var(--accent); }
@@ -232,7 +232,7 @@
         .video-fs-wrapper:fullscreen .fs-toolbar,.video-fs-wrapper:-webkit-full-screen .fs-toolbar{display:flex}
         .fs-toolbar button {
             background: rgba(0,0,0,0.75); color: var(--text); border: 1px solid rgba(0,229,255,0.25);
-            border-radius: 7px; padding: 7px 16px; cursor: pointer; font-size: 25px;
+            border-radius: 7px; padding: 7px 16px; cursor: pointer; font-size: 20px;
             font-family: 'Rajdhani', sans-serif; font-weight: 600;
             backdrop-filter: blur(10px); transition: all .15s;
         }
@@ -274,14 +274,14 @@
             width: 32px; height: 32px; border-radius: 50%;
             background: linear-gradient(135deg, var(--accent), var(--accent2));
             display: flex; align-items: center; justify-content: center;
-            font-size: 25px; flex-shrink: 0; color: #fff;
+            font-size: 20px; flex-shrink: 0; color: #fff;
             box-shadow: 0 0 12px rgba(0,229,255,0.3);
         }
         .bubble-user-icon {
             width: 32px; height: 32px; border-radius: 50%;
             background: linear-gradient(135deg, var(--warn), #ea580c);
             display: flex; align-items: center; justify-content: center;
-            font-size: 25px; flex-shrink: 0; color: #fff;
+            font-size: 20px; flex-shrink: 0; color: #fff;
             box-shadow: 0 0 10px rgba(249,115,22,0.3);
         }
         .bubble {
@@ -295,7 +295,7 @@
         .bubble-row.user .bubble { background: linear-gradient(135deg, rgba(0,229,255,0.3), rgba(0,180,210,0.25)); border: 1px solid rgba(0,229,255,0.25); color: #fff; border-bottom-right-radius: 4px; box-shadow: 0 2px 14px rgba(0,229,255,0.15); }
         .bubble-system-row { display: flex; justify-content: center; }
         .bubble-system { font-size: 1rem; color: var(--text-muted); background: rgba(0,229,255,0.03); border: 1px solid rgba(0,229,255,0.06); border-radius: 20px; padding: 3px 14px; font-weight: 500; }
-        .bubble-timestamp { font-size: 0.64rem; color: var(--text-muted); margin-top: 3px; text-align: right; }
+        .bubble-timestamp { font-size: 0.7rem; color: var(--text-muted); margin-top: 3px; text-align: right; }
         .bubble-row.avatar .bubble-timestamp { text-align: left; }
         .chat-status-row { display: flex; justify-content: center; min-height: 22px; padding: 0 14px; }
         .chat-status-pill { font-size: 1rem; padding: 3px 14px; background: rgba(0,229,255,0.06); color: var(--accent); font-weight: 600; border-radius: 20px; display: inline-flex; align-items: center; gap: 5px; border: 1px solid rgba(0,229,255,0.1); }
@@ -318,7 +318,7 @@
             background: linear-gradient(135deg, #00d4ee, #0096c2);
             border: none; color: #fff; cursor: pointer;
             display: flex; align-items: center; justify-content: center;
-            font-size: 25px; flex-shrink: 0;
+            font-size: 20px; flex-shrink: 0;
             transition: all .18s var(--ease);
             box-shadow: 0 3px 12px rgba(0,229,255,0.25);
         }
@@ -329,7 +329,7 @@
             border: 1.5px solid rgba(0,229,255,0.2);
             background: transparent; color: var(--accent); cursor: pointer;
             display: flex; align-items: center; justify-content: center;
-            font-size: 25px; flex-shrink: 0; transition: all .15s;
+            font-size: 20px; flex-shrink: 0; transition: all .15s;
         }
         .btn-mic:hover { background: rgba(0,229,255,0.06); border-color: var(--accent); }
         .btn-mic.free-active { background: var(--success); border-color: var(--success); color: #000; animation: freePulse 1.4s infinite; }
