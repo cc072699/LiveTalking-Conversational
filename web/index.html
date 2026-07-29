@@ -11,21 +11,24 @@
     <style>
         /* ═══════════════ Design System ─────────────────────────────── */
         :root {
-            --bg-deep: #080d1a;
-            --bg-surface: rgba(12, 22, 48, 0.85);
-            --bg-elevated: rgba(16, 30, 60, 0.9);
-            --accent: #00d4ff;
-            --accent-warm: #f0a500;
-            --accent-glow: rgba(0, 212, 255, 0.25);
-            --success: #00e5a0;
-            --danger: #ff4d6d;
-            --text: #e4ecf7;
-            --text-dim: #8a9fb8;
-            --border: rgba(0, 212, 255, 0.12);
-            --border-glow: rgba(0, 212, 255, 0.22);
-            --radius: 12px;
-            --radius-sm: 8px;
-            --radius-xs: 5px;
+            --bg: #f0f2f5;
+            --bg-surface: #ffffff;
+            --bg-elevated: #f8f9fb;
+            --accent: #0ea5e9;
+            --accent-dark: #0284c7;
+            --accent-warm: #f59e0b;
+            --accent-glow: rgba(14, 165, 233, 0.15);
+            --success: #10b981;
+            --danger: #ef4444;
+            --text: #1e293b;
+            --text-dim: #64748b;
+            --text-muted: #94a3b8;
+            --border: rgba(14, 165, 233, 0.12);
+            --border-glow: rgba(14, 165, 233, 0.2);
+            --shadow-card: 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04);
+            --radius: 14px;
+            --radius-sm: 10px;
+            --radius-xs: 6px;
             --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
             --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
             --duration-normal: 250ms;
@@ -178,21 +181,21 @@
 
         /* ── Dark Select / Input ────────────────────────────────────── */
         .dark-select, .dark-input {
-            background: rgba(6, 14, 30, 0.7);
-            border: 1px solid rgba(0, 212, 255, 0.12);
+            background: #f8f9fb;
+            border: 1px solid #dde1e8;
             border-radius: var(--radius-xs);
             color: var(--text); font-size: 0.76rem;
             padding: 6px 10px; font-family: inherit;
             transition: border-color 0.2s, box-shadow 0.2s;
             outline: none;
         }
-        .dark-select:hover, .dark-input:hover { border-color: rgba(0,212,255,0.25); }
+        .dark-select:hover, .dark-input:hover { border-color: #bcc3d0; }
         .dark-select:focus, .dark-input:focus {
             border-color: var(--accent);
-            box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.06);
+            box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
         }
-        .dark-select option { background: #0a1632; color: #e4ecf7; font-weight: 500; }
-        .dark-input::placeholder { color: rgba(180, 200, 220, 0.55); font-weight: 400; }
+        .dark-select option { background: #fff; color: var(--text); font-weight: 500; }
+        .dark-input::placeholder { color: #94a3b8; font-weight: 400; }
         .field-hint { font-size: 0.7rem; color: rgba(150,175,200,0.75); margin-top: 1px; font-weight: 400; }
 
         /* ── Buttons ────────────────────────────────────────────────── */
@@ -505,8 +508,8 @@
             transition: border-color 0.2s, box-shadow 0.2s; outline: none;
             font-family: inherit;
         }
-        .chat-input-bar textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0,212,255,0.08); }
-        .chat-input-bar textarea::placeholder { color: #3a4a5e; }
+        .chat-input-bar textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(14,165,233,0.12); }
+        .chat-input-bar textarea::placeholder { color: #94a3b8; }
 
         .btn-send {
             width: 36px; height: 36px; border-radius: 50%;
