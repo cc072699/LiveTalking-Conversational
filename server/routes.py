@@ -196,7 +196,7 @@ async def admin_sessions(request):
     """Admin: 获取活跃的会话及其配置"""
     try:
         sessions_info = []
-        for sid, avatar_session in session_manager.sessions.items():
+        for sid, avatar_session in session_manager.get_sessions_snapshot().items():
             if avatar_session:
                 s_opt = getattr(avatar_session, 'opt', None)
                 s_data = {

@@ -105,7 +105,7 @@ class TencentTTS(BaseTTS):
                         #response["Message"] = rsp["Response"]["Error"]["Message"]
                         logger.error("tencent tts:%s",rsp["Response"]["Error"]["Message"])
                         return
-                    except:
+                    except (json.JSONDecodeError, KeyError, ValueError):
                         end = time.perf_counter()
                         logger.info(f"tencent Time to first chunk: {end-start}s")
                         first = False                    

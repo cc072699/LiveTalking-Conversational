@@ -929,127 +929,7 @@
             background: #52c41a;
         }
 
-
-        /* ─── Unified Chat Panel ───────────────────────────────── */
-        .chat-panel { display: flex; flex-direction: column; height: 500px; }
-        .chat-messages {
-            flex: 1; overflow-y: auto; padding: 14px 12px 6px;
-            display: flex; flex-direction: column; gap: 10px; scroll-behavior: smooth;
-        }
-        .chat-messages::-webkit-scrollbar { width: 4px; }
-        .chat-messages::-webkit-scrollbar-thumb { background: rgba(0,212,255,0.25); border-radius: 4px; }
-        .bubble-row { display: flex; align-items: flex-end; gap: 8px; }
-        .bubble-row.user { flex-direction: row-reverse; }
-        .bubble-avatar-icon {
-            width: 30px; height: 30px; border-radius: 50%;
-            background: linear-gradient(135deg, #00d4ff, #7b2ff7);
-            display: flex; align-items: center; justify-content: center;
-            font-size: 14px; flex-shrink: 0; color: #fff;
-            box-shadow: 0 2px 8px rgba(0,212,255,0.4);
-        }
-        .bubble-user-icon {
-            width: 30px; height: 30px; border-radius: 50%;
-            background: linear-gradient(135deg, #10b981, #059669);
-            display: flex; align-items: center; justify-content: center;
-            font-size: 14px; flex-shrink: 0; color: #fff;
-            box-shadow: 0 2px 8px rgba(16,185,129,0.4);
-        }
-        .bubble {
-            max-width: 72%; padding: 9px 13px; border-radius: 16px;
-            font-size: 0.86rem; line-height: 1.5; word-break: break-word;
-            animation: bubbleIn 0.22s cubic-bezier(0.34,1.56,0.64,1);
-        }
-        @keyframes bubbleIn {
-            from { opacity: 0; transform: scale(0.85) translateY(6px); }
-            to   { opacity: 1; transform: scale(1) translateY(0); }
-        }
-        .bubble-row.avatar .bubble {
-            background: rgba(0,212,255,0.08);
-            border: 1px solid rgba(0,212,255,0.2);
-            border-bottom-left-radius: 4px;
-            color: var(--text-primary, #e2e8f0);
-        }
-        .bubble-row.user .bubble {
-            background: linear-gradient(135deg, rgba(0,212,255,0.25), rgba(0,150,200,0.3));
-            border: 1px solid rgba(0,212,255,0.35);
-            color: #fff; border-bottom-right-radius: 4px;
-            box-shadow: 0 2px 12px rgba(0,212,255,0.2);
-        }
-        .bubble-system-row { display: flex; justify-content: center; }
-        .bubble-system {
-            font-size: 0.73rem; color: #64748b;
-            background: rgba(255,255,255,0.05);
-            border-radius: 20px; padding: 3px 12px;
-            animation: bubbleIn 0.18s ease;
-        }
-        .bubble-interim { opacity: 0.5; font-style: italic; }
-        .bubble-timestamp { font-size: 0.62rem; color: #64748b; margin-top: 3px; text-align: right; }
-        .bubble-row.avatar .bubble-timestamp { text-align: left; }
-        .chat-toolbar {
-            padding: 5px 12px 3px; display: flex; gap: 6px; align-items: center;
-            border-top: 1px solid rgba(0,212,255,0.1); flex-wrap: wrap;
-        }
-        .chat-toolbar select { font-size: 0.76rem; }
-        .chat-input-bar { padding: 6px 12px 12px; display: flex; gap: 7px; align-items: flex-end; }
-        .chat-input-bar textarea {
-            flex: 1; resize: none; border-radius: 18px;
-            border: 1.5px solid rgba(0,212,255,0.25); padding: 8px 13px;
-            font-size: 0.86rem; line-height: 1.4; min-height: 38px; max-height: 96px;
-            transition: border-color 0.2s, box-shadow 0.2s;
-            background: rgba(0,212,255,0.05); color: #e2e8f0;
-        }
-        .chat-input-bar textarea:focus {
-            outline: none; border-color: var(--accent-primary, #00d4ff);
-            box-shadow: 0 0 0 3px rgba(0,212,255,0.12);
-        }
-        .chat-input-bar textarea::placeholder { color: #4a5568; }
-        .btn-send-chat {
-            width: 38px; height: 38px; border-radius: 50%;
-            background: linear-gradient(135deg, #00d4ff, #0099cc);
-            border: none; color: #060d1a; cursor: pointer;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 15px; flex-shrink: 0;
-            transition: transform 0.2s, box-shadow 0.2s;
-            box-shadow: 0 3px 10px rgba(0,212,255,0.4);
-        }
-        .btn-send-chat:hover { transform: scale(1.1); box-shadow: 0 5px 16px rgba(0,212,255,0.55); }
-        .btn-send-chat:active { transform: scale(0.93); }
-        .btn-mic-chat {
-            width: 38px; height: 38px; border-radius: 50%;
-            border: 1.5px solid rgba(0,212,255,0.4); background: transparent;
-            color: var(--accent-primary, #00d4ff); cursor: pointer;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 16px; flex-shrink: 0; transition: all 0.2s;
-        }
-        .btn-mic-chat:hover { background: rgba(0,212,255,0.1); }
-        .btn-mic-chat.active {
-            background: #ef4444; border-color: #ef4444; color: #fff;
-            animation: micPulseChat 1.2s infinite;
-        }
-        .btn-mic-chat.ptt-hold { background: #f59e0b; border-color: #f59e0b; color: #fff; }
-        /* 自由对话按钮：开启后绿色呼吸光 */
-        .btn-free-chat.active {
-            background: #10b981; border-color: #10b981; color: #fff;
-            animation: freePulseChat 1.4s infinite;
-        }
-        @keyframes freePulseChat {
-            0%   { box-shadow: 0 0 0 0   rgba(16,185,129,0.6); }
-            70%  { box-shadow: 0 0 0 12px rgba(16,185,129,0); }
-            100% { box-shadow: 0 0 0 0   rgba(16,185,129,0); }
-        }
-        @keyframes micPulseChat {
-            0%   { box-shadow: 0 0 0 0   rgba(239,68,68,0.6); }
-            70%  { box-shadow: 0 0 0 10px rgba(239,68,68,0); }
-            100% { box-shadow: 0 0 0 0   rgba(239,68,68,0); }
-        }
-        .chat-status-row { display: flex; justify-content: center; min-height: 20px; padding: 0 12px; }
-        .chat-status-pill {
-            font-size: 0.7rem; padding: 2px 10px;
-            background: rgba(0,212,255,0.1); color: var(--accent-primary,#00d4ff);
-            border-radius: 20px; display: inline-flex; align-items: center; gap: 4px;
-        }
-
-    </style>
+</style>
 </head>
 <body>
 
@@ -1293,59 +1173,43 @@
         </div><!-- /col-lg-7 -->
 
         <div class="col-lg-5">
-            <!-- Unified Chat Panel -->
+            <!-- Voice Conversation -->
             <div class="glass-card">
-                <div class="card-header d-flex align-items-center" style="gap:8px;">
-                    <i class="bi bi-chat-dots-fill"></i> 对话
-                    <div class="ms-auto d-flex gap-2 align-items-center">
-                        <span id="chatModeLabel" style="font-size:0.76rem;color:var(--accent-primary,#00d4ff);padding:2px 8px;background:rgba(0,212,255,0.08);border-radius:8px;cursor:pointer;" onclick="document.getElementById('txtType').focus()" title="在顶部配置面板切换模式">Echo</span>
-                        <button class="btn-outline-custom btn-sm" onclick="interrupt()" style="white-space:nowrap;">
-                            <i class="bi bi-stop-circle"></i> 打断
-                        </button>
+                <div class="card-header"><i class="bi bi-mic-fill"></i> 语音对话</div>
+                <div class="card-body">
+                    <div id="voiceStatusBar" class="small mb-2" style="display:none;">
+                        <span id="voiceStatusIcon">🎤</span>
+                        <span id="voiceStatusText">聆听中...</span>
                     </div>
-                </div>
-                <div class="chat-panel">
-                    <div class="chat-messages" id="chatMessages">
-                        <div class="bubble-system-row">
-                            <span class="bubble-system">💡 连接 WebRTC 后开始对话</span>
-                        </div>
-                    </div>
-                    <div class="chat-status-row" id="chatStatusRow" style="display:none;">
-                        <span class="chat-status-pill" id="chatStatusPill"></span>
-                    </div>
-                    <div class="chat-toolbar">
-                        <label style="font-size:0.76rem;color:#64748b;margin:0;">模式</label>
-                        <!-- txtType already exists in top config panel — read from there -->
-                        <span id="chatTxtTypeLabel" style="font-size:0.76rem;color:var(--accent-primary,#00d4ff);padding:2px 8px;background:rgba(0,212,255,0.08);border-radius:8px;">Echo</span>
-                        <label style="font-size:0.76rem;color:#64748b;margin:0;margin-left:4px;">TTS</label>
-                        <span id="chatTtsLabel" style="font-size:0.76rem;color:var(--accent-primary,#00d4ff);padding:2px 8px;background:rgba(0,212,255,0.08);border-radius:8px;max-width:130px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">loading...</span>
-                        <select class="form-select form-select-sm" id="voiceMode" onchange="onVoiceModeChange()" style="display:none;">
-                            <option value="off">关闭</option>
-                            <option value="free">自由对话</option>
-                            <option value="ptt">按住说话</option>
+                    <div class="d-flex gap-2 align-items-center mb-2">
+                        <select class="form-select form-select-sm" id="voiceMode" onchange="onVoiceModeChange()" style="width:130px;">
+                            <option value="off">🎙️ 关闭</option>
+                            <option value="free">💬 自由对话</option>
+                            <option value="ptt">🎤 按住说话</option>
                         </select>
+                        <button class="btn-outline-custom btn-sm" onclick="interrupt()"><i class="bi bi-stop-circle"></i> 打断</button>
                     </div>
-                    <div class="chat-input-bar">
-                        <textarea id="chatInput" placeholder="输入文本发送 / 按住🎤说话 / 点击🎙️自由对话…" rows="1"
-                            onkeydown="onChatInputKeydown(event)"
-                            oninput="autoResizeChatInput(this)"></textarea>
-                        <button class="btn-mic-chat btn-free-chat" id="btnFree" title="点击切换 自由对话" onclick="toggleFreeMode()">🎙️</button>
-                        <button class="btn-mic-chat" id="btnPtt" title="按住说话"
-                            onmousedown="pttStart()" onmouseup="pttEnd()" ontouchstart="pttStart()" ontouchend="pttEnd()">🎤</button>
-                        <button class="btn-send-chat" onclick="sendChatText()" title="发送">
-                            <i class="bi bi-send-fill"></i>
-                        </button>
+                    <div id="pttContainer" style="display:none;" class="mb-2">
+                        <button id="pttButton" class="btn-primary-custom w-100 py-3 fs-5" onmousedown="pttStart()" onmouseup="pttEnd()" ontouchstart="pttStart()" ontouchend="pttEnd()">🎤 按住说话</button>
                     </div>
+                    <div id="voiceTranscript" class="voice-transcript mb-2" style="display:none;"></div>
+                    <div id="voiceChatLog" class="voice-chat-log"></div>
                 </div>
             </div>
 
-            <!-- Legacy DOM elements (JS compat — 必须不在 display:none 父容器内，否则 JS show/hide 无效) -->
-            <div style="position:absolute; left:0; top:0; visibility:hidden; pointer-events:none; width:0; height:0; overflow:hidden;">
-                <textarea id="txtMessage"></textarea>
-                <div id="voiceStatusBar"><span id="voiceStatusIcon"></span><span id="voiceStatusText"></span></div>
-                <div id="pttContainer"><button id="pttButton"></button></div>
-                <div id="voiceTranscript"></div>
-                <div id="voiceChatLog"></div>
+            <!-- Text Driver -->
+            <div class="glass-card">
+                <div class="card-header"><i class="bi bi-chat-text-fill"></i> 文本驱动 <span style="font-size:0.7rem;color:var(--text-muted);font-weight:400;">(POST /human)</span></div>
+                <div class="card-body">
+                    <div class="mb-2">
+                        <label class="form-label">输入文本 <span class="param-hint">(type: echo/chat)</span></label>
+                        <textarea class="form-control form-control-sm" id="txtMessage" rows="2" placeholder="输入要播报的文本...">你好，欢迎使用LiveTalking</textarea>
+                    </div>
+                    <div class="d-flex gap-2 align-items-center mb-2">
+                        <button class="btn-primary-custom btn-sm ms-auto" onclick="sendText()"><i class="bi bi-send"></i> 发送文本</button>
+                        <button class="btn-outline-custom btn-sm" onclick="interrupt()"><i class="bi bi-stop-circle"></i> 打断播报</button>
+                    </div>
+                    </div>
             </div>
 
             
@@ -2193,10 +2057,6 @@ function pttStart() {
     const fsPttBtn = document.getElementById('fsPttButton');
     if (fsPttBtn) { fsPttBtn.className = 'btn btn-danger w-100 py-2'; fsPttBtn.textContent = '✋ 松开发送'; }
 
-    // Sync main chat panel PTT button
-    const mainPtt = document.getElementById('btnPtt');
-    if (mainPtt) { mainPtt.classList.add('ptt-hold'); mainPtt.textContent = '✋'; }
-
     // Clear any previous waiting state so new input is not discarded
     _clearVoiceWaiting();
 
@@ -2204,7 +2064,6 @@ function pttStart() {
     voiceLastFinalText = '';
     voiceLastSentText = '';
     localASR.pendingText = '';
-    _avatarRecentTexts = [];
 
     console.log('[PTT] start');
 
@@ -2245,10 +2104,6 @@ function pttEnd() {
     // Sync fullscreen PTT button
     const fsPttBtn = document.getElementById('fsPttButton');
     if (fsPttBtn) { fsPttBtn.className = 'btn btn-primary w-100 py-2'; fsPttBtn.textContent = '🎤 按住说话'; }
-
-    // Sync main chat panel PTT button
-    const mainPtt = document.getElementById('btnPtt');
-    if (mainPtt) { mainPtt.classList.remove('ptt-hold'); mainPtt.textContent = '🎤'; }
 
     showVoiceStatus(true, '⏳', '处理中...');
 
@@ -2725,202 +2580,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 });
-
-
-
-// Sync chat toolbar labels from main config selects
-function syncChatToolbarLabels() {
-    const typeLabel = document.getElementById('chatTxtTypeLabel');
-    const ttsLabel = document.getElementById('chatTtsLabel');
-    const txtTypeSel = document.getElementById('txtType');
-    const ttsModelSel = document.getElementById('ttsModel');
-    if (typeLabel && txtTypeSel) typeLabel.textContent = txtTypeSel.options[txtTypeSel.selectedIndex]?.text || 'Echo';
-    if (ttsLabel && ttsModelSel) {
-        const t = ttsModelSel.options[ttsModelSel.selectedIndex]?.text || '';
-        ttsLabel.textContent = t.replace(' ✅','');
-    }
-}
-// Run on load and whenever selects change
-document.addEventListener('DOMContentLoaded', function() {
-    syncChatToolbarLabels();
-    ['ttsModel','ttsVoice','txtType'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.addEventListener('change', syncChatToolbarLabels);
-    });
-});
-
-
-// ═══ Chat UI: unified send ════════════════════════════════════════
-function sendChatText() {
-    const input = document.getElementById('chatInput');
-    const text = input.value.trim();
-    if (!text) return;
-    if (!sessionid) { showChatStatus('⚠️', '请先连接 WebRTC'); return; }
-    appendChatBubble('user', text);
-    input.value = ''; autoResizeChatInput(input);
-    const type = document.getElementById('txtType').value;
-    const ttsModel = document.getElementById('ttsModel').value;
-    const ttsVoice = document.getElementById('ttsVoice').value;
-    showChatStatus('⏳', '发送中...');
-    fetch('/human', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text, type, interrupt: true, sessionid: String(sessionid),
-            tts: { model: ttsModel, ref_file: ttsVoice } }),
-    }).then(r => r.json()).then(d => {
-        if (d.code !== 0) { showChatStatus('⚠️', '发送失败'); setTimeout(() => hideChatStatus(), 2000); return; }
-        showChatStatus('🔊', '数字人回复中...');
-        pollChatSpeakEnd();
-    }).catch(() => { showChatStatus('⚠️', '网络错误'); setTimeout(() => hideChatStatus(), 2000); });
-}
-
-let _chatPollTimer = null;
-function pollChatSpeakEnd() {
-    if (_chatPollTimer) clearInterval(_chatPollTimer);
-    let avatarEverSpoke = false;
-    const startTime = Date.now();
-    _chatPollTimer = setInterval(() => {
-        if (!sessionid) { clearInterval(_chatPollTimer); return; }
-        fetch('/is_speaking', { method: 'POST', headers: {'Content-Type':'application/json'},
-            body: JSON.stringify({ sessionid: String(sessionid) }) })
-        .then(r => r.json()).then(d => {
-            const speaking = typeof d.data === 'boolean' ? d.data : (d.data && d.data.speaking);
-            const llmPending = d.data && typeof d.data === 'object' && d.data.llm_pending;
-            if (d.data && d.data.recent_texts) _avatarRecentTexts = d.data.recent_texts;
-            if (speaking) { avatarEverSpoke = true; _avatarSpeaking = true; }
-            if (!speaking) {
-                if (_avatarSpeaking) { _avatarSpeaking = false; _avatarSpeakEndTime = Date.now(); }
-                if (avatarEverSpoke) { clearInterval(_chatPollTimer); hideChatStatus(); appendChatBubble('avatar', '✅ 回复完成'); }
-                else if (!llmPending && Date.now() - startTime > 15000) { clearInterval(_chatPollTimer); hideChatStatus(); appendChatBubble('avatar', '⚠️ 未收到回复'); }
-            }
-        }).catch(() => {});
-    }, 500);
-}
-
-// ═══ Chat UI: bubble rendering ════════════════════════════════════
-function appendChatBubble(role, text, opts) {
-    opts = opts || {};
-    const container = document.getElementById('chatMessages');
-    if (!container) return;
-    if (role === 'system') {
-        const row = document.createElement('div'); row.className = 'bubble-system-row';
-        const sp = document.createElement('span'); sp.className = 'bubble-system'; sp.textContent = text;
-        row.appendChild(sp); container.appendChild(row); container.scrollTop = container.scrollHeight; return;
-    }
-    const row = document.createElement('div');
-    row.className = 'bubble-row ' + role;
-    if (opts.interim) row.dataset.interim = '1';
-    const icon = document.createElement('div');
-    icon.className = role === 'user' ? 'bubble-user-icon' : 'bubble-avatar-icon';
-    icon.textContent = role === 'user' ? '🧑' : '🤖';
-    const wrap = document.createElement('div');
-    const bubble = document.createElement('div');
-    bubble.className = 'bubble' + (opts.interim ? ' bubble-interim' : '');
-    bubble.textContent = text;
-    const ts = document.createElement('div');
-    ts.className = 'bubble-timestamp';
-    ts.textContent = new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
-    wrap.appendChild(bubble); wrap.appendChild(ts);
-    row.appendChild(icon); row.appendChild(wrap);
-    container.appendChild(row); container.scrollTop = container.scrollHeight;
-    return row;
-}
-function escapeHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-
-// ═══ Chat status pill ═════════════════════════════════════════════
-function showChatStatus(icon, text) {
-    const row = document.getElementById('chatStatusRow');
-    const pill = document.getElementById('chatStatusPill');
-    if (!row || !pill) return;
-    pill.innerHTML = '<span>' + icon + '</span>' + escapeHtml(text);
-    row.style.display = 'flex';
-}
-function hideChatStatus() {
-    const row = document.getElementById('chatStatusRow');
-    if (row) row.style.display = 'none';
-}
-
-// ═══ Chat input helpers ═══════════════════════════════════════════
-function autoResizeChatInput(el) {
-    el.style.height = 'auto';
-    el.style.height = Math.min(el.scrollHeight, 96) + 'px';
-}
-function onChatInputKeydown(e) {
-    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChatText(); }
-}
-
-// ═══ Mic buttons (自由对话 + 按住说话) ════════════════════════════
-// 自由对话：点击切换 on/off
-function toggleFreeMode() {
-    const vmSel = document.getElementById('voiceMode');
-    if (!sessionid) { alert('请先连接 WebRTC'); return; }
-    if (vmSel.value === 'free') {
-        vmSel.value = 'off'; onVoiceModeChange();
-    } else {
-        // 切换前先关闭其他模式
-        if (vmSel.value !== 'off') { vmSel.value = 'off'; onVoiceModeChange(); }
-        // 清理跨会话残留状态，避免 chat 文本发送后的回声误判
-        _avatarRecentTexts = [];
-        voiceLastFinalText = '';
-        voiceLastSentText = '';
-        vmSel.value = 'free'; onVoiceModeChange();
-        showChatStatus('🎙️', '聆听中...');
-    }
-    syncMicButtons();
-}
-
-// 同步 UI：根据 voiceMode 状态更新按钮
-function syncMicButtons() {
-    const freeBtn = document.getElementById('btnFree');
-    if (freeBtn) freeBtn.classList.toggle('active', document.getElementById('voiceMode').value === 'free');
-    const pttBtn = document.getElementById('btnPtt');
-    if (pttBtn) pttBtn.classList.remove('ptt-hold');
-}
-
-// ═══ Bridge: voice UI → chat bubbles ════════════════════════════
-const _orig2ShowVoiceStatus = showVoiceStatus;
-showVoiceStatus = function(show, icon, text) {
-    _orig2ShowVoiceStatus(show, icon, text);
-    if (show) { showChatStatus(icon, text); } else { hideChatStatus(); }
-    // 同步麦克风按钮状态
-    syncMicButtons();
-    // PTT 按钮：仅在按住期间高亮
-    const pttBtn = document.getElementById('btnPtt');
-    if (pttBtn) {
-        if (show && icon === '🎤' && document.getElementById('voiceMode').value === 'ptt') {
-            pttBtn.classList.add('ptt-hold');
-        } else if (!show || document.getElementById('voiceMode').value !== 'ptt') {
-            pttBtn.classList.remove('ptt-hold');
-        }
-    }
-};
-
-const _orig2ShowVoiceTranscript = showVoiceTranscript;
-showVoiceTranscript = function(text, interim) {
-    _orig2ShowVoiceTranscript(text, interim);
-    const chatInput = document.getElementById('chatInput');
-    if (!chatInput) return;
-    if (interim && text) {
-        chatInput.placeholder = '🎤 ' + text + '...';
-    } else {
-        chatInput.placeholder = '输入文本发送 / 按住🎤说话 / 点击🎙️自由对话…';
-        if (!interim && text) {
-            // ASR 最终结果：填入输入框
-            chatInput.value = text;
-            autoResizeChatInput(chatInput);
-        } else if (!interim && !text && chatInput.value) {
-            // ASR 发送完成：清空输入框（避免残留文字）
-            chatInput.value = '';
-            autoResizeChatInput(chatInput);
-        }
-    }
-};
-
-const _orig2AppendVoiceChatLog = appendVoiceChatLog;
-appendVoiceChatLog = function(role, text) {
-    _orig2AppendVoiceChatLog(role, text);
-    appendChatBubble(role === 'user' ? 'user' : 'avatar', text);
-};
 
 </script>
 </body>

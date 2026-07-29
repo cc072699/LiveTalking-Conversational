@@ -112,8 +112,8 @@ def build_avatar_session(sessionid:str, params:dict)->BaseAvatar:
                 def _cleanup_stale():
                     try:
                         _stale.release_resources()
-                    except:
-                        pass
+                    except Exception:
+                        logger.exception('Error releasing stale session resources')
                 Thread(target=_cleanup_stale, daemon=True).start()
             del _session_cache[cache_key]
             logger.info(f'Session cache INVALIDATED (busy): avatar={avatar_id}')

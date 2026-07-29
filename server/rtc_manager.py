@@ -150,6 +150,8 @@ class RTCManager:
         import aiohttp
         await session_manager.create_session({}, sessionid)
         avatar_session = session_manager.get_session(sessionid)
+        if avatar_session is None:
+            raise RuntimeError(f"Failed to create RTCPush session {sessionid}")
 
         pc = RTCPeerConnection()
         self.pcs.add(pc)
