@@ -18,7 +18,6 @@
 #  Wav2Lip 数字人 — 迁移自 lipreal.py + lipasr.py
 #
 
-import math
 import torch
 import numpy as np
 
@@ -37,11 +36,9 @@ import torch.multiprocessing as mp
 
 from avatars.audio_features.mel import MelASR
 import asyncio
-from av import AudioFrame, VideoFrame
 from avatars.wav2lip.models import Wav2Lip
 from avatars.base_avatar import BaseAvatar
 
-from tqdm import tqdm
 from utils.logger import logger
 from utils.image import read_imgs, mirror_index
 from utils.device import initialize_device

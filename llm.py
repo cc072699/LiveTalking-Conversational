@@ -64,10 +64,6 @@ def _get_system_prompt(prompt_key: str = ''):
     return '你是一位专业的AI助手。'
 
 
-def _load_system_prompt():
-    """向后兼容：返回默认 prompt"""
-    return _get_system_prompt()
-
 
 def llm_response(message, avatar_session: 'BaseAvatar', datainfo: dict = {}):
     try:

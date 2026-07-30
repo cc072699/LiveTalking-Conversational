@@ -18,7 +18,6 @@
 #  Avatar 基类 — 合并自 basereal.py，集成到 Async Pipeline
 #
 
-import math
 import gc
 from numpy.typing import NDArray
 import torch
@@ -34,9 +33,6 @@ from queue import Queue
 from threading import Thread, Event
 from io import BytesIO
 import soundfile as sf
-import asyncio
-from enum import Enum
-import json
 import importlib
 import registry
 
@@ -44,7 +40,6 @@ import torch.multiprocessing as mp
 from dataclasses import dataclass, field
 
 from av import AudioFrame, VideoFrame
-from fractions import Fraction
 
 from utils.logger import logger
 from utils.image import read_imgs,mirror_index

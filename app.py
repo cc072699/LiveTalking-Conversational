@@ -23,14 +23,11 @@ import os
 import numpy as np
 from threading import Thread,Event
 from concurrent.futures import ThreadPoolExecutor
-#import multiprocessing
 import torch.multiprocessing as mp
 
 from aiohttp import web
-import aiohttp
 import aiohttp_cors
 from aiortc import RTCPeerConnection, RTCSessionDescription,RTCIceServer,RTCConfiguration
-from aiortc.rtcrtpsender import RTCRtpSender
 from server.webrtc import HumanPlayer
 from avatars.base_avatar import BaseAvatar
 from llm import llm_response
@@ -41,11 +38,9 @@ from server.session_manager import session_manager
 
 import argparse
 import random
-import shutil
 import ssl
 import asyncio
 import torch
-from io import BytesIO
 from typing import Dict
 from utils.logger import logger
 import copy
@@ -76,8 +71,6 @@ def _cache_evict_oldest():
         except Exception as e:
             logger.warning(f'Session cache evict failed: {e}')
         logger.info(f'Session cache evicted: avatar={old_key[0]} voice={old_key[1]}')
-
-def randN(N)->int:
     '''生成长度为 N的随机数 '''
     min = pow(10, N - 1)
     max = pow(10, N)
@@ -322,6 +315,3 @@ if __name__ == '__main__':
     mp.set_start_method('spawn')
     load_dotenv()  # Load environment variables from .env file, if it exists
     main()
-    
-    
-    
