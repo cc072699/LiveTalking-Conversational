@@ -825,13 +825,41 @@ function shutdownServer() {
 
 function stop() {
     _reconnectAttempts = RECONNECT_MAX; // 阻止自动重连
-    if (pc) { pc.close(); pc = null; }
-    updateStatus(false);
+
+    // 1. 停止所有 MediaStream tracks（关键！避免 audioContext/decoder 残留）
+    const video = document.getElementById('video');
+    const audio = document.getElementById('audio');
+    [video, audio].forEach(el => {
+        if (el && el.srcObject) {
+            try {
+                el.srcObject.getTracks().forEach(t => {
+                    t.stop();           // 停止轨道
+                    t.enabled = false;  // 禁用
+                });
+            } catch(e) {}
+            el.srcObject = null;
+        }
+        // 清空视频缓冲
+        if (el && el.pause) { try { el.pause(); el.removeAttribute('src'); el.load(); } catch(e) {} }
+    });
+
+    // 2. 关闭 PeerConnection + 清理所有 senders/receivers
+    if (pc) {
+        try {
+            pc.getSenders().forEach(s => { try { s.track && s.track.stop(); } catch(e) {} });
+            pc.getReceivers().forEach(r => { try { r.track && r.track.stop(); } catch(e) {} });
+            pc.close();
+        } catch(e) {}
+        pc = null;
+    }
+
+    // 3. 重置状态
     setSessionId(null);
-    document.getElementById('btnStart').style.display = 'inline-block';
+    _webrtcLoaded = false;
+    updateStatus(false);
+    document.getElementById('btnStart').style.display = 'inline-flex';
     document.getElementById('btnStop').style.display = 'none';
-    document.getElementById('video').srcObject = null;
-    document.getElementById('audio').srcObject = null;
+    document.getElementById('videoLoadingOverlay').style.display = 'none';
 }
 
 // ─── Text ──────────────────────────────────────────────────

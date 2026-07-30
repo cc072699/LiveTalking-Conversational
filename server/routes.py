@@ -180,6 +180,23 @@ async def api_avatars(request):
         return json_error(str(e))
 
 
+async def api_prompts(request):
+    """返回 prompt_config.yaml 中的所有 persona 预设"""
+    try:
+        from llm import _load_prompts
+        cfg = _load_prompts()
+        prompts = cfg.get('prompts', {})
+        # 列表形态：[{key, name, size}, ...]，content 字段不返回避免传输过大
+        items = [
+            {"key": k, "name": v.get('name', k), "size": len(v.get('content', ''))}
+            for k, v in prompts.items()
+        ]
+        return json_ok(data={"prompts": items, "default": cfg.get('default', '')})
+    except Exception as e:
+        logger.exception('api_prompts exception:')
+        return json_error(str(e))
+
+
 async def admin_config(request):
     """Admin: 获取全局配置参数"""
     try:
@@ -221,13 +238,20 @@ async def admin_sessions(request):
 
 
 async def admin_shutdown(request):
-    """优雅关闭服务器进程（通过 asyncio 事件循环停止）"""
+    """强制关闭服务器进程，释放端口和内存"""
     try:
         logger.info("Shutdown requested via admin API")
         resp = json_ok(data={"msg": "Server shutting down now"})
-        # 延迟停止，确保 HTTP 响应先发回；走 loop.stop() 触发 on_shutdown 钩子
-        loop = asyncio.get_event_loop()
-        loop.call_later(0.5, loop.stop)
+
+        # 同步线程：稍等让 HTTP 响应写回，然后强制退出进程
+        import os, threading, time
+        def _kill():
+            time.sleep(0.5)  # 等响应发回
+            try:
+                os._exit(0)  # 立即终止进程，强制释放显存/RAM/端口
+            except Exception:
+                os.kill(os.getpid(), 9)
+        threading.Thread(target=_kill, daemon=True).start()
         return resp
     except Exception as e:
         logger.exception('admin_shutdown exception:')
@@ -245,6 +269,7 @@ def setup_routes(app):
     app.router.add_post("/interrupt_talk", interrupt_talk)
     app.router.add_post("/is_speaking", is_speaking)
     app.router.add_get("/api/avatars", api_avatars)
+    app.router.add_get("/api/prompts", api_prompts)
     app.router.add_post("/api/admin/shutdown", admin_shutdown)
     app.router.add_get("/api/admin/config", admin_config)
     app.router.add_get("/api/admin/sessions", admin_sessions)

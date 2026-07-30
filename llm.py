@@ -33,16 +33,40 @@ def _get_llm_client(provider: str):
     return client
 
 
-def _load_system_prompt():
-    """从配置文件加载 System Prompt，支持热更新（每次请求重新读取）"""
+def _load_prompts():
+    """从配置文件加载所有 prompt 预设，支持热更新"""
     config_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'prompt_config.yaml')
     try:
         with open(config_path, 'r', encoding='utf-8') as f:
             config = yaml.safe_load(f)
-        return config.get('system_prompt', '你是一位专业的AI助手。')
+        return {
+            'prompts': config.get('prompts', {}),
+            'default': config.get('default', ''),
+        }
     except Exception as e:
         logger.warning(f"Failed to load prompt config: {e}")
-        return '你是一位专业的AI助手。'
+        return {'prompts': {}, 'default': ''}
+
+
+def _get_system_prompt(prompt_key: str = ''):
+    """根据 key 获取 system prompt；空/未找到时取默认"""
+    cfg = _load_prompts()
+    prompts = cfg.get('prompts', {})
+    if prompt_key and prompt_key in prompts:
+        return prompts[prompt_key].get('content', '你是一位专业的AI助手。')
+    default_key = cfg.get('default', '')
+    if default_key and default_key in prompts:
+        return prompts[default_key].get('content', '你是一位专业的AI助手。')
+    # 兜底：取第一个
+    if prompts:
+        first = next(iter(prompts.values()))
+        return first.get('content', '你是一位专业的AI助手。')
+    return '你是一位专业的AI助手。'
+
+
+def _load_system_prompt():
+    """向后兼容：返回默认 prompt"""
+    return _get_system_prompt()
 
 
 def llm_response(message, avatar_session: 'BaseAvatar', datainfo: dict = {}):
@@ -61,9 +85,11 @@ def llm_response(message, avatar_session: 'BaseAvatar', datainfo: dict = {}):
         end = time.perf_counter()
         logger.info(f"llm provider={provider}, model={model}, init={end-start:.3f}s")
 
+        prompt_key = getattr(opt, 'PROMPT_KEY', '') or ''
+        system_prompt = _get_system_prompt(prompt_key)
         completion = client.chat.completions.create(
             model=model,
-            messages=[{'role': 'system', 'content': _load_system_prompt()},
+            messages=[{'role': 'system', 'content': system_prompt},
                       {'role': 'user', 'content': message}],
             stream=True,
             max_tokens=1024,

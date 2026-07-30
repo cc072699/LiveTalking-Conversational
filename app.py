@@ -91,10 +91,11 @@ def build_avatar_session(sessionid:str, params:dict)->BaseAvatar:
     opt_this.avatar_id = avatar_id
     ref_audio = params.get('refaudio','') #音色
     ref_text = params.get('reftext','')
+    prompt_key = params.get('prompt','') or ''  # 数字人 Persona
     custom_config = params.get('custom_config','')
 
-    # ── 缓存 key：(avatar_id, tts_voice, has_custom) ──
-    cache_key = (avatar_id, ref_audio, bool(custom_config))
+    # ── 缓存 key：(avatar_id, tts_voice, prompt, has_custom) ──
+    cache_key = (avatar_id, ref_audio, prompt_key, bool(custom_config))
     if cache_key in _session_cache:
         cached = _session_cache[cache_key]
         if cached and not cached.is_speaking():
@@ -135,6 +136,8 @@ def build_avatar_session(sessionid:str, params:dict)->BaseAvatar:
     if ref_audio: #请求参数配置了参考音频
         opt_this.REF_FILE = ref_audio
         opt_this.REF_TEXT = ref_text
+    if prompt_key:
+        opt_this.PROMPT_KEY = prompt_key
     if custom_config:
         opt_this.customopt = json.loads(custom_config)
 
