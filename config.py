@@ -65,7 +65,7 @@ def parse_args():
                         default=os.environ.get('TTS', 'qwentts'),
                         help="tts plugin: edgetts/gpt-sovits/cosyvoice/fishtts/tencent/doubao/indextts2/azuretts/qwentts/dashscopetts")
     parser.add_argument('--REF_FILE', type=str,
-                        default=os.environ.get('REF_FILE', 'Cherry'),
+                        default=os.environ.get('REF_FILE', 'Ethan'),
                         help="参考文件名或语音模型ID (qwentts 音色名, 如 Cherry/Ethan)")
     parser.add_argument('--REF_TEXT', type=str,
                         default=os.environ.get('REF_TEXT', ''))

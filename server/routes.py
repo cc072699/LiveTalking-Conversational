@@ -4,6 +4,7 @@
 
 import json
 import asyncio
+import aiohttp
 from aiohttp import web
 
 from utils.logger import logger
@@ -293,4 +294,17 @@ def setup_routes(app):
     from server.tts_proxy import setup_tts_proxy_routes
     setup_tts_proxy_routes(app)
 
+    # 根路径直接返回 index.html（add_static 默认不会自动）
+    async def index_redirect(request):
+        import os
+        path = os.path.join('web', 'index.html')
+        if os.path.exists(path):
+            with open(path, 'rb') as f:
+                return aiohttp.web.Response(
+                    body=f.read(),
+                    content_type='text/html',
+                    charset='utf-8',
+                )
+        return aiohttp.web.Response(text='index.html not found', status=404)
+    app.router.add_get('/', index_redirect)
     app.router.add_static('/', path='web')

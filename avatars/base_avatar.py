@@ -213,7 +213,7 @@ class BaseAvatar:
         # 首次收到文本输入时自动启动渲染管线，无需等待 WebRTC 连接
         logger.info('[put_msg_txt] msg_len=%d, has_tts=%s, session=%s', len(msg) if msg else 0, hasattr(self, 'tts'), self.sessionid)
         self._ensure_render_running()
-        if hasattr(self, 'tts'):
+        if hasattr(self, 'tts') and self.tts is not None:
             self.tts.put_msg_txt(msg, datainfo)
 
     def put_audio_frame(self, audio_chunk:NDArray[np.float32], datainfo:dict={}): # 16khz 20ms pcm

@@ -43,7 +43,7 @@ class QwenTTS(BaseTTS):
         super().__init__(opt, parent)
 
         # 音色名, 复用 REF_FILE 参数
-        self.voice = opt.REF_FILE if opt.REF_FILE else 'Cherry'
+        self.voice = opt.REF_FILE if opt.REF_FILE else 'Ethan'
         # 默认语速, 1.0 为正常速度, <1 变慢, >1 变快
         self.speech_rate = getattr(opt, 'tts_speed', None) or 1.0
         if isinstance(self.speech_rate, str):
@@ -68,6 +68,7 @@ class QwenTTS(BaseTTS):
         # ---------- 内部状态 ----------
         self._remainder = np.array([], dtype=np.float32)  # 上次重采样后不足一 chunk 的 16kHz 样本
         self._response_event = threading.Event()
+        self._session_updated_event = threading.Event()  # 等待 session.update 服务端确认
         self._first_chunk = True          # 当前合成的一句话里的第一个音频包
         self._current_text = ''
         self._current_textevent = {}
@@ -103,6 +104,12 @@ class QwenTTS(BaseTTS):
                 event_type = response.get('type', '')
                 if event_type == 'session.created':
                     logger.info(f"QwenTTS session: {response.get('session', {}).get('id', '')}")
+                    # 首次会话创建后立即 set（防止 _build_client 中 wait 死锁）
+                    self._ref._session_updated_event.set()
+                elif event_type == 'session.updated':
+                    # 服务端已确认 session.update 生效
+                    logger.info(f"QwenTTS session.updated: voice={response.get('session', {}).get('voice', '?')}")
+                    self._ref._session_updated_event.set()
                 elif event_type == 'response.audio.delta':
                     audio_b64 = response.get('delta', '')
                     if audio_b64:
@@ -127,7 +134,13 @@ class QwenTTS(BaseTTS):
         elif not self._ws_connected:
             # 之前断开了，仅重连 WebSocket（不重建 client）
             try:
+                self._session_updated_event.clear()
                 self._tts_client.connect()
+                # 等待 session.created
+                if not self._session_updated_event.wait(timeout=3.0):
+                    logger.warning("QwenTTS reconnect: 未收到 session.created 事件（3s 超时）")
+                self._session_updated_event.clear()
+
                 self._tts_client.update_session(
                     voice=self.voice,
                     response_format=AudioFormat.PCM_24000HZ_MONO_16BIT,
@@ -135,8 +148,15 @@ class QwenTTS(BaseTTS):
                     mode='commit',
                     speech_rate=self.speech_rate,
                 )
+                # 关键修复：必须等服务端确认 session.update 完成
+                # 否则 idle timeout 重连后的第一段文本会用服务端默认 voice (Cherry)
+                if not self._session_updated_event.wait(timeout=2.0):
+                    logger.warning(
+                        f"QwenTTS reconnect: update_session 后未收到 session.updated（2s 超时）"
+                        f" voice={self.voice!r} — 第一段文本可能用旧 voice"
+                    )
                 self._ws_connected = True
-                logger.info("QwenTTS reconnected")
+                logger.info(f"QwenTTS reconnected: voice={self.voice}, speech_rate={self.speech_rate}")
             except Exception:
                 logger.warning("QwenTTS reconnect failed, rebuilding")
                 self._build_client()
@@ -144,6 +164,7 @@ class QwenTTS(BaseTTS):
     def _build_client(self):
         """初始化 / 重建 QwenTtsRealtime 客户端（使用 self.model / self.voice / self.speech_rate）"""
         self._remainder = np.array([], dtype=np.float32)
+        self._session_updated_event.clear()
         self._callback = self._Callback(self)
         try:
             self._tts_client = QwenTtsRealtime(
@@ -152,6 +173,11 @@ class QwenTTS(BaseTTS):
                 url=self.ws_url,
             )
             self._tts_client.connect()
+            # 等待 session.created 事件（connect 成功后服务端必发）
+            if not self._session_updated_event.wait(timeout=3.0):
+                logger.warning("QwenTTS connect 后未收到 session.created 事件（3s 超时）")
+            self._session_updated_event.clear()
+
             self._tts_client.update_session(
                 voice=self.voice,
                 response_format=AudioFormat.PCM_24000HZ_MONO_16BIT,
@@ -159,7 +185,15 @@ class QwenTTS(BaseTTS):
                 mode='commit',
                 speech_rate=self.speech_rate,
             )
-            logger.info(f"QwenTTS 初始化完成: model={self.model}, voice={self.voice}, speech_rate={self.speech_rate}")
+            # 关键修复：等待服务端确认 session.update 已应用 voice，再返回
+            # 避免 append_text/commit 时服务端还在用旧 voice（默认 Cherry）
+            if not self._session_updated_event.wait(timeout=2.0):
+                logger.warning(
+                    f"QwenTTS update_session 后未收到 session.updated 事件（2s 超时）"
+                    f" voice={self.voice!r} — 第一段文本可能用旧 voice"
+                )
+            else:
+                logger.info(f"QwenTTS 初始化完成: model={self.model}, voice={self.voice}, speech_rate={self.speech_rate}")
         except Exception as e:
             logger.error(f"QwenTTS 连接建立失败: {e}")
             self._ws_connected = False
@@ -204,6 +238,18 @@ class QwenTTS(BaseTTS):
         self._ensure_connected()
 
         ref_file = textevent.get('tts', {}).get('ref_file', self.opt.REF_FILE)
+        # 强制禁止女声：如果 ref_file 或 self.voice 是 Cherry，立即改为 Ethan
+        FORBIDDEN = {'cherry', 'Cherry', 'CHERRY'}
+        if ref_file in FORBIDDEN:
+            logger.warning(f"[QwenTTS.FORCE] 禁止女声！ref_file={ref_file!r} → 强制改为 Ethan")
+            ref_file = 'Ethan'
+        if self.voice in FORBIDDEN:
+            logger.warning(f"[QwenTTS.FORCE] 禁止女声！self.voice={self.voice!r} → 强制改为 Ethan，强制重建 client")
+            self.voice = 'Ethan'
+            self._build_client()
+
+        # 诊断：每次合成时打印 self.voice 和实际使用的 ref_file
+        logger.info(f"[QwenTTS.SYNTH] text='{text[:20]}...' datainfo.voice={ref_file!r} self.voice={self.voice!r} opt.REF_FILE={self.opt.REF_FILE!r} _ws_connected={self._ws_connected}")
         if ref_file == self.opt.REF_FILE and self.voice != self.opt.REF_FILE:
             logger.debug(f"QwenTTS using fallback voice={ref_file} (no ref_file in datainfo)")
         elif ref_file != self.voice:
@@ -232,7 +278,12 @@ class QwenTTS(BaseTTS):
                 else:
                     try:
                         self._tts_client.close()
+                        self._session_updated_event.clear()
                         self._tts_client.connect()
+                        # 等待 session.created
+                        if not self._session_updated_event.wait(timeout=3.0):
+                            logger.warning("QwenTTS voice switch: 未收到 session.created（3s 超时）")
+                        self._session_updated_event.clear()
                         self._tts_client.update_session(
                             voice=self.voice,
                             response_format=AudioFormat.PCM_24000HZ_MONO_16BIT,
@@ -240,6 +291,12 @@ class QwenTTS(BaseTTS):
                             mode='commit',
                             speech_rate=self.speech_rate,
                         )
+                        # 关键修复：等待服务端确认 voice 切换完成
+                        if not self._session_updated_event.wait(timeout=2.0):
+                            logger.warning(
+                                f"QwenTTS voice switch: update_session 后未收到 session.updated（2s 超时）"
+                                f" voice={self.voice!r} — 第一段文本可能用旧 voice"
+                            )
                         logger.info(f"QwenTTS reconnected: voice={self.voice}, speech_rate={self.speech_rate}")
                     except Exception:
                         logger.warning("QwenTTS reconnect failed, rebuilding client")

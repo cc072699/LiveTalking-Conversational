@@ -388,7 +388,9 @@ function negotiate() {
             sdp: offer.sdp,
             type: offer.type,
             avatar: document.getElementById('offerAvatar').value || undefined,
-            refaudio: document.getElementById('offerRefAudio').value || undefined,
+            refaudio: (document.getElementById('ttsVoice') && document.getElementById('ttsVoice').value)
+                    || (document.getElementById('offerRefAudio') && document.getElementById('offerRefAudio').value)
+                    || undefined,
             reftext: document.getElementById('offerRefText').value || undefined,
         };
         return fetch('/offer', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });

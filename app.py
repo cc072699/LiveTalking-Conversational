@@ -129,6 +129,14 @@ def build_avatar_session(sessionid:str, params:dict)->BaseAvatar:
     if ref_audio: #请求参数配置了参考音频
         opt_this.REF_FILE = ref_audio
         opt_this.REF_TEXT = ref_text
+    else:
+        # 前端没传 refaudio（可能是浏览器旧 JS cache / DOM 元素缺失 / 切到 index-en.html 等）
+        # 用 config.py 的 opt.REF_FILE 兜底（而不是直接保持 Cherry 默认）
+        opt_this.REF_FILE = opt.REF_FILE
+        logger.warning(
+            f'[音色] 前端未传 refaudio，session 沿用服务端默认音色 REF_FILE={opt.REF_FILE!r} '
+            f'(sessionid={sessionid}, avatar={avatar_id})'
+        )
     if prompt_key:
         opt_this.PROMPT_KEY = prompt_key
     if custom_config:
