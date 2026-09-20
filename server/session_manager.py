@@ -32,6 +32,7 @@ class SessionManager:
     def __init__(self):
         if not hasattr(self, "initialized"):
             self.sessions: Dict[str, BaseAvatar] = {}
+            self._sessions_lock = threading.Lock()
             self.build_session_fn = None
             self._cache = None  # 由 app.py 注入 _session_cache 引用
             self.initialized = True
@@ -46,11 +47,18 @@ class SessionManager:
         
     def get_session(self, sessionid: str) -> Optional[BaseAvatar]:
         """获取已存活的会话"""
-        return self.sessions.get(sessionid)
+        with self._sessions_lock:
+            return self.sessions.get(sessionid)
+
+    def get_sessions_snapshot(self) -> Dict[str, BaseAvatar]:
+        """获取当前所有会话的线程安全快照"""
+        with self._sessions_lock:
+            return dict(self.sessions)
 
     def has_session(self, sessionid: str) -> bool:
         """检查会话是否存在"""
-        return sessionid in self.sessions and self.sessions[sessionid] is not None
+        with self._sessions_lock:
+            return sessionid in self.sessions and self.sessions[sessionid] is not None
         
     async def create_session(self, params: dict, sessionid: str = None) -> str:
         """
@@ -65,26 +73,31 @@ class SessionManager:
             
         logger.info('Creating sessionid=%s, current session num=%d', sessionid, len(self.sessions))
         # 预先占位防止重复
-        self.sessions[sessionid] = None
+        with self._sessions_lock:
+            self.sessions[sessionid] = None
 
         try:
             # 在线程池中构建 session（加载模型非常耗时）
             avatar_session = await asyncio.get_event_loop().run_in_executor(
                 None, self.build_session_fn, sessionid, params
             )
-            self.sessions[sessionid] = avatar_session
+            with self._sessions_lock:
+                self.sessions[sessionid] = avatar_session
         except Exception:
-            self.sessions.pop(sessionid, None)
+            with self._sessions_lock:
+                self.sessions.pop(sessionid, None)
             raise
         return sessionid
         
     def add_session(self, sessionid: str, avatar_session: BaseAvatar):
         """同步添加静态或外部管理的会话（供非服务端入口调用）"""
-        self.sessions[sessionid] = avatar_session
+        with self._sessions_lock:
+            self.sessions[sessionid] = avatar_session
         
     def remove_session(self, sessionid: str):
         """销毁会话资源（释放 CPU/GPU 内存，关闭 WebSocket 连接）"""
-        avatar = self.sessions.pop(sessionid, None)
+        with self._sessions_lock:
+            avatar = self.sessions.pop(sessionid, None)
         if avatar is not None:
             logger.info(f"Removing session {sessionid}")
             # 顺便从缓存移除

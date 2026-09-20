@@ -3,425 +3,628 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LiveTalking - 数字人实时驱动</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
-    <style>
+    <title>五六零科技 · 数字人展览平台 | 560 TECH · Digital Human Platform</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+        <style>
+        /* ═══════════════ Neo-Tech Design System ═══════════════════════ */
         :root {
-            --primary: #4361ee;
-            --primary-dark: #3f37c9;
-            --bg: #f0f4fc;
-            --card-bg: rgba(255,255,255,0.85);
-            --radius: 14px;
+            --bg: #050810;
+            --bg-card: rgba(10, 14, 26, 0.78);
+            --bg-elevated: rgba(14, 19, 34, 0.92);
+            --accent: #00e5ff;
+            --accent2: #7c3aed;
+            --accent-glow: rgba(0, 229, 255, 0.18);
+            --accent2-glow: rgba(124, 58, 237, 0.14);
+            --success: #00f0a8;
+            --danger: #ff3b5c;
+            --warn: #f97316;
+            --text: #e8ecf1;
+            --text-dim: #7e8ba3;
+            --text-muted: #596478;
+            --border: rgba(0, 229, 255, 0.1);
+            --border-glow: rgba(0, 229, 255, 0.18);
+            --radius: 10px;
+            --radius-sm: 7px;
+            --radius-xs: 5px;
+            --ease: cubic-bezier(0.22, 1, 0.36, 1);
+            --dur: 220ms;
         }
-        body {
-            font-family: 'Inter', system-ui, -apple-system, sans-serif;
-            background: linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%);
-            color: #1e293b;
-            min-height: 100vh;
-            padding-bottom: 40px;
-        }
-        .navbar-brand { font-weight: 700; }
-        .glass-card {
-            background: var(--card-bg);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255,255,255,0.4);
-            border-radius: var(--radius);
-            box-shadow: 0 8px 24px rgba(0,0,0,0.06);
-            margin-bottom: 20px;
-        }
-        .card-header {
-            background: transparent;
-            border-bottom: 1px solid rgba(0,0,0,0.06);
-            padding: 16px 20px;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .card-header i { color: var(--primary); }
-        .card-body { padding: 20px; }
-        .btn-primary-custom {
-            background: linear-gradient(135deg, #4361ee, #3f37c9);
-            border: none;
-            color: #fff;
-            font-weight: 600;
-            border-radius: 8px;
-            padding: 8px 16px;
-            cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-        .btn-primary-custom:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(67,97,238,0.3); color: #fff; }
-        .btn-primary-custom:active { transform: translateY(0); }
-        .btn-danger-custom { background: #ef4444; border: none; color: #fff; font-weight: 600; border-radius: 8px; padding: 8px 16px; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; }
-        .btn-danger-custom:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(239,68,68,0.3); }
-        .btn-danger-custom:active { transform: translateY(0); }
-        .btn-outline-custom { border: 2px solid var(--primary); color: var(--primary); font-weight: 600; border-radius: 8px; padding: 8px 16px; background: transparent; cursor: pointer; transition: all 0.2s; }
-        .btn-outline-custom:hover { background: var(--primary); color: #fff; }
-        .btn-outline-custom:active { transform: scale(0.97); }
-        video { width: 100%; border-radius: 8px; background: #000; }
-        .session-badge { font-size: 0.75rem; padding: 4px 10px; border-radius: 20px; }
-        .connected { background: #d1fae5; color: #065f46; }
-        .disconnected { background: #fee2e2; color: #991b1b; }
-        .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
-        .status-dot.on { background: #10b981; }
-        .status-dot.off { background: #ef4444; }
-        .quick-link { text-decoration: none; }
-        .quick-link .glass-card { transition: transform 0.3s, box-shadow 0.3s; cursor: pointer; }
-        .quick-link:hover .glass-card { transform: translateY(-3px); box-shadow: 0 12px 28px rgba(0,0,0,0.1); }
-        pre { background: #1e293b; color: #e2e8f0; padding: 12px; border-radius: 8px; font-size: 0.8rem; max-height: 120px; overflow-y: auto; }
-        label { font-weight: 500; font-size: 0.9rem; color: #64748b; margin-bottom: 4px; }
-        .param-hint { font-size: 0.75rem; color: #94a3b8; }
-        ::placeholder { color: #9ca3af !important; opacity: 1; }
-        :-ms-input-placeholder { color: #9ca3af; }
-        .voice-transcript {
-            background: rgba(67, 97, 238, 0.06);
-            border-radius: 8px;
-            padding: 10px 14px;
-            min-height: 40px;
-            font-size: 0.9rem;
-            color: #334155;
-            white-space: pre-wrap;
-            word-break: break-all;
-        }
-        .voice-chat-log {
-            max-height: 200px;
-            overflow-y: auto;
-            font-size: 0.85rem;
-            padding: 8px 0;
-        }
-        .voice-chat-log .msg-user { color: var(--primary); margin-bottom: 4px; }
-        .voice-chat-log .msg-user::before { content: '🗣️ '; }
-        .voice-chat-log .msg-avatar { color: #64748b; margin-bottom: 8px; }
-        .voice-chat-log .msg-avatar::before { content: '🤖 '; }
 
-        /* Fullscreen wrapper */
-        .video-fs-wrapper { position: relative; display: inline-block; width: 100%; }
-        .video-fs-wrapper:fullscreen,
-        .video-fs-wrapper:-webkit-full-screen {
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html { scroll-behavior: smooth; height: 100%; font-size: 18px; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            height: 100vh; overflow: hidden;
+            position: relative;
+            -webkit-font-smoothing: antialiased;
+        }
+        body::before {
+            content: '';
+            position: fixed; inset: 0; z-index: 0; pointer-events: none;
+            background:
+                radial-gradient(ellipse 60% 40% at 25% 55%, rgba(124,58,237,0.06) 0%, transparent 60%),
+                radial-gradient(ellipse 50% 35% at 75% 35%, rgba(0,229,255,0.05) 0%, transparent 60%),
+                linear-gradient(rgba(0,229,255,0.018) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0,229,255,0.018) 1px, transparent 1px);
+            background-size: 100% 100%, 100% 100%, 48px 48px, 48px 48px;
+        }
+
+        /* ── App Shell ───────────────────────────────────────────────── */
+        #app { position: relative; z-index: 2; display: flex; flex-direction: column; height: 100vh; }
+
+        /* ── Top Bar ────────────────────────────────────────────────── */
+        #topbar {
+            height: 56px; display: flex; align-items: center; justify-content: space-between;
+            padding: 0 24px;
+            background: rgba(5, 8, 16, 0.88);
+            backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+            border-bottom: 1px solid var(--border);
+            box-shadow: 0 1px 20px rgba(0,0,0,0.4);
+            flex-shrink: 0; z-index: 100;
+        }
+        #topbar .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+        #topbar .brand i { color: var(--accent); font-size: 1rem; filter: drop-shadow(0 0 8px var(--accent-glow)); }
+        #topbar .brand .zh { color: var(--text); font-size: 1rem; font-weight: 800; letter-spacing: 1px; font-family: 'Rajdhani', sans-serif; }
+        #topbar .brand .sep { color: rgba(255,255,255,0.15); margin: 0 6px; }
+        #topbar .brand .en { color: var(--text-dim); font-size: 1rem; font-weight: 500; }
+        #topbar .right-group { display: flex; align-items: center; gap: 14px; }
+        #topbar .btn-top-link {
+            font-size: 1rem; color: var(--text-dim); text-decoration: none;
+            padding: 5px 12px; border-radius: 6px; transition: all .15s var(--ease);
+            display: flex; align-items: center; gap: 4px; font-weight: 500;
+        }
+        #topbar .btn-top-link:hover { color: var(--accent); background: rgba(0,229,255,0.06); }
+        #topbar .btn-top-link.danger:hover { color: var(--danger); background: rgba(255,59,92,0.06); }
+        .session-badge {
+            font-size: 1rem; padding: 5px 13px; border-radius: 20px; font-weight: 700;
+            font-family: 'Rajdhani', sans-serif; letter-spacing: 0.6px;
+            display: flex; align-items: center; gap: 6px; transition: all .25s;
+        }
+        .session-badge.connected { background: rgba(0,240,168,0.08); color: var(--success); border: 1px solid rgba(0,240,168,0.2); box-shadow: 0 0 14px rgba(0,240,168,0.08); }
+        .session-badge.disconnected { background: rgba(255,59,92,0.06); color: var(--danger); border: 1px solid rgba(255,59,92,0.12); }
+        .status-dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
+        .status-dot.on { background: var(--success); box-shadow: 0 0 8px var(--success); }
+        .status-dot.off { background: var(--danger); }
+        #sessionIdDisplay { font-family: 'Rajdhani', sans-serif; font-size: 1rem; color: var(--text-dim); letter-spacing: 0.4px; white-space: nowrap; font-weight: 500; }
+        .btn-settings {
+            width: 36px; height: 36px; border-radius: 8px; background: transparent;
+            border: 1px solid rgba(255,255,255,0.08); color: var(--text-dim); cursor: pointer;
+            display: flex; align-items: center; justify-content: center; font-size: 1rem;
+            transition: all var(--dur) var(--ease);
+        }
+        .btn-settings:hover { color: var(--accent); border-color: var(--accent); background: rgba(0,229,255,0.05); box-shadow: 0 0 14px var(--accent-glow); }
+        .btn-settings.active { color: var(--accent); border-color: var(--accent); background: rgba(0,229,255,0.08); }
+
+        /* ── Settings Drawer ────────────────────────────────────────── */
+        #settingsDrawer {
+            background: rgba(8, 12, 22, 0.96);
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border-glow);
+            overflow: hidden; max-height: 0;
+            transition: max-height 0.45s var(--ease), padding 0.45s var(--ease), border-color 0.45s var(--ease);
+            flex-shrink: 0; z-index: 99;
+        }
+        #settingsDrawer.open { max-height: 400px; border-bottom-color: var(--border-glow); }
+        #settingsDrawer .drawer-inner { padding: 0 22px; transition: padding 0.45s var(--ease); }
+        #settingsDrawer.open .drawer-inner { padding: 18px 22px; }
+        #settingsDrawer .section-title {
+            font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 1rem;
+            color: var(--accent); text-transform: uppercase; letter-spacing: 2px;
+            margin-bottom: 10px; display: flex; align-items: center; gap: 8px;
+            padding: 4px 0;
+        }
+        #settingsDrawer .section-title::after {
+            content: ''; flex: 1; height: 1px;
+            background: linear-gradient(90deg, rgba(0,229,255,0.2), transparent);
+        }
+        #settingsDrawer .config-row { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+        #settingsDrawer .config-row:last-child { margin-bottom: 4px; }
+        #settingsDrawer .field { display: flex; flex-direction: column; gap: 4px; min-width: 140px; flex: 1; }
+        #settingsDrawer .field label {
+            font-size: 1rem; color: var(--text); letter-spacing: 0.4px;
+            font-weight: 600; white-space: nowrap; display: flex; align-items: center; gap: 6px;
+        }
+        #settingsDrawer .field label i { color: var(--accent); font-size: 1rem; }
+        .field-hint { font-size: 0.75rem; color: var(--text-muted); margin-top: 1px; }
+        .dark-select, .dark-input {
+            background: rgba(5,8,18,0.7); border: 1px solid rgba(0,229,255,0.1);
+            border-radius: var(--radius-xs); color: var(--text); font-size: 1rem;
+            padding: 8px 12px; font-family: inherit;
+            transition: border-color .15s, box-shadow .15s; outline: none;
+        }
+        .dark-select:hover, .dark-input:hover { border-color: rgba(0,229,255,0.25); }
+        .dark-select:focus, .dark-input:focus { background: rgba(5,8,18,0.9); border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0,229,255,0.06); }
+        .dark-select option { background: #0a1222; color: var(--text); }
+        .dark-input::placeholder { color: var(--text-muted); font-weight: 400; }
+
+        /* ── Buttons ────────────────────────────────────────────────── */
+        .btn-accent {
+            background: linear-gradient(135deg, #00c4e0, #0090a8);
+            border: none; color: #050810; font-weight: 700;
+            font-size: 1rem; border-radius: var(--radius-xs); padding: 9px 20px; cursor: pointer;
+            font-family: 'Rajdhani', sans-serif; letter-spacing: 0.5px;
+            transition: all .18s var(--ease);
+            display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
+        }
+        .btn-accent:hover { transform: translateY(-2px); box-shadow: 0 6px 24px rgba(0,229,255,0.25); filter: brightness(1.1); }
+        .btn-accent:active { transform: translateY(0); }
+        .btn-danger-sm{background:linear-gradient(135deg,#e63946,#c1121f);border:none;color:#fff;font-weight:700;font-size: 1rem;border-radius:var(--radius-xs);padding:9px 20px;cursor:pointer;font-family:'Rajdhani',sans-serif;letter-spacing:0.5px;transition:all .18s;display:inline-flex;align-items:center;gap:6px}
+        .btn-danger-sm:hover{transform:translateY(-2px);box-shadow:0 6px 24px rgba(230,57,70,0.3)}
+        .btn-ghost{background:transparent;border:1px solid rgba(0,229,255,0.25);color:var(--accent);font-weight:600;font-size: 1rem;border-radius:var(--radius-xs);padding:7px 14px;cursor:pointer;font-family:'Rajdhani',sans-serif;letter-spacing:0.4px;transition:all .15s;display:inline-flex;align-items:center;gap:6px}
+        .btn-ghost:hover{background:rgba(0,229,255,0.06);border-color:var(--accent);box-shadow:0 0 12px var(--accent-glow)}
+        .btn-ghost:disabled{opacity:0.3;cursor:not-allowed}
+        .btn-ghost:disabled:hover{background:transparent;border-color:rgba(0,229,255,0.25);box-shadow:none}
+        .toggle-wrap{display:inline-flex;align-items:center;gap:8px;cursor:pointer;user-select:none}
+        .toggle-wrap input{display:none}
+        .toggle-slider{position:relative;width:40px;height:22px;background:rgba(255,255,255,0.1);border-radius:22px;transition:all .15s;border:1px solid rgba(255,255,255,0.08)}
+        .toggle-slider::after{content:'';position:absolute;top:2px;left:2px;width:16px;height:16px;background:#fff;border-radius:50%;transition:transform .25s var(--ease);box-shadow:0 1px 3px rgba(0,0,0,0.3)}
+        .toggle-wrap input:checked+.toggle-slider{background:var(--accent);border-color:var(--accent);box-shadow:0 0 10px var(--accent-glow)}
+        .toggle-wrap input:checked+.toggle-slider::after{transform:translateX(18px)}
+        .toggle-label{font-size: 1rem;color:var(--text-dim);font-weight:500}
+
+        /* ── Main Layout ────────────────────────────────────────────── */
+        #mainContent { display: flex; flex: 1; min-height: 0; gap: 1px; background: var(--border); }
+
+        /* ── Video Panel ────────────────────────────────────────────── */
+        #videoPanel { flex: 5; display: flex; flex-direction: column; background: #000; min-width: 0; position: relative; }
+        #videoPanel .panel-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 10px 18px; background: rgba(5,8,18,0.9);
+            border-bottom: 1px solid var(--border); flex-shrink: 0;
+        }
+        #videoPanel .panel-title { font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 1rem; color: var(--text); letter-spacing: 0.8px; display: flex; align-items: center; gap: 8px; }
+        #videoPanel .panel-title i { color: var(--accent); filter: drop-shadow(0 0 5px var(--accent-glow)); }
+        .video-stage { flex: 1; position: relative; overflow: hidden; background: #000; min-height: 0; display: flex; align-items: center; justify-content: center; }
+        .video-stage video { width: 100%; height: 100%; object-fit: contain; background: #000; }
+        .video-stage audio { display: none; }
+        .video-fs-wrapper { width: 100%; height: 100%; position: relative; display: flex; align-items: center; justify-content: center; }
+        .video-fs-wrapper:fullscreen,.video-fs-wrapper:-webkit-full-screen{display:flex;align-items:center;justify-content:center;background:#000;width:100vw;height:100vh}
+        .video-fs-wrapper:fullscreen video,.video-fs-wrapper:-webkit-full-screen video{max-width:100%;max-height:100vh;width:auto;height:auto}
+
+        /* ── Loading Overlay ────────────────────────────────────────── */
+        .video-loading-overlay {
+            position: absolute; inset: 0; z-index: 30;
+            background: rgba(3,6,12,0.82); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
             display: flex; align-items: center; justify-content: center;
-            background: #000; width: 100vw; height: 100vh;
+            transition: opacity 0.3s, visibility 0.3s;
         }
-        .video-fs-wrapper:fullscreen video,
-        .video-fs-wrapper:-webkit-full-screen video {
-            max-width: 100%; max-height: 100vh; width: auto; height: auto; border-radius: 0;
+        .loading-box {
+            background: rgba(12,18,30,0.92); border: 1px solid rgba(0,229,255,0.22);
+            border-radius: var(--radius); padding: 24px 30px;
+            max-width: 380px; width: 100%; text-align: center;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.6), 0 0 40px rgba(0,229,255,0.04);
         }
-        /* Side panel: absolute overlay on the right */
-        .video-fs-wrapper:fullscreen .fs-side-panel,
-        .video-fs-wrapper:-webkit-full-screen .fs-side-panel {
-            display: none; flex-direction: column; position: absolute; top: 0; right: 0;
-            width: 380px; height: 100vh; overflow-y: auto; padding: 16px; gap: 16px;
-            background: #0d1117; color: #e6edf3; z-index: 100;
+        .loading-pulse {
+            width: 50px; height: 50px; margin: 0 auto 14px; border-radius: 50%;
+            background: rgba(0,229,255,0.06); border: 2px solid var(--accent);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1rem; color: var(--accent);
+            animation: pulseGlow 1.6s infinite ease-in-out;
         }
-        /* Panel open state */
-        .video-fs-wrapper:fullscreen.fs-panel-open .fs-side-panel,
-        .video-fs-wrapper:-webkit-full-screen.fs-panel-open .fs-side-panel {
-            display: flex;
+        @keyframes pulseGlow {
+            0%{box-shadow:0 0 0 0 rgba(0,229,255,0.3);transform:scale(1)}
+            70%{box-shadow:0 0 0 16px rgba(0,229,255,0);transform:scale(1.04)}
+            100%{box-shadow:0 0 0 0 rgba(0,229,255,0);transform:scale(1)}
         }
-        .video-fs-wrapper:fullscreen .fs-side-panel .fs-glass-card,
-        .video-fs-wrapper:-webkit-full-screen .fs-side-panel .fs-glass-card {
-            background: rgba(255,255,255,0.85); backdrop-filter: blur(12px);
-            border: 1px solid rgba(255,255,255,0.4); border-radius: 14px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.06); color: #1e293b;
-        }
-        .video-fs-wrapper:fullscreen .fs-side-panel .fs-card-header,
-        .video-fs-wrapper:-webkit-full-screen .fs-side-panel .fs-card-header {
-            background: transparent; border-bottom: 1px solid rgba(0,0,0,0.06);
-            padding: 14px 18px; font-weight: 600; display: flex; align-items: center; gap: 8px;
-        }
-        .video-fs-wrapper:fullscreen .fs-side-panel .fs-card-header i,
-        .video-fs-wrapper:-webkit-full-screen .fs-side-panel .fs-card-header i { color: #4361ee; }
-        .video-fs-wrapper:fullscreen .fs-side-panel .fs-card-body,
-        .video-fs-wrapper:-webkit-full-screen .fs-side-panel .fs-card-body { padding: 16px 18px; }
-        /* Hide native fullscreen button */
-        video::-webkit-media-controls-fullscreen-button { display: none !important; }
-        video::-moz-full-screen-button { display: none !important; }
-        /* Fullscreen button (normal state) */
+        .loading-title { font-size: 1rem; font-weight: 600; color: #fff; margin-bottom: 4px; }
+        .loading-sub { font-size: 1rem; color: var(--text-dim); margin-bottom: 14px; }
+        .step-dots { display: flex; justify-content: center; gap: 10px; }
+        .c-dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.1); transition: all 0.3s; }
+        .c-dot.active { background: var(--accent); box-shadow: 0 0 10px var(--accent); transform: scale(1.4); }
+        .c-dot.done { background: var(--success); }
+
+        /* ── Fullscreen Controls ────────────────────────────────────── */
         .fs-trigger {
-            position: absolute; bottom: 8px; right: 8px;
-            background: rgba(0,0,0,0.6); color: #fff; border: none;
-            border-radius: 4px; padding: 4px 8px; cursor: pointer;
-            font-size: 14px; z-index: 10; opacity: 0.7; transition: opacity 0.2s;
+            position: absolute; bottom: 10px; right: 10px;
+            background: rgba(0,0,0,0.6); color: rgba(255,255,255,0.6);
+            border: 1px solid rgba(255,255,255,0.1); border-radius: 5px;
+            padding: 4px 12px; cursor: pointer; font-size: 18px; z-index: 10;
+            opacity: 0.4; transition: opacity 0.2s;
         }
-        .fs-trigger:hover { opacity: 1; }
-        /* Toolbar in fullscreen (top-right, contains panel toggle + exit) */
-        .fs-toolbar {
-            display: none; position: fixed; top: 12px; right: 12px; z-index: 2147483647;
-            gap: 8px;
-        }
-        .video-fs-wrapper:fullscreen .fs-toolbar,
-        .video-fs-wrapper:-webkit-full-screen .fs-toolbar { display: flex; }
+        .fs-trigger:hover { opacity: 1; background: rgba(0,229,255,0.1); border-color: var(--accent); }
+        .fs-toolbar { display: none; position: fixed; top: 14px; right: 14px; z-index: 2147483647; gap: 8px; }
+        .video-fs-wrapper:fullscreen .fs-toolbar,.video-fs-wrapper:-webkit-full-screen .fs-toolbar{display:flex}
         .fs-toolbar button {
-            background: rgba(255,255,255,0.15); color: #fff; border: 1px solid rgba(255,255,255,0.25);
-            border-radius: 6px; padding: 6px 14px; cursor: pointer; font-size: 14px;
-            transition: background 0.2s;
+            background: rgba(0,0,0,0.75); color: var(--text); border: 1px solid rgba(0,229,255,0.25);
+            border-radius: 7px; padding: 7px 16px; cursor: pointer; font-size: 18px;
+            font-family: 'Rajdhani', sans-serif; font-weight: 600;
+            backdrop-filter: blur(10px); transition: all .15s;
         }
-        .fs-toolbar button:hover { background: rgba(255,255,255,0.3); }
-        .fs-toolbar button.active { background: rgba(67,97,238,0.7); border-color: rgba(67,97,238,0.9); }
-        /* Side panel hidden in normal state */
+        .fs-toolbar button:hover { background: rgba(0,229,255,0.12); border-color: var(--accent); }
+        .fs-toolbar button.active { background: rgba(0,229,255,0.15); border-color: var(--accent); box-shadow: 0 0 12px var(--accent-glow); }
         .fs-side-panel { display: none; }
+        .video-fs-wrapper:fullscreen .fs-side-panel,.video-fs-wrapper:-webkit-full-screen .fs-side-panel{display:none;flex-direction:column;position:absolute;top:0;right:0;width:400px;height:100vh;overflow-y:auto;padding:16px;gap:14px;background:rgba(5,8,16,0.97);color:var(--text);z-index:100;border-left:1px solid var(--border-glow)}
+        .video-fs-wrapper:fullscreen.fs-panel-open .fs-side-panel,.video-fs-wrapper:-webkit-full-screen.fs-panel-open .fs-side-panel{display:flex}
+        .video-fs-wrapper:fullscreen.fs-panel-open .fs-toolbar,.video-fs-wrapper:-webkit-full-screen.fs-panel-open .fs-toolbar{right:auto;left:14px}
+        .fs-glass-card{background:rgba(10,16,28,0.9);border:1px solid var(--border-glow);border-radius:var(--radius);box-shadow:0 4px 24px rgba(0,0,0,0.4)}
+        .fs-card-header{padding:14px 18px;font-weight:700;font-family:'Rajdhani',sans-serif;color:var(--text);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px}
+        .fs-card-header i{color:var(--accent)}
+
+        /* ── Chat Panel ─────────────────────────────────────────────── */
+        #chatPanel {
+            flex: 4; display: flex; flex-direction: column;
+            background: rgba(7, 12, 22, 0.65);
+            border-left: 1px solid var(--border);
+            min-width: 380px; max-width: 500px;
+        }
+        #chatPanel .panel-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 10px 18px; flex-shrink: 0;
+            border-bottom: 1px solid var(--border);
+            background: rgba(5,8,16,0.5);
+        }
+        #chatPanel .panel-title { font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 1rem; color: var(--text); letter-spacing: 0.8px; display: flex; align-items: center; gap: 8px; }
+        #chatPanel .panel-title i { color: var(--accent); filter: drop-shadow(0 0 5px var(--accent-glow)); }
+        .chat-panel { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+        .chat-messages { flex: 1; overflow-y: auto; padding: 14px 16px 8px; display: flex; flex-direction: column; gap: 10px; scroll-behavior: smooth; }
+        .chat-messages::-webkit-scrollbar { width: 4px; }
+        .chat-messages::-webkit-scrollbar-thumb { background: rgba(0,229,255,0.15); border-radius: 2px; }
+        .chat-messages::-webkit-scrollbar-thumb:hover { background: rgba(0,229,255,0.28); }
+        .bubble-row { display: flex; align-items: flex-end; gap: 8px; }
+        .bubble-row.user { flex-direction: row-reverse; }
+        .bubble-content { max-width: 75%; min-width: 0; display: flex; flex-direction: column; }
+        .bubble-row.user .bubble-content { align-items: flex-end; }
+        .bubble-avatar-icon {
+            width: 32px; height: 32px; border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            display: flex; align-items: center; justify-content: center;
+            font-size: 18px; flex-shrink: 0; color: #fff;
+            box-shadow: 0 0 12px rgba(0,229,255,0.3);
+        }
+        .bubble-user-icon {
+            width: 32px; height: 32px; border-radius: 50%;
+            background: linear-gradient(135deg, var(--warn), #ea580c);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 18px; flex-shrink: 0; color: #fff;
+            box-shadow: 0 0 10px rgba(249,115,22,0.3);
+        }
+        .bubble {
+            padding: 10px 16px; border-radius: 18px;
+            font-size: 1rem; line-height: 1.5; word-break: break-word;
+            animation: bubbleIn 0.25s var(--ease);
+            width: fit-content; max-width: 100%;
+        }
+        @keyframes bubbleIn { from{opacity:0;transform:scale(0.85) translateY(6px)} to{opacity:1;transform:scale(1) translateY(0)} }
+        .bubble-row.avatar .bubble { background: rgba(0,229,255,0.04); border: 1px solid rgba(0,229,255,0.12); border-bottom-left-radius: 4px; color: var(--text); }
+        .bubble-row.user .bubble { background: linear-gradient(135deg, rgba(0,229,255,0.3), rgba(0,180,210,0.25)); border: 1px solid rgba(0,229,255,0.25); color: #fff; border-bottom-right-radius: 4px; box-shadow: 0 2px 14px rgba(0,229,255,0.15); }
+        .bubble-system-row { display: flex; justify-content: center; }
+        .bubble-system { font-size: 1rem; color: var(--text-muted); background: rgba(0,229,255,0.03); border: 1px solid rgba(0,229,255,0.06); border-radius: 20px; padding: 3px 14px; font-weight: 500; }
+        .bubble-timestamp { font-size: 0.7rem; color: var(--text-muted); margin-top: 3px; text-align: right; }
+        .bubble-row.avatar .bubble-timestamp { text-align: left; }
+        .chat-status-row { display: flex; justify-content: center; min-height: 22px; padding: 0 14px; }
+        .chat-status-pill { font-size: 1rem; padding: 3px 14px; background: rgba(0,229,255,0.06); color: var(--accent); font-weight: 600; border-radius: 20px; display: inline-flex; align-items: center; gap: 5px; border: 1px solid rgba(0,229,255,0.1); }
+        .chat-toolbar { padding: 6px 16px 4px; display: flex; gap: 8px; align-items: center; border-top: 1px solid var(--border); flex-wrap: wrap; background: rgba(5,8,16,0.4); }
+        .chat-toolbar .tool-label { font-size: 1rem; color: var(--text-muted); font-weight: 500; }
+        .chat-toolbar .tool-value { font-size: 1rem; color: var(--accent); font-weight: 700; padding: 2px 10px; background: rgba(0,229,255,0.06); border-radius: 8px; border: 1px solid rgba(0,229,255,0.08); }
+        .chat-mode-label { font-size: 1rem; color: var(--accent); padding: 2px 10px; background: rgba(0,229,255,0.06); border-radius: 8px; cursor: pointer; }
+        .chat-input-bar { padding: 4px 12px 12px; display: flex; gap: 8px; align-items: flex-end; }
+        .chat-input-bar textarea {
+            flex: 1; resize: none; border-radius: 20px;
+            border: 1.5px solid rgba(0,229,255,0.12); padding: 8px 14px;
+            font-size: 1rem; line-height: 1.45; min-height: 38px; max-height: 96px;
+            background: rgba(0,229,255,0.03); color: var(--text);
+            transition: border-color .15s, box-shadow .15s; outline: none; font-family: inherit;
+        }
+        .chat-input-bar textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 4px rgba(0,229,255,0.06); }
+        .chat-input-bar textarea::placeholder { color: var(--text-muted); }
+        .btn-send {
+            width: 38px; height: 38px; border-radius: 50%;
+            background: linear-gradient(135deg, #00d4ee, #0096c2);
+            border: none; color: #fff; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 18px; flex-shrink: 0;
+            transition: all .18s var(--ease);
+            box-shadow: 0 3px 12px rgba(0,229,255,0.25);
+        }
+        .btn-send:hover { transform: scale(1.12); box-shadow: 0 5px 20px rgba(0,229,255,0.4); }
+        .btn-send:active { transform: scale(0.93); }
+        .btn-mic {
+            width: 38px; height: 38px; border-radius: 50%;
+            border: 1.5px solid rgba(0,229,255,0.2);
+            background: transparent; color: var(--accent); cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 18px; flex-shrink: 0; transition: all .15s;
+        }
+        .btn-mic:hover { background: rgba(0,229,255,0.06); border-color: var(--accent); }
+        .btn-mic.free-active { background: var(--success); border-color: var(--success); color: #000; animation: freePulse 1.4s infinite; }
+        @keyframes freePulse { 0%{box-shadow:0 0 0 0 rgba(0,240,168,0.5)}70%{box-shadow:0 0 0 10px rgba(0,240,168,0)}100%{box-shadow:0 0 0 0 rgba(0,240,168,0)} }
+        .btn-mic.ptt-hold { background: var(--warn); border-color: var(--warn); color: #fff; animation: micPulse 1.2s infinite; }
+        @keyframes micPulse { 0%{box-shadow:0 0 0 0 rgba(249,115,22,0.5)}70%{box-shadow:0 0 0 10px rgba(249,115,22,0)}100%{box-shadow:0 0 0 0 rgba(249,115,22,0)} }
+
+        /* ── Scrollbar ───────────────────────────────────────────────── */
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(0,229,255,0.12); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(0,229,255,0.25); }
+
+        /* ── Responsive ──────────────────────────────────────────────── */
+        @media (max-width: 768px) {
+            #mainContent { flex-direction: column; }
+            #videoPanel { flex: none; height: 40vh; }
+            #chatPanel { flex: 1; max-width: none; min-width: 0; border-left: none; border-top: 1px solid var(--border); }
+            #settingsDrawer.open { max-height: 500px; }
+            #settingsDrawer .config-row { flex-direction: column; }
+        }
+        @media (min-width: 1400px) { #chatPanel { max-width: 540px; } }
+
+        /* ── Button Aliases ─────────────────────────────────────────── */
+        .btn-primary-custom{background:linear-gradient(135deg,#00c4e0,#0090a8);border:none;color:#050810;font-weight:700;font-size: 1rem;border-radius:8px;padding:8px 18px;cursor:pointer;font-family:'Rajdhani',sans-serif;letter-spacing:0.5px;transition:all .15s;display:inline-flex;align-items:center;gap:6px}
+        .btn-primary-custom:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,229,255,0.25)}
+        .btn-danger-custom{background:linear-gradient(135deg,#e63946,#c1121f);border:none;color:#fff;font-weight:700;font-size: 1rem;border-radius:8px;padding:8px 18px;cursor:pointer;font-family:'Rajdhani',sans-serif;letter-spacing:0.5px;transition:all .15s;display:inline-flex;align-items:center;gap:6px}
+        .btn-danger-custom:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(230,57,70,0.3)}
+        .btn-outline-custom{background:transparent;border:1px solid rgba(0,229,255,0.25);color:var(--accent);font-weight:600;font-size: 1rem;border-radius:8px;padding:7px 14px;cursor:pointer;font-family:'Rajdhani',sans-serif;letter-spacing:0.4px;transition:all .15s;display:inline-flex;align-items:center;gap:6px}
+        .btn-outline-custom:hover{background:rgba(0,229,255,0.06);border-color:var(--accent);box-shadow:0 0 12px var(--accent-glow)}
+        .btn-outline-custom:disabled{opacity:0.3;cursor:not-allowed}
+        .btn-outline-custom:disabled:hover{background:transparent;border-color:rgba(0,229,255,0.25);box-shadow:none}
+        .btn-primary-custom.btn-sm,.btn-danger-custom.btn-sm,.btn-outline-custom.btn-sm{font-size: 1rem;padding:5px 10px}
+        .btn.btn-danger{background:linear-gradient(135deg,#e63946,#c1121f)!important;border:none!important;color:#fff!important;border-radius:8px!important}
+        .btn.btn-primary{background:linear-gradient(135deg,#00c4e0,#0090a8)!important;border:none!important;color:#050810!important;border-radius:8px!important}
     </style>
 </head>
 <body>
 
-<nav class="navbar navbar-dark" style="background: linear-gradient(135deg, #4361ee, #3f37c9); box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
-    <div class="container-fluid px-4">
-        <span class="navbar-brand"><i class="bi bi-camera-video-fill me-2"></i>LiveTalking</span>
-        <a href="/index-en.html" class="text-white-50 small text-decoration-none me-2">English</a>
-        <div class="d-flex gap-2">
-            <span class="session-badge disconnected" id="statusBadge"><span class="status-dot off"></span>未连接</span>
-            <span class="text-white-50 small" id="sessionIdDisplay">SID: -</span>
+<!-- ═══════════════ APP SHELL ═══════════════════════════════════════ -->
+<div id="app">
+
+    <!-- ═══ TOP BAR ══════════════════════════════════════════════════ -->
+    <header id="topbar">
+        <a class="brand" href="/">
+            <i class="bi bi-camera-reels-fill"></i>
+            <span class="zh">五六零科技</span>
+            <span class="sep">·</span>
+            <span class="en">数字人展览平台</span>
+        </a>
+        <div class="right-group">
+            <a href="/avatar.html" target="_blank" class="btn-top-link"><i class="bi bi-person-bounding-box"></i>Avatar</a>
+            <a href="/admin.html" target="_blank" class="btn-top-link"><i class="bi bi-gear"></i>管理</a>
+            <a href="javascript:void(0)" onclick="shutdownServer()" class="btn-top-link danger"><i class="bi bi-power"></i></a>
+            <span class="session-badge disconnected" id="statusBadge">
+                <span class="status-dot off"></span>未连接
+            </span>
+            <span id="sessionIdDisplay">SID: -</span>
+            <button class="btn-settings" id="btnSettingsToggle" onclick="toggleSettingsDrawer()" title="配置面板">
+                <i class="bi bi-sliders"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- ═══ SETTINGS DRAWER ═══════════════════════════════════════════ -->
+    <div id="settingsDrawer">
+        <div class="drawer-inner">
+            <!-- Row 1: 数字人 & TTS -->
+            <div class="section-title"><i class="bi bi-person-bounding-box"></i> 数字人与语音</div>
+            <div class="config-row">
+                <div class="field">
+                    <label><i class="bi bi-person-bounding-box"></i>数字人模型</label>
+                    <select class="dark-select" id="offerAvatar">
+                        <option value="zxw560" selected>zxw560 (默认模型)</option>
+                        <option value="cc3">cc3</option>
+                        <option value="zxw560-1">zxw560-1</option>
+                        <option value="zxw560-2">zxw560-2</option>
+                    </select>
+                    <span class="field-hint" id="avatarStatus"></span>
+                </div>
+                <div class="field">
+                    <label><i class="bi bi-file-earmark-music"></i>参考音频</label>
+                    <input type="text" class="dark-input" id="offerRefAudio" placeholder="zh-CN-YunxiaNeural">
+                </div>
+                <div class="field">
+                    <label><i class="bi bi-chat-left-quote"></i>驱动模式</label>
+                    <select class="dark-select" id="txtType">
+                        <option value="echo">Echo 复读</option>
+                        <option value="chat">Chat LLM</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label><i class="bi bi-cpu"></i>TTS 模型</label>
+                    <select class="dark-select" id="ttsModel">
+                        <option value="qwen-tts-realtime-latest" selected>qwen-tts-realtime-latest</option>
+                        <option value="qwen-tts-realtime-2025-07-15">qwen-tts-realtime-2025-07-15</option>
+                        <option value="qwen-tts-2025-05-22">qwen-tts-2025-05-22</option>
+                        <option value="qwen-tts-latest">qwen-tts-latest</option>
+                        <option value="qwen3-tts-flash-realtime" disabled>qwen3-tts-flash-realtime (额度不足)</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label><i class="bi bi-soundwave"></i>音色</label>
+                    <select class="dark-select" id="ttsVoice">
+                        <option value="Ethan" selected>Ethan (英文男声)</option>
+                        <option value="Cherry">Cherry (英文女声)</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label><i class="bi bi-person-badge"></i>Persona 人设</label>
+                    <select class="dark-select" id="promptType"></select>
+                    <span class="field-hint" id="promptHint">控制数字人性格与回答风格</span>
+                </div>
+            </div>
+
+            <!-- Row 2: 音频驱动 & 录制 & 打断 -->
+            <div class="section-title"><i class="bi bi-mic-fill"></i> 驱动与录制</div>
+            <div class="config-row">
+                <div class="field" style="flex:2; min-width:240px;">
+                    <label><i class="bi bi-upload"></i>音频驱动 (POST /humanaudio)</label>
+                    <div style="display:flex; gap:6px;">
+                        <input type="file" class="dark-input" id="audioFile" accept="audio/*" style="flex:1;">
+                        <button class="btn-accent" onclick="uploadAudio()" style="flex-shrink:0;"><i class="bi bi-play-fill"></i>上传播放</button>
+                    </div>
+                </div>
+                <div class="field" style="flex:1; min-width:180px;">
+                    <label><i class="bi bi-record-circle"></i>录制控制 (POST /record)</label>
+                    <div style="display:flex; gap:6px;">
+                        <button class="btn-ghost" id="btnRecToggle" onclick="toggleRecord()"><i class="bi bi-record-circle"></i>开始录制</button>
+                        <button class="btn-ghost" id="btnDownload" onclick="downloadRecord()" disabled><i class="bi bi-download"></i>下载</button>
+                    </div>
+                </div>
+                <div class="field" style="flex:0 0 auto; min-width:0; justify-content:flex-end; padding-top:18px;">
+                    <label class="toggle-wrap">
+                        <input type="checkbox" id="txtInterrupt" checked>
+                        <span class="toggle-slider"></span>
+                        <span class="toggle-label">播报自动打断</span>
+                    </label>
+                </div>
+            </div>
         </div>
     </div>
-</nav>
 
-<div class="container mt-4">
-    <!-- Quick Links -->
-    <div class="row g-3 mb-2">
-        <div class="col-md-3">
-            <a href="/avatar.html" class="quick-link" target="_blank">
-                <div class="glass-card p-3 text-center">
-                    <i class="bi bi-person-bounding-box fs-2" style="color: #4361ee;"></i>
-                    <div class="fw-bold mt-2">Avatar 生成</div>
-                    <div class="small text-muted">创建数字人形象</div>
-                </div>
-            </a>
-        </div>
-        <div class="col-md-3">
-            <a href="/admin.html" class="quick-link" target="_blank">
-                <div class="glass-card p-3 text-center">
-                    <i class="bi bi-speedometer2 fs-2" style="color: #4361ee;"></i>
-                    <div class="fw-bold mt-2">管理后台</div>
-                    <div class="small text-muted">监控会话与配置</div>
-                </div>
-            </a>
-        </div>
-        <div class="col-md-3">
-            <a href="/tts/index.html" class="quick-link" target="_blank">
-                <div class="glass-card p-3 text-center">
-                    <i class="bi bi-soundwave fs-2" style="color: #4361ee;"></i>
-                    <div class="fw-bold mt-2">TTS 语音管理</div>
-                    <div class="small text-muted">语音列表 · 克隆 · 合成</div>
-                </div>
-            </a>
-        </div>
-    </div>
+    <!-- ═══ MAIN CONTENT ══════════════════════════════════════════════ -->
+    <div id="mainContent">
 
-    <div class="row">
-        <!-- Left Column: Connection + Video -->
-        <div class="col-lg-7">
-            <!-- 1. WebRTC Connection -->
-            <div class="glass-card">
-                <div class="card-header"><i class="bi bi-broadcast"></i> WebRTC 连接</div>
-                <div class="card-body">
-                    <div class="row g-2 align-items-end mb-3">
-                        <div class="col-md-4">
-                            <label class="form-label">Avatar ID</label>
-                            <select class="form-select form-select-sm" id="offerAvatar">
-                                <option value="">加载中...</option>
-                            </select>
-                            <small class="text-muted" id="avatarStatus"></small>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">参考音频</label>
-                            <input type="text" class="form-control form-control-sm" id="offerRefAudio" placeholder="zh-CN-YunxiaNeural">
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">参考音频文本</label>
-                            <input type="text" class="form-control form-control-sm" id="offerRefText" placeholder="参考文本（可选）">
-                        </div>
-                    </div>
-                    <div class="d-flex gap-2">
-                        <button class="btn-primary-custom" id="btnStart" onclick="start()"><i class="bi bi-play-fill"></i> 开始连接</button>
-                        <button class="btn-danger-custom" id="btnStop" onclick="stop()" style="display:none;"><i class="bi bi-stop-fill"></i> 断开连接</button>
-                        <button class="btn btn-sm btn-outline-danger ms-1" onclick="shutdownServer()" title="关闭服务器进程">⏻</button>
-                    </div>
-                    <div class="mt-3">
-                        <div id="videoFullscreenWrapper" class="video-fs-wrapper">
-                            <video id="video" autoplay playsinline muted controls></video>
-                            <audio id="audio" autoplay></audio>
-                            <button class="fs-trigger" id="fsBtn" onclick="toggleFullscreen()" title="全屏">⛶</button>
-                            <div class="fs-toolbar" id="fsToolbar">
-                                <button id="fsPanelToggle" onclick="toggleFsPanel()" title="控制面板">☰ 控制</button>
-                                <button onclick="toggleFullscreen()" title="退出全屏">✕ 退出</button>
-                            </div>
-                            <div id="fsSidePanel" class="fs-side-panel">
-                                <!-- Voice Conversation -->
-                                <div class="fs-glass-card">
-                                    <div class="fs-card-header"><i class="bi bi-mic-fill"></i> 语音对话</div>
-                                    <div class="fs-card-body">
-                                        <div id="fsVoiceStatusBar" class="small mb-2" style="display:none;color:#64748b;">
-                                            <span id="fsVoiceStatusIcon">🎤</span>
-                                            <span id="fsVoiceStatusText"></span>
-                                        </div>
-                                        <div class="d-flex gap-2 align-items-center mb-2">
-                                            <select class="form-select form-select-sm" id="fsVoiceMode"
-                                                onchange="document.getElementById('voiceMode').value=this.value; onVoiceModeChange();"
-                                                style="width:130px;">
-                                                <option value="off">🎙️ 关闭</option>
-                                                <option value="free">💬 自由对话</option>
-                                                <option value="ptt">🎤 按住说话</option>
-                                            </select>
-                                            <button class="btn-outline-custom btn-sm" onclick="interrupt()"><i class="bi bi-stop-circle"></i> 打断</button>
-                                        </div>
-                                        <div id="fsPttContainer" style="display:none;" class="mb-2">
-                                            <button id="fsPttButton" class="btn-primary-custom w-100 py-3 fs-5"
-                                                onmousedown="pttStart()" onmouseup="pttEnd()" ontouchstart="pttStart()" ontouchend="pttEnd()">
-                                                🎤 按住说话
-                                            </button>
-                                        </div>
-                                        <div id="fsVoiceTranscript" class="voice-transcript mb-2" style="display:none;"></div>
-                                        <div id="fsVoiceChatLog" class="voice-chat-log"></div>
-                                    </div>
-                                </div>
-                                <!-- Text Driver -->
-                                <div class="fs-glass-card">
-                                    <div class="fs-card-header"><i class="bi bi-chat-text-fill"></i> 文本驱动</div>
-                                    <div class="fs-card-body">
-                                        <div class="mb-2">
-                                            <label class="form-label">输入文本 <span class="param-hint">(type: echo/chat)</span></label>
-                                            <textarea class="form-control form-control-sm" id="fsTxtMessage" rows="2" placeholder="输入要播报的文本..."></textarea>
-                                        </div>
-                                        <div class="d-flex gap-2 align-items-end mb-2">
-                                            <select class="form-select form-select-sm" style="width:120px;" id="fsTxtType">
-                                                <option value="echo">Echo 复读</option>
-                                                <option value="chat">Chat LLM</option>
-                                            </select>
-                                            <div class="form-check form-switch">
-                                                <input class="form-check-input" type="checkbox" id="fsTxtInterrupt" checked>
-                                                <label class="form-check-label small">打断</label>
-                                            </div>
-                                            <button class="btn-primary-custom btn-sm ms-auto" onclick="sendFsText()"><i class="bi bi-send"></i> 发送</button>
-                                            <button class="btn-outline-custom btn-sm" onclick="interrupt()"><i class="bi bi-stop-circle"></i> 打断</button>
-                                        </div>
-                                        <div class="d-flex gap-2 align-items-center">
-                                            <label class="form-label mb-0" style="white-space:nowrap;">TTS 模型</label>
-                                            <select class="form-select form-select-sm" id="fsTtsModel" style="flex:1;">
-                                                <option value="qwen-tts-realtime-latest" selected>qwen-tts-realtime-latest</option>
-                                                <option value="qwen-tts-realtime-2025-07-15">qwen-tts-realtime-2025-07-15</option>
-                                                <option value="qwen-tts-2025-05-22">qwen-tts-2025-05-22</option>
-                                                <option value="qwen-tts-latest">qwen-tts-latest</option>
-                                                <option value="qwen3-tts-flash-realtime" disabled>qwen3-tts-flash-realtime ⚠️ 额度不足</option>
-                                            </select>
-                                            <label class="form-label mb-0" style="white-space:nowrap;">音色</label>
-                                            <select class="form-select form-select-sm" id="fsTtsVoice" style="width:120px;">
-                                                <option value="Ethan" selected>Ethan (英文男声)</option>
-                            <option value="Cherry">Cherry</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                </div>
+        <!-- ── VIDEO PANEL ──────────────────────────────────────────── -->
+        <section id="videoPanel">
+            <div class="panel-header">
+                <span class="panel-title"><i class="bi bi-broadcast"></i>WebRTC 实时视频</span>
+                <div style="display:flex; gap:8px;">
+                    <button class="btn-accent" id="btnStart" onclick="start()" style="font-size: 1rem; padding:5px 14px;">
+                        <i class="bi bi-play-fill"></i> 开始连接
+                    </button>
+                    <button class="btn-danger-sm" id="btnStop" onclick="stop()" style="display:none; font-size: 1rem; padding:5px 14px;">
+                        <i class="bi bi-stop-fill"></i> 断开连接
+                    </button>
+                </div>
+            </div>
+            <div class="video-stage">
+                <div id="videoFullscreenWrapper" class="video-fs-wrapper">
+                    <video id="video" autoplay playsinline muted controls></video>
+                    <audio id="audio" autoplay></audio>
+
+                    <!-- Loading Overlay -->
+                    <div id="videoLoadingOverlay" class="video-loading-overlay" style="display:none;">
+                        <div class="loading-box">
+                            <div class="loading-pulse"><i class="bi bi-robot" id="loadingIcon"></i></div>
+                            <div class="loading-title" id="webrtcStepTitle">正在连接数字人服务器...</div>
+                            <div class="loading-sub" id="webrtcStepSubtext">准备初始化数字人推流通道</div>
+                            <div class="step-dots">
+                                <span class="c-dot active" id="cdot1"></span>
+                                <span class="c-dot" id="cdot2"></span>
+                                <span class="c-dot" id="cdot3"></span>
+                                <span class="c-dot" id="cdot4"></span>
                             </div>
                         </div>
                     </div>
-                </div>
-            </div>
-        </div>
 
-        <!-- Right Column: Drivers + Actions -->
-        <div class="col-lg-5">
-            <!-- 2. Voice Conversation -->
-            <div class="glass-card">
-                <div class="card-header"><i class="bi bi-mic-fill"></i> 语音对话</div>
-                <div class="card-body">
-                    <div id="voiceStatusBar" class="small text-muted mb-2" style="display:none;">
-                        <span id="voiceStatusIcon">🎤</span>
-                        <span id="voiceStatusText">聆听中...</span>
-                    </div>
-                    <div class="d-flex gap-2 align-items-center mb-2">
-                        <select class="form-select form-select-sm" id="voiceMode" onchange="onVoiceModeChange()" style="width:130px;">
-                            <option value="off">🎙️ 关闭</option>
-                            <option value="free">💬 自由对话</option>
-                            <option value="ptt">🎤 按住说话</option>
-                        </select>
-                        <button class="btn-outline-custom btn-sm" onclick="interrupt()"><i class="bi bi-stop-circle"></i> 打断</button>
-                    </div>
-                    <div id="pttContainer" style="display:none;" class="mb-2">
-                        <button id="pttButton" class="btn-primary-custom w-100 py-3 fs-5" onmousedown="pttStart()" onmouseup="pttEnd()" ontouchstart="pttStart()" ontouchend="pttEnd()">🎤 按住说话</button>
-                    </div>
-                    <div id="voiceTranscript" class="voice-transcript mb-2" style="display:none;"></div>
-                    <div id="voiceChatLog" class="voice-chat-log"></div>
-                </div>
-            </div>
+                    <button class="fs-trigger" onclick="toggleFullscreen()" title="全屏"><i class="bi bi-arrows-fullscreen"></i></button>
 
-            <!-- 3. Text Driver -->
-            <div class="glass-card">
-                <div class="card-header"><i class="bi bi-chat-text-fill"></i> 文本驱动 (POST /human)</div>
-                <div class="card-body">
-                    <div class="mb-2">
-                        <label class="form-label">输入文本 <span class="param-hint">(type: echo/chat)</span></label>
-                        <textarea class="form-control form-control-sm" id="txtMessage" rows="2" placeholder="输入要播报的文本...">你好，欢迎使用LiveTalking</textarea>
+                    <div class="fs-toolbar" id="fsToolbar">
+                        <button id="fsPanelToggle" onclick="toggleFsPanel()" title="控制面板"><i class="bi bi-layout-sidebar"></i> 控制</button>
+                        <button onclick="toggleFullscreen()" title="退出全屏"><i class="bi bi-fullscreen-exit"></i> 退出</button>
                     </div>
-                    <div class="d-flex gap-2 align-items-end mb-2">
-                        <select class="form-select form-select-sm" style="width:120px;" id="txtType">
-                            <option value="echo">Echo 复读</option>
-                            <option value="chat">Chat LLM</option>
-                        </select>
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" id="txtInterrupt" checked>
-                            <label class="form-check-label small">打断</label>
-                        </div>
-                        <button class="btn-primary-custom btn-sm ms-auto" onclick="sendText()"><i class="bi bi-send"></i> 发送</button>
-                        <button class="btn-outline-custom btn-sm" onclick="interrupt()"><i class="bi bi-stop-circle"></i> 打断</button>
-                    </div>
-                    <div class="d-flex gap-2 align-items-center">
-                        <label class="form-label mb-0" style="white-space:nowrap;">TTS 模型</label>
-                        <select class="form-select form-select-sm" id="ttsModel" style="flex:1;">
-                            <option value="qwen-tts-realtime-latest" selected>qwen-tts-realtime-latest ✅</option>
-                            <option value="qwen-tts-realtime-2025-07-15">qwen-tts-realtime-2025-07-15 ✅</option>
-                            <option value="qwen-tts-2025-05-22">qwen-tts-2025-05-22 ✅</option>
-                            <option value="qwen-tts-latest">qwen-tts-latest ✅</option>
-                            <option value="qwen3-tts-flash-realtime" disabled>qwen3-tts-flash-realtime ⚠️ 额度不足</option>
-                        </select>
-                        <label class="form-label mb-0" style="white-space:nowrap;">音色</label>
-                        <select class="form-select form-select-sm" id="ttsVoice" style="width:120px;">
-                            <option value="Ethan" selected>Ethan (英文男声)</option>
-                            <option value="Cherry">Cherry (英文女声)</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
 
-            <!-- 3. Audio Upload -->
-            <div class="glass-card">
-                <div class="card-header"><i class="bi bi-mic-fill"></i> 音频驱动 (POST /humanaudio)</div>
-                <div class="card-body">
-                    <input type="file" class="form-control form-control-sm mb-2" id="audioFile" accept="audio/*">
-                    <button class="btn-primary-custom btn-sm" onclick="uploadAudio()"><i class="bi bi-upload"></i> 上传并播放</button>
-                </div>
-            </div>
-
-            <!-- 4. Recording -->
-            <div class="glass-card">
-                <div class="card-header"><i class="bi bi-record-circle"></i> 录制控制 (POST /record)</div>
-                <div class="card-body">
-                    <div class="d-flex gap-2">
-                        <button class="btn-outline-custom btn-sm" id="btnRecToggle" onclick="toggleRecord()"><i class="bi bi-record-circle"></i> 开始录制</button>
-                        <button class="btn-outline-custom btn-sm" id="btnDownload" onclick="downloadRecord()" disabled><i class="bi bi-download"></i> 下载录像</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 5. Custom State -->
-            <div class="glass-card">
-                <div class="card-header"><i class="bi bi-sliders"></i> 动作编排 (POST /set_audiotype)</div>
-                <div class="card-body">
-                    <div class="row g-2 align-items-end">
-                        <div class="col-6">
-                            <label class="form-label">Audiotype 索引</label>
-                            <input type="number" class="form-control form-control-sm" id="audiotypeVal" value="2" min="2">
-                        </div>
-                        <div class="col-6">
-                            <button class="btn-primary-custom btn-sm w-100" onclick="setAudiotype()"><i class="bi bi-arrow-right-circle"></i> 切换状态</button>
+                    <div id="fsSidePanel" class="fs-side-panel">
+                        <div class="fs-glass-card" style="height:100%;display:flex;flex-direction:column;">
+                            <div class="fs-card-header">
+                                <i class="bi bi-chat-dots-fill"></i> 对话
+                                <div style="margin-left:auto;display:flex;gap:6px;align-items:center;">
+                                    <span id="fsChatModeLabel" style="font-size: 1rem;color:var(--accent);padding:2px 6px;background:rgba(0,212,255,0.06);border-radius:6px;">Echo</span>
+                                    <button class="btn-ghost btn-sm" onclick="interrupt()" style="font-size: 1rem;padding:4px 10px;">
+                                        <i class="bi bi-stop-circle"></i> 打断
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="chat-panel">
+                                <div class="chat-messages" id="fsChatMessages">
+                                    <div class="bubble-system-row"><span class="bubble-system">💡 连接 WebRTC 后开始对话</span></div>
+                                </div>
+                                <div class="chat-status-row" id="fsChatStatusRow" style="display:none;">
+                                    <span class="chat-status-pill" id="fsChatStatusPill"></span>
+                                </div>
+                                <div class="chat-toolbar">
+                                    <span class="tool-label">模式</span>
+                                    <span class="tool-value" id="fsChatTxtTypeLabel">Echo</span>
+                                    <span class="tool-label">TTS</span>
+                                    <span class="tool-value" id="fsChatTtsLabel">loading...</span>
+                                </div>
+                                <div class="chat-input-bar">
+                                    <textarea id="fsChatInput" placeholder="输入文本发送 / 按住🎤说话 / 点击🎙️自由对话…" rows="1"
+                                        onkeydown="onFsChatInputKeydown(event)" oninput="autoResizeChatInput(this)"></textarea>
+                                    <button class="btn-mic" id="fsBtnFree" title="自由对话" onclick="toggleFreeMode()">🎙️</button>
+                                    <button class="btn-mic" id="fsBtnPtt" title="按住说话"
+                                        onmousedown="pttStart()" onmouseup="pttEnd()" ontouchstart="pttStart()" ontouchend="pttEnd()">🎤</button>
+                                    <button class="btn-send" onclick="sendFsChatText()" title="发送"><i class="bi bi-send-fill"></i></button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
+        </section>
 
-        </div>
+        <!-- ── CHAT PANEL ───────────────────────────────────────────── -->
+        <section id="chatPanel">
+            <div class="panel-header">
+                <span class="panel-title"><i class="bi bi-chat-dots-fill"></i>对话</span>
+                <div style="display:flex; gap:8px; align-items:center;">
+                    <span id="chatModeLabel" style="font-size: 1rem;color:var(--accent-dark);padding:3px 10px;background:rgba(14,165,233,0.06);border-radius:6px;cursor:pointer;" title="在顶部配置面板切换模式">Echo</span>
+                    <button class="btn-ghost" onclick="interrupt()" style="font-size: 1rem;padding:4px 10px;">
+                        <i class="bi bi-stop-circle"></i> 打断
+                    </button>
+                </div>
+            </div>
+            <div class="chat-panel">
+                <div class="chat-messages" id="chatMessages">
+                    <div class="bubble-system-row"><span class="bubble-system">💡 连接 WebRTC 后开始对话</span></div>
+                </div>
+                <div class="chat-status-row" id="chatStatusRow" style="display:none;">
+                    <span class="chat-status-pill" id="chatStatusPill"></span>
+                </div>
+                <div class="chat-toolbar">
+                    <span class="tool-label">模式</span>
+                    <span class="tool-value" id="chatTxtTypeLabel">Echo</span>
+                    <span class="tool-label">TTS</span>
+                    <span class="tool-value" id="chatTtsLabel">loading...</span>
+                    <select class="dark-select" id="voiceMode" onchange="onVoiceModeChange()" style="display:none; font-size: 1rem; padding:2px 6px;">
+                        <option value="off">关闭</option>
+                        <option value="free">自由对话</option>
+                        <option value="ptt">按住说话</option>
+                    </select>
+                </div>
+                <div class="chat-input-bar">
+                    <textarea id="chatInput" placeholder="输入文本发送 / 按住🎤说话 / 点击🎙️自由对话…" rows="1"
+                        onkeydown="onChatInputKeydown(event)" oninput="autoResizeChatInput(this)"></textarea>
+                    <button class="btn-mic" id="btnFree" title="自由对话" onclick="toggleFreeMode()">🎙️</button>
+                    <button class="btn-mic" id="btnPtt" title="按住说话"
+                        onmousedown="pttStart()" onmouseup="pttEnd()" ontouchstart="pttStart()" ontouchend="pttEnd()">🎤</button>
+                    <button class="btn-send" onclick="sendChatText()" title="发送"><i class="bi bi-send-fill"></i></button>
+                </div>
+            </div>
+        </section>
+
     </div>
+
 </div>
 
+<!-- ═══════════════ Legacy DOM (JS compat - hidden) ══════════════════ -->
+<div style="position:absolute; left:0; top:0; visibility:hidden; pointer-events:none; width:0; height:0; overflow:hidden;">
+    <textarea id="txtMessage"></textarea>
+    <div id="voiceStatusBar"><span id="voiceStatusIcon"></span><span id="voiceStatusText"></span></div>
+    <div id="pttContainer"><button id="pttButton">🎤 按住说话</button></div>
+    <div id="voiceTranscript"></div>
+    <div id="voiceChatLog"></div>
+    <div id="configPanelContent" class="panel-collapse-content"></div>
+    <span id="panelToggleIcon"></span>
+    <span id="panelToggleText"></span>
+    <input type="text" id="offerRefText">
+    <input type="text" id="audiotypeVal" value="0">
+    <select id="fsVoiceMode"><option value="off">关闭</option></select>
+    <div id="fsPttContainer"><button id="fsPttButton"></button></div>
+    <div id="fsVoiceStatusBar"><span id="fsVoiceStatusIcon"></span><span id="fsVoiceStatusText"></span></div>
+    <div id="fsVoiceTranscript"></div>
+    <div id="fsVoiceChatLog"></div>
+    <textarea id="fsTxtMessage"></textarea>
+    <select id="fsTxtType"><option value="echo">Echo</option></select>
+    <input type="checkbox" id="fsTxtInterrupt">
+    <select id="fsTtsModel"></select>
+    <select id="fsTtsVoice"></select>
+    <input type="text" id="sessionid">
+</div>
+
+<!-- ═══════════════ SCRIPTS ══════════════════════════════════════════ -->
 <script>
 // ── 动态加载可用 Avatar 列表 ──────────────────────────────────
 async function loadAvatars() {
@@ -458,6 +661,30 @@ async function loadAvatars() {
     }
 }
 document.addEventListener('DOMContentLoaded', loadAvatars);
+// ── 动态加载 Persona 列表 ────────────────────────────────
+async function loadPrompts() {
+  const sel = document.getElementById('promptType');
+  if (!sel) return;
+  try {
+    const resp = await fetch('/api/prompts');
+    const json = await resp.json();
+    if (json.code === 0 && json.data && Array.isArray(json.data.prompts)) {
+      sel.innerHTML = '';
+      const items = json.data.prompts;
+      const defaultKey = json.data.default || '';
+      items.forEach(p => {
+        const opt = document.createElement('option');
+        opt.value = p.key;
+        opt.textContent = p.name + (p.key === defaultKey ? ' (默认)' : '');
+        if (p.key === defaultKey) opt.selected = true;
+        sel.appendChild(opt);
+      });
+    }
+  } catch (e) { console.error('loadPrompts:', e); }
+}
+document.addEventListener('DOMContentLoaded', loadPrompts);
+loadPrompts();
+
 
 let pc = null;
 let sessionid = null;
@@ -486,6 +713,7 @@ const RECONNECT_BASE_DELAY = 2000; // ms, exponential backoff
 function negotiate() {
     pc.addTransceiver('video', { direction: 'recvonly' });
     pc.addTransceiver('audio', { direction: 'recvonly' });
+    setWebRTCStep(2, '正在加载数字人模型...', '预加载 3D 形象与动态渲染', 'bi-person-badge');
     return pc.createOffer().then(offer => pc.setLocalDescription(offer)).then(() => {
         return new Promise(resolve => {
             if (pc.iceGatheringState === 'complete') resolve();
@@ -502,7 +730,9 @@ function negotiate() {
             avatar: document.getElementById('offerAvatar').value || undefined,
             refaudio: document.getElementById('ttsVoice').value || undefined,
             reftext: document.getElementById('offerRefText').value || undefined,
+            prompt: document.getElementById('promptType')?.value || undefined,
         };
+        setWebRTCStep(3, '正在初始化语音引擎...', '配置高清音轨与推流响应', 'bi-soundwave');
         return fetch('/offer', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     }).then(res => res.json()).then(answer => {
         if (answer.sessionid) setSessionId(answer.sessionid);
@@ -565,6 +795,15 @@ function _setupConnection() {
 
 function start() {
     _reconnectAttempts = 0;
+    // 强制重置 loading overlay 状态
+    _webrtcLoaded = false;
+    const overlay = document.getElementById('videoLoadingOverlay');
+    if (overlay) {
+        overlay.style.display = 'flex';
+        overlay.style.opacity = '1';
+        overlay.style.visibility = 'visible';
+    }
+    setWebRTCStep(1, '正在连接数字人服务器...', '建立实时音视频通信通道', 'bi-wifi');
     _setupConnection();
     negotiate();
     document.getElementById('btnStart').style.display = 'none';
@@ -586,13 +825,41 @@ function shutdownServer() {
 
 function stop() {
     _reconnectAttempts = RECONNECT_MAX; // 阻止自动重连
-    if (pc) { pc.close(); pc = null; }
-    updateStatus(false);
+
+    // 1. 停止所有 MediaStream tracks（关键！避免 audioContext/decoder 残留）
+    const video = document.getElementById('video');
+    const audio = document.getElementById('audio');
+    [video, audio].forEach(el => {
+        if (el && el.srcObject) {
+            try {
+                el.srcObject.getTracks().forEach(t => {
+                    t.stop();           // 停止轨道
+                    t.enabled = false;  // 禁用
+                });
+            } catch(e) {}
+            el.srcObject = null;
+        }
+        // 清空视频缓冲
+        if (el && el.pause) { try { el.pause(); el.removeAttribute('src'); el.load(); } catch(e) {} }
+    });
+
+    // 2. 关闭 PeerConnection + 清理所有 senders/receivers
+    if (pc) {
+        try {
+            pc.getSenders().forEach(s => { try { s.track && s.track.stop(); } catch(e) {} });
+            pc.getReceivers().forEach(r => { try { r.track && r.track.stop(); } catch(e) {} });
+            pc.close();
+        } catch(e) {}
+        pc = null;
+    }
+
+    // 3. 重置状态
     setSessionId(null);
-    document.getElementById('btnStart').style.display = 'inline-block';
+    _webrtcLoaded = false;
+    updateStatus(false);
+    document.getElementById('btnStart').style.display = 'inline-flex';
     document.getElementById('btnStop').style.display = 'none';
-    document.getElementById('video').srcObject = null;
-    document.getElementById('audio').srcObject = null;
+    document.getElementById('videoLoadingOverlay').style.display = 'none';
 }
 
 // ─── Text ──────────────────────────────────────────────────
@@ -1249,6 +1516,7 @@ let _pttActive = false;
 function pttStart() {
     if (!sessionid) return;
     _pttActive = true;
+    voiceEnabled = true;
 
     document.getElementById('pttButton').className = 'btn-danger-custom w-100 py-3 fs-5';
     document.getElementById('pttButton').textContent = '✋ 松开发送';
@@ -1256,6 +1524,12 @@ function pttStart() {
     // Sync fullscreen PTT button
     const fsPttBtn = document.getElementById('fsPttButton');
     if (fsPttBtn) { fsPttBtn.className = 'btn btn-danger w-100 py-2'; fsPttBtn.textContent = '✋ 松开发送'; }
+
+    // New UI: chat panel mic buttons
+    const mainPtt = document.getElementById('btnPtt');
+    if (mainPtt) { mainPtt.classList.add('ptt-hold'); mainPtt.textContent = '✋'; }
+    const fsPtt = document.getElementById('fsBtnPtt');
+    if (fsPtt) { fsPtt.classList.add('ptt-hold'); fsPtt.textContent = '✋'; }
 
     // Clear any previous waiting state so new input is not discarded
     _clearVoiceWaiting();
@@ -1304,6 +1578,12 @@ function pttEnd() {
     // Sync fullscreen PTT button
     const fsPttBtn = document.getElementById('fsPttButton');
     if (fsPttBtn) { fsPttBtn.className = 'btn btn-primary w-100 py-2'; fsPttBtn.textContent = '🎤 按住说话'; }
+
+    // New UI: reset chat panel mic buttons
+    const mainPtt = document.getElementById('btnPtt');
+    if (mainPtt) { mainPtt.classList.remove('ptt-hold'); mainPtt.textContent = '🎤'; }
+    const fsPtt = document.getElementById('fsBtnPtt');
+    if (fsPtt) { fsPtt.classList.remove('ptt-hold'); fsPtt.textContent = '🎤'; }
 
     showVoiceStatus(true, '⏳', '处理中...');
 
@@ -1530,11 +1810,15 @@ function pollSpeakingEnd() {
                 }
 
                 if (avatarEverSpoke) {
-                    // Avatar finished speaking — normal end
+                    // Avatar finished speaking — 延迟 400ms 避免最后一字被截断
+                    avatarEverSpoke = false; // 防止重复触发
                     _clearVoiceWaiting();
                     voiceRestartCount = 0;
-                    appendVoiceChatLog('avatar', '(回复完成)');
-                    if (voiceMode === 'free' && voiceEnabled) startVoiceCooldown();
+                    if (voicePollTimer) { clearInterval(voicePollTimer); voicePollTimer = null; }
+                    setTimeout(() => {
+                        appendVoiceChatLog('avatar', '(回复完成)');
+                        if (voiceMode === 'free' && voiceEnabled) startVoiceCooldown();
+                    }, 400);
                 } else if (!llmPending && Date.now() - pollStartTime > VOICE_WAITING_START_MS) {
                     // LLM finished but avatar never spoke — error
                     console.warn('[Voice] LLM done but avatar never spoke');
@@ -1692,6 +1976,211 @@ showVoiceTranscript = function(text, interim) {
     }
 };
 
+
+// ═══════════════ Chat Panel (new UI) ═══════════════════════════════
+
+function syncChatToolbarLabels(){
+  var a=document.getElementById('chatTxtTypeLabel'),b=document.getElementById('chatTtsLabel'),
+      c=document.getElementById('fsChatTxtTypeLabel'),d=document.getElementById('fsChatTtsLabel'),
+      e=document.getElementById('txtType'),f=document.getElementById('ttsModel'),
+      g=e?.options[e.selectedIndex]?.text||'Echo',
+      h=(f?.options[f.selectedIndex]?.text||'').replace(' ✅','');
+  if(a&&e)a.textContent=g;if(c)c.textContent=g;
+  if(b&&f)b.textContent=h;if(d)d.textContent=h;
+  var i=document.getElementById('chatModeLabel');if(i)i.textContent=g;
+  var j=document.getElementById('fsChatModeLabel');if(j)j.textContent=g;
+}
+document.addEventListener('DOMContentLoaded',function(){
+  syncChatToolbarLabels();
+  ['ttsModel','ttsVoice','txtType'].forEach(function(k){
+    var l=document.getElementById(k);if(l)l.addEventListener('change',syncChatToolbarLabels);
+  });
+});
+
+function sendChatText(){
+  var a=document.getElementById('chatInput'),b=a.value.trim();
+  if(!b)return;if(!sessionid){showChatStatus('⚠️','请先连接 WebRTC');return}
+  appendChatBubble('user',b);a.value='';autoResizeChatInput(a);
+  var c=document.getElementById('txtType').value,d=document.getElementById('ttsModel').value,
+      e=document.getElementById('ttsVoice').value;
+  showChatStatus('⏳','发送中...');
+  fetch('/human',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({text:b,type:c,interrupt:true,sessionid:String(sessionid),
+    tts:{model:d,ref_file:e}})}).then(function(f){return f.json()}).then(function(f){
+    if(f.code!==0){showChatStatus('⚠️','发送失败');setTimeout(function(){hideChatStatus()},2000);return}
+    showChatStatus('🔊','数字人回复中...');pollChatSpeakEnd()}).catch(function(){
+    showChatStatus('⚠️','网络错误');setTimeout(function(){hideChatStatus()},2000)})
+}
+var _chatPollTimer=null;
+function pollChatSpeakEnd(){
+  if(_chatPollTimer)clearInterval(_chatPollTimer);var a=false,b=Date.now();
+  _chatPollTimer=setInterval(function(){
+    if(!sessionid){clearInterval(_chatPollTimer);return}
+    fetch('/is_speaking',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({sessionid:String(sessionid)})}).then(function(c){return c.json()})
+    .then(function(c){
+      var d=typeof c.data==='boolean'?c.data:(c.data&&c.data.speaking),
+          e=c.data&&typeof c.data==='object'&&c.data.llm_pending;
+      if(c.data&&c.data.recent_texts)_avatarRecentTexts=c.data.recent_texts;
+      if(d){a=true;_avatarSpeaking=true}
+      if(!d){
+        if(_avatarSpeaking){_avatarSpeaking=false;_avatarSpeakEndTime=Date.now()}
+        if(a){clearInterval(_chatPollTimer);hideChatStatus();appendChatBubble('avatar','✅ 回复完成')}
+        else if(!e&&Date.now()-b>15000){clearInterval(_chatPollTimer);hideChatStatus();appendChatBubble('avatar','⚠️ 未收到回复')}
+      }
+    }).catch(function(){})
+  },500)
+}
+
+function _appendBubbleTo(a,b,c,d){
+  if(!a)return;if(b==='system'){
+    var e=document.createElement('div');e.className='bubble-system-row';
+    var f=document.createElement('span');f.className='bubble-system';f.textContent=c;
+    e.appendChild(f);a.appendChild(e);a.scrollTop=a.scrollHeight;return
+  }
+  var g=document.createElement('div');g.className='bubble-row '+b;
+  if(d&&d.interim)g.dataset.interim='1';
+  var h=document.createElement('div');
+  h.className=b==='user'?'bubble-user-icon':'bubble-avatar-icon';
+  h.textContent=b==='user'?'🧑':'🤖';
+  var i=document.createElement('div');i.className='bubble-content';
+  var j=document.createElement('div');
+  j.className='bubble'+(d&&d.interim?' bubble-interim':'');
+  j.textContent=c;
+  var k=document.createElement('div');k.className='bubble-timestamp';
+  k.textContent=new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'});
+  i.appendChild(j);i.appendChild(k);g.appendChild(h);g.appendChild(i);
+  a.appendChild(g);a.scrollTop=a.scrollHeight;return g
+}
+function appendChatBubble(a,b,c){
+  c=c||{};
+  _appendBubbleTo(document.getElementById('chatMessages'),a,b,c);
+  _appendBubbleTo(document.getElementById('fsChatMessages'),a,b,c)
+}
+function escapeHtml(a){return a.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function showChatStatus(a,b){
+  var c=document.getElementById('chatStatusRow'),d=document.getElementById('chatStatusPill');
+  if(c&&d){d.innerHTML='<span>'+a+'</span>'+escapeHtml(b);c.style.display='flex'}
+  var e=document.getElementById('fsChatStatusRow'),f=document.getElementById('fsChatStatusPill');
+  if(e&&f){f.innerHTML='<span>'+a+'</span>'+escapeHtml(b);e.style.display='flex'}
+}
+function hideChatStatus(){
+  var a=document.getElementById('chatStatusRow');if(a)a.style.display='none';
+  var b=document.getElementById('fsChatStatusRow');if(b)b.style.display='none'
+}
+function autoResizeChatInput(a){a.style.height='auto';a.style.height=Math.min(a.scrollHeight,90)+'px'}
+function onChatInputKeydown(a){if(a.key==='Enter'&&!a.shiftKey){a.preventDefault();sendChatText()}}
+function onFsChatInputKeydown(a){if(a.key==='Enter'&&!a.shiftKey){a.preventDefault();sendFsChatText()}}
+function sendFsChatText(){
+  var a=document.getElementById('fsChatInput'),b=a.value.trim();
+  if(!b)return;var c=document.getElementById('chatInput');
+  if(c){c.value=b;autoResizeChatInput(c)}a.value='';autoResizeChatInput(a);sendChatText()
+}
+
+// ═══════════════ Mic Buttons (new UI) ═══════════════════════════════
+function toggleFreeMode(){
+  var a=document.getElementById('voiceMode');
+  if(!sessionid){alert('请先连接 WebRTC');return}
+  if(a.value==='free'){a.value='off';onVoiceModeChange()}
+  else{
+    if(a.value!=='off'){a.value='off';onVoiceModeChange()}
+    _avatarRecentTexts=[];voiceLastFinalText='';voiceLastSentText='';
+    a.value='free';onVoiceModeChange();showChatStatus('🎙️','聆听中...')
+  }
+  syncMicButtons()
+}
+function syncMicButtons(){
+  var a=document.getElementById('voiceMode').value==='free',
+      b=document.getElementById('btnFree');
+  if(b)b.classList.toggle('free-active',a);
+  var c=document.getElementById('fsBtnFree');if(c)c.classList.toggle('free-active',a);
+}
+
+// ═══════════════ Bridge: voice → chat bubbles (non-override) ═══════=
+(function(){
+  var polling = false;
+  function voiceToChatBridge(){
+    // Sync voice status text to chat status
+    var vsBar = document.getElementById('voiceStatusBar');
+    if(vsBar && vsBar.style.display !== 'none'){
+      var icon = document.getElementById('voiceStatusIcon').textContent;
+      var text = document.getElementById('voiceStatusText').textContent;
+      showChatStatus(icon, text);
+    }
+    // Sync voice transcript to chat input
+    var vt = document.getElementById('voiceTranscript');
+    var ci = document.getElementById('chatInput');
+    if(vt && ci){
+      if(vt.style.display !== 'none' && vt.textContent){
+        ci.placeholder = '🎤 ' + vt.textContent + '...';
+      }
+    }
+    // Sync voice chat log to chat bubbles
+    var vLog = document.getElementById('voiceChatLog');
+    if(vLog && polling){
+      var items = vLog.querySelectorAll('.msg-user,.msg-avatar');
+      var last = items[items.length-1];
+      if(last && !last.dataset.synced){
+        var role = last.classList.contains('msg-user')?'user':'avatar';
+        appendChatBubble(role, last.textContent);
+        last.dataset.synced = '1';
+      }
+    }
+  }
+  window._startVoiceBridge = function(){
+    if(polling) return;
+    polling = true;
+    setInterval(voiceToChatBridge, 300);
+  };
+  window._stopVoiceBridge = function(){ polling = false; };
+  // Auto-start bridge when voice mode activates
+  var orig_onVoiceModeChange = onVoiceModeChange;
+  onVoiceModeChange = function(){
+    orig_onVoiceModeChange();
+    if(document.getElementById('voiceMode').value !== 'off'){
+      window._startVoiceBridge();
+    } else {
+      window._stopVoiceBridge();
+      hideChatStatus();
+    }
+  };
+})();
+
+// ═══════════════ Settings Drawer + Loading ══════════════════
+function toggleSettingsDrawer(){
+  var a=document.getElementById('settingsDrawer'),b=document.getElementById('btnSettingsToggle');
+  if(!a||!b)return;
+  var c=a.classList.toggle('open');b.classList.toggle('active',c)
+}
+function toggleConfigPanel(){toggleSettingsDrawer()}
+var _webrtcLoaded=false;
+function setWebRTCStep(a,b,c,d){
+  if(_webrtcLoaded&&a<4)return;var e=document.getElementById('videoLoadingOverlay');
+  if(!e)return;e.style.display='flex';e.style.opacity='1';e.style.visibility='visible';
+  if(b)document.getElementById('webrtcStepTitle').innerHTML=b;
+  if(c)document.getElementById('webrtcStepSubtext').textContent=c;
+  if(d)document.getElementById('loadingIcon').className='bi '+d;
+  for(var f=1;f<=4;f++){var g=document.getElementById('cdot'+f);
+    if(!g)continue;g.classList.remove('active','done');
+    if(f<a)g.classList.add('done');else if(f===a)g.classList.add('active')
+  }
+}
+function hideWebRTCStep(){
+  _webrtcLoaded=true;var a=document.getElementById('videoLoadingOverlay');if(!a)return;
+  setWebRTCStep(4,'数字人连线就绪！','正在呈现画面...','bi-check-lg');
+  setTimeout(function(){a.style.opacity='0';
+    setTimeout(function(){a.style.display='none';a.style.visibility='hidden'},300)},200)
+}
+document.addEventListener('DOMContentLoaded',function(){
+  var a=document.getElementById('video');
+  if(a){a.addEventListener('playing',hideWebRTCStep);
+    a.addEventListener('timeupdate',function(){if(a.currentTime>0.1&&!_webrtcLoaded)hideWebRTCStep()})}
+});
+document.addEventListener('DOMContentLoaded',function(){
+  var a=document.getElementById('btnStart');if(a)a.style.display='inline-flex'
+});
+
 </script>
+
 </body>
 </html>

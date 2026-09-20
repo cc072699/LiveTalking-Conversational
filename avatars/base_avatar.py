@@ -55,6 +55,7 @@ from PIL import Image, ImageDraw, ImageFont
 # 在 macOS 上查找可用的中文字体
 _SUBTITLE_FONT_PATH = None
 _CANDIDATE_FONTS = [
+    "/home/k560/www/opt/livetalking/LiveTalking_560/simhei.ttf",
     "/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc",
     "/usr/share/fonts/truetype/wqy/wqy-microhei.ttc",
     "/usr/share/fonts/truetype/droid/DroidSansFallbackFull.ttf",
@@ -160,12 +161,15 @@ class BaseAvatar:
         self._subtitle_font_scale = getattr(opt, 'subtitle_font_scale', 1.0)
         # 字幕 Y 轴位置比例（距底部）
         self._subtitle_y_ratio = getattr(opt, 'subtitle_y_offset_ratio', 0.08)
-        # 字幕逐行展示
+        # 字幕逐行展示（滑动窗口模式）
         self._subtitle_reveal_start = 0.0
         self._subtitle_reveal_ended = False
         self._subtitle_line_count = 0
         self._subtitle_line_h = 0
         self._subtitle_y_start = 0
+        self._subtitle_lines = []          # 折行后的文本行列表
+        self._subtitle_current_idx = -1    # 当前显示的行索引
+        self._subtitle_frame_wh = (0, 0)   # 缓存帧尺寸
 
         self.batch_size = opt.batch_size
         self.res_frame_queue = Queue(self.batch_size*8)
@@ -297,6 +301,8 @@ class BaseAvatar:
         self.speaking = False
         self._current_subtitle = ""
         self._last_rendered_subtitle = ""  # 清除字幕缓存
+        self._subtitle_current_idx = -1
+        self._subtitle_lines = []
 
     # def flush(self):
     #     self.flush_talk()
@@ -390,8 +396,8 @@ class BaseAvatar:
         temp_aac = f"temp{self.opt.sessionid}.aac"
         temp_mp4 = f"temp{self.opt.sessionid}.mp4"
         
-        cmd_combine_audio = f"ffmpeg -y -i {temp_aac} -i {temp_mp4} -c:v copy -c:a copy {output_file}"
-        os.system(cmd_combine_audio)
+        cmd_args = ['ffmpeg', '-y', '-i', temp_aac, '-i', temp_mp4, '-c:v', 'copy', '-c:a', 'copy', output_file]
+        subprocess.run(cmd_args, check=False, capture_output=True)
         
         # 删除临时文件
         try:
@@ -470,8 +476,12 @@ class BaseAvatar:
                         is_all_silence = False
                     audio_frames.append(audioframe)
             except queue.Empty:
-                logger.warning('inference: output_queue.get() timed out, skipping batch')
-                continue
+                logger.warning('inference: output_queue.get() timed out, padding with silence')
+                # 补齐缺失帧为静音帧，避免 feat_queue 已消费但 res_frame_queue 无产出
+                silence_frame = AudioFrameData(data=np.zeros(self.chunk, dtype=np.float32), type=1)
+                padding = max(0, self.batch_size * 2 - len(audio_frames))
+                audio_frames.extend([silence_frame] * padding)
+                is_all_silence = True
 
              # 检测状态变化
             current_speaking = not is_all_silence
@@ -549,6 +559,15 @@ class BaseAvatar:
                 last_speaking = current_speaking
         logger.info('baseavatar inference thread stop')
 
+    def _watermark_numpy(self):
+        """返回预渲染的水印 numpy 覆盖层（缓存复用，避免每帧 cv2.putText）"""
+        if self._watermark_text and not hasattr(self, '_watermark_cache'):
+            h, w = self._frame_h, self._frame_w
+            self._watermark_cache = np.zeros((h, w, 3), dtype=np.uint8)
+            cv2.putText(self._watermark_cache, self._watermark_text, (10, 20),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.3, (128, 128, 128), 1)
+        return getattr(self, '_watermark_cache', None)
+
     def process_frames(self,quit_event):
         enable_transition = False  # 设置为False禁用过渡效果，True启用
 
@@ -616,8 +635,8 @@ class BaseAvatar:
                     try:
                         current_frame = self.paste_back_frame(res_frame,idx)
                     except Exception as e:
-                        logger.warning(f"paste_back_frame error: {e}")
-                        continue
+                        logger.warning(f"paste_back_frame error: {e}, fallback to frame_list_cycle[{idx}]")
+                        current_frame = self.frame_list_cycle[idx]
                 if enable_transition:
                     # 静音→说话过渡
                     if time.time() - _transition_start < _transition_duration and _last_silent_frame is not None:
@@ -640,91 +659,125 @@ class BaseAvatar:
                     elif ud.get("status") == "end":
                         self._subtitle_reveal_ended = True
 
-            if self._watermark_text:
-                cv2.putText(combine_frame, self._watermark_text, (10, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.3, (128,128,128), 1)
+            # 水印叠加（静音帧已预渲染，只对说话帧 paste_back 新帧叠加）
+            if self._watermark_text and current_speaking:
+                wm = self._watermark_numpy()
+                if wm is not None:
+                    mask = (wm > 0).any(axis=2)
+                    combine_frame[mask] = wm[mask]
 
-            # ── 叠加字幕（缓存优化：文本不变时不重绘 PIL，节省 5-10ms/帧）──
+            # ── 叠加字幕（滑动窗口：只显示当前行 + 预加载行）──
             if self._subtitle_enabled and self._current_subtitle:
                 try:
                     txt = _clean_subtitle_text(self._current_subtitle)
                     if txt:
                         h, w = combine_frame.shape[:2]
                         if txt != self._last_rendered_subtitle:
-                            # 重新生成缓存层
+                            # ── 文本变化：计算字体、折行，缓存 lines[] ──
                             font_size = max(24, int(w * 0.065 * self._subtitle_size * self._subtitle_font_scale))
                             if self._subtitle_font is None or self._subtitle_font_size != font_size:
+                                logger.debug(f"[Subtitle] Loading font size {font_size}")
                                 _font_path = _detect_subtitle_font(self._subtitle_font_path_override)
                                 if _font_path:
                                     self._subtitle_font = ImageFont.truetype(_font_path, font_size)
+                                    logger.debug(f"[Subtitle] Loaded font {_font_path}")
+                                else:
+                                    logger.warning("[Subtitle] No font found!")
                                 self._subtitle_font_size = font_size
                             font = self._subtitle_font
-                            # 在黑色背景上绘制字幕
-                            overlay = Image.new('RGBA', (w, h), (0, 0, 0, 0))
-                            draw = ImageDraw.Draw(overlay)
-                            max_w = w - 40
-                            line_h = draw.textbbox((0, 0), "测", font=font)[3] - draw.textbbox((0, 0), "测", font=font)[1]
-                            lines = []
-                            for char in txt:
-                                if not lines:
-                                    lines.append(char)
-                                else:
-                                    candidate = lines[-1] + char
-                                    tw = draw.textbbox((0, 0), candidate, font=font)[2] - draw.textbbox((0, 0), candidate, font=font)[0]
-                                    if tw <= max_w:
-                                        lines[-1] = candidate
-                                    else:
+                            # 字体不可用时跳过字幕渲染，不阻塞帧输出
+                            if font is not None:
+                                # 测量用临时画布
+                                logger.debug("[Subtitle] Calculating text wrap")
+                                _m_img = Image.new('RGBA', (w, h), (0, 0, 0, 0))
+                                _m_draw = ImageDraw.Draw(_m_img)
+                                max_w = w - 40
+                                line_h = _m_draw.textbbox((0, 0), "测", font=font)[3] - _m_draw.textbbox((0, 0), "测", font=font)[1]
+                                lines = []
+                                for char in txt:
+                                    if not lines:
                                         lines.append(char)
-                            total_h = len(lines) * (line_h + 4)
-                            y_start = h - int(h * self._subtitle_y_ratio) - total_h
-                            for i, line in enumerate(lines):
-                                tw = draw.textbbox((0, 0), line, font=font)[2] - draw.textbbox((0, 0), line, font=font)[0]
-                                x = (w - tw) // 2
-                                y = y_start + i * (line_h + 4) + line_h
-                                draw.text((x, y - line_h), line, font=font, fill=(255, 255, 255, 255),
-                                          stroke_width=max(2, int(font_size * 0.08)), stroke_fill=(0, 0, 0, 255))
-                            # 将 PIL RGBA overlay 转为 OpenCV BGR + mask（一次性转换，后续帧复用）
-                            overlay_np = np.array(overlay)  # [H, W, 4] RGBA
-                            alpha = overlay_np[:, :, 3:4].astype(np.float32) / 255.0  # [H, W, 1]
-                            # 预乘 overlay 的 BGR（只在 alpha > 0 的区域有值）
-                            overlay_bgr = overlay_np[:, :, :3][:, :, ::-1]  # RGBA→BGR
-                            self._cached_subtitle_overlay = (overlay_bgr * alpha).astype(np.uint8)
-                            self._cached_subtitle_mask = alpha  # [H, W, 1] float32
-                            self._cached_subtitle_inv_mask = (1.0 - alpha).astype(np.float32)
-                            self._cached_subtitle_inv_mask = np.repeat(self._cached_subtitle_inv_mask, 3, axis=2)
-                            self._last_rendered_subtitle = txt
-                            # 记录逐行展示参数
-                            self._subtitle_line_count = len(lines)
-                            self._subtitle_line_h = line_h + 4
-                            self._subtitle_y_start = y_start
-                            self._subtitle_reveal_start = time.perf_counter()
-                            self._subtitle_reveal_ended = False
-                        # ── 合成缓存层（逐行展示）──
-                        if self._cached_subtitle_overlay is not None:
-                            _REVEAL_INTERVAL = 0.45  # 每行展示间隔（秒）
+                                    else:
+                                        candidate = lines[-1] + char
+                                        tw = _m_draw.textbbox((0, 0), candidate, font=font)[2] - _m_draw.textbbox((0, 0), candidate, font=font)[0]
+                                        if tw <= max_w:
+                                            lines[-1] = candidate
+                                        else:
+                                            lines.append(char)
+                                self._subtitle_lines = lines
+                                self._subtitle_line_count = len(lines)
+                                self._subtitle_line_h = line_h + 4
+                                self._last_rendered_subtitle = txt
+                                self._subtitle_reveal_start = time.perf_counter()
+                                self._subtitle_reveal_ended = False
+                                self._subtitle_current_idx = -1  # 强制重绘
+                                self._subtitle_frame_wh = (w, h)
+
+                        # ── 计算当前说到第几行（按语速估算）──
+                        if self._subtitle_font is not None:
                             _REVEAL_HOLD = 1.5       # 播完后停留时间（秒）
+                            _CHAR_PER_SEC = 4.0      # 中文语速：字/秒
                             elapsed = time.perf_counter() - self._subtitle_reveal_start
                             total = self._subtitle_line_count
+                            chars = len(txt)
+                            total_est = max(0.6, chars / _CHAR_PER_SEC)
+                            line_interval = total_est / max(total, 1)
+
                             if self._subtitle_reveal_ended:
-                                n_revealed = total
+                                current_idx = total - 1
                             else:
-                                n_revealed = min(total, max(1, int(elapsed / _REVEAL_INTERVAL) + 1))
-                            if n_revealed < total:
-                                ln_h = self._subtitle_line_h
-                                yoff = self._subtitle_y_start
-                                reveal_y = yoff + (total - n_revealed) * ln_h
-                                mask = self._cached_subtitle_mask.copy()
-                                mask[:reveal_y, :] = 0.0
-                                overlay = self._cached_subtitle_overlay.copy()
-                                overlay[:reveal_y, :] = 0
-                                inv = np.repeat(1.0 - mask, 3, axis=2)
-                                combine_frame = cv2.multiply(combine_frame, inv, dtype=cv2.CV_8U)
-                                combine_frame = cv2.add(combine_frame, overlay)
-                            else:
+                                current_idx = min(total - 1, int(elapsed / line_interval))
+
+                            # ── 窗口位置变化时才重绘 PIL overlay（节省 CPU）──
+                            if current_idx != self._subtitle_current_idx and self._subtitle_lines:
+                                self._subtitle_current_idx = current_idx
+                                lines = self._subtitle_lines
+                                font = self._subtitle_font
+                                _sw, _sh = self._subtitle_frame_wh
+                                line_h_gap = self._subtitle_line_h
+
+                                logger.debug(f"[Subtitle] Drawing frame overlay for lines idx={current_idx}")
+                                # 构建显示行：当前行（全亮）+ 下一行（半透明预加载）
+                                display_lines = []
+                                if 0 <= current_idx < total:
+                                    display_lines.append((lines[current_idx], 255))
+                                if current_idx + 1 < total:
+                                    display_lines.append((lines[current_idx + 1], 128))
+
+                                if display_lines:
+                                    overlay = Image.new('RGBA', (_sw, _sh), (0, 0, 0, 0))
+                                    draw = ImageDraw.Draw(overlay)
+                                    num_display = len(display_lines)
+                                    y_base = _sh - int(_sh * self._subtitle_y_ratio) - num_display * line_h_gap
+
+                                    for i, (line_text, alpha_val) in enumerate(display_lines):
+                                        tw = draw.textbbox((0, 0), line_text, font=font)[2] - draw.textbbox((0, 0), line_text, font=font)[0]
+                                        x = (_sw - tw) // 2
+                                        y = y_base + i * line_h_gap
+                                        draw.text((x, y), line_text, font=font,
+                                                  fill=(255, 255, 255, alpha_val),
+                                                  stroke_width=max(2, int(self._subtitle_font_size * 0.08)),
+                                                  stroke_fill=(0, 0, 0, alpha_val))
+
+                                    # PIL → OpenCV 缓存
+                                    logger.debug("[Subtitle] Converting PIL to numpy")
+                                    overlay_np = np.array(overlay)
+                                    alpha = overlay_np[:, :, 3:4].astype(np.float32) / 255.0
+                                    overlay_bgr = overlay_np[:, :, :3][:, :, ::-1]
+                                    self._cached_subtitle_overlay = (overlay_bgr * alpha).astype(np.uint8)
+                                    self._cached_subtitle_inv_mask = np.repeat((1.0 - alpha).astype(np.float32), 3, axis=2)
+                                    logger.debug("[Subtitle] Overlay ready")
+                                else:
+                                    self._cached_subtitle_overlay = None
+
+                            # ── 合成字幕层 ──
+                            if self._cached_subtitle_overlay is not None:
                                 combine_frame = cv2.multiply(combine_frame, self._cached_subtitle_inv_mask, dtype=cv2.CV_8U)
                                 combine_frame = cv2.add(combine_frame, self._cached_subtitle_overlay)
-                            # 播完停留后清除
-                            if self._subtitle_reveal_ended and n_revealed >= total:
-                                if elapsed > total * _REVEAL_INTERVAL + _REVEAL_HOLD:
+
+                            # ── 播完停留后清除 ──
+                            if self._subtitle_reveal_ended and current_idx >= total - 1:
+                                if elapsed > total_est + _REVEAL_HOLD:
                                     self._current_subtitle = ""
                                     self._subtitle_reveal_ended = False
                 except Exception as e:

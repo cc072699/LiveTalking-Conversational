@@ -53,7 +53,8 @@ logger.info('Using {} for inference. _use_gpu={}'.format(device, _use_gpu))
 
 # ── GPU tensor 缓存（按 avatar_id 跨 session 共享，避免重复加载）──
 _face_gpu_cache: dict = {}
-_FACE_GPU_CACHE_MAX = 3  # 最多缓存 3 个 GPU face tensor
+_frame_gpu_cache: dict = {}
+_GPU_CACHE_MAX = 3  # 最多缓存 3 个 avatar 的 GPU tensor
 
 def _load(checkpoint_path):
     if device == 'cuda':
@@ -112,23 +113,32 @@ class LipReal(BaseAvatar):
 
         self.frame_list_cycle,self.face_list_cycle,self.coord_list_cycle = avatar
 
+        # ── 预渲染水印到静音帧（一次操作消除 25fps 每帧 cv2.putText）──
+        if self._watermark_text and len(self.frame_list_cycle) > 0:
+            text = self._watermark_text
+            h, w = self.frame_list_cycle[0].shape[:2]
+            wm_cache = np.zeros((h, w, 3), dtype=np.uint8)
+            cv2.putText(wm_cache, text, (10, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.3, (128,128,128), 1)
+            mask = (wm_cache > 0).any(axis=2)
+            for i in range(len(self.frame_list_cycle)):
+                self.frame_list_cycle[i][mask] = wm_cache[mask]
+            logger.info(f'watermark pre-rendered on {len(self.frame_list_cycle)} silent frames: "{text}"')
+
         # ── 预加载 GPU 张量（弱 CPU 强 GPU 场景关键优化）──
         if _use_gpu:
-            # face_list_cycle → [N, 3, H, W] fp16 归一化张量（避免每 batch 重复 CPU→GPU 传输）
             avatar_id = getattr(opt, 'avatar_id', 'default')
             cache_key = avatar_id
+
+            # face_list_cycle → [N, 3, H, W] fp16 归一化张量（避免每 batch 重复 CPU→GPU 传输）
             if cache_key in _face_gpu_cache:
-                # 命中缓存：直接复用已加载的 GPU tensor
                 self.face_gpu = _face_gpu_cache[cache_key]
                 logger.info(f'face_gpu cache HIT for {avatar_id}: {self.face_gpu.shape}')
             else:
-                # 未命中：构建并缓存
                 face_tensors = []
                 for face_img in self.face_list_cycle:
                     face_tensors.append(torch.from_numpy(face_img).permute(2, 0, 1).float().div(255.0).half())
                 self.face_gpu = torch.stack(face_tensors).to(device)
-                # 淘汰最旧缓存（LRU）
-                if len(_face_gpu_cache) >= _FACE_GPU_CACHE_MAX:
+                if len(_face_gpu_cache) >= _GPU_CACHE_MAX:
                     oldest = next(iter(_face_gpu_cache))
                     logger.info(f'face_gpu cache evicted: {oldest}')
                     del _face_gpu_cache[oldest]
@@ -137,13 +147,46 @@ class LipReal(BaseAvatar):
                 del face_tensors
                 gc.collect()
                 torch.cuda.empty_cache()
+
+            # frame_list_cycle → [N, H, W, C] fp16 归一化张量（GPU paste_back 关键优化）
+            if cache_key in _frame_gpu_cache:
+                self.frame_gpu = _frame_gpu_cache[cache_key]
+                self._frame_h, self._frame_w = self.frame_gpu.shape[1], self.frame_gpu.shape[2]
+                logger.info(f'frame_gpu cache HIT for {avatar_id}: {self.frame_gpu.shape}')
+            else:
+                frame_tensors = []
+                for frame_img in self.frame_list_cycle:
+                    # 保持 HWC 格式（paste_back 按坐标操作），fp16 归一化
+                    t = torch.from_numpy(frame_img.astype(np.float32)).div(255.0).half()
+                    frame_tensors.append(t)
+                self.frame_gpu = torch.stack(frame_tensors).to(device)
+                self._frame_h = self.frame_gpu.shape[1]
+                self._frame_w = self.frame_gpu.shape[2]
+                if len(_frame_gpu_cache) >= _GPU_CACHE_MAX:
+                    oldest = next(iter(_frame_gpu_cache))
+                    logger.info(f'frame_gpu cache evicted: {oldest}')
+                    del _frame_gpu_cache[oldest]
+                _frame_gpu_cache[cache_key] = self.frame_gpu
+                logger.info(f'frame_gpu cache MISS for {avatar_id}: pre-loaded {len(frame_tensors)} frames (fp16): {self.frame_gpu.shape}')
+                del frame_tensors
+                gc.collect()
+                torch.cuda.empty_cache()
+
         else:
             self.face_gpu = None
+            self.frame_gpu = None
+            self._frame_h = self._frame_w = 0
 
-        # ── GPU 缓存就绪后释放 CPU 端 numpy 拷贝（节省 ~12MB/avatar）──
-        if _use_gpu and self.face_list_cycle is not None:
-            self._face_count = len(self.face_list_cycle)  # 缓存长度供 inference_batch 使用
-            self.face_list_cycle = None
+        # ── GPU 缓存就绪后释放 CPU 端 numpy 拷贝 ──
+        if _use_gpu:
+            if self.face_list_cycle is not None:
+                self._face_count = len(self.face_list_cycle)
+                self.face_list_cycle = None
+            if self.frame_list_cycle is not None:
+                self._frame_count = len(self.frame_list_cycle)
+                # 保留 frame_list_cycle 引用给 CPU 回退路径；
+                # 如果不需要回退，可以设为 None 释放 CPU 内存
+                # self.frame_list_cycle = None
             gc.collect()
 
         # inference batch counter for periodic GC
@@ -236,11 +279,35 @@ class LipReal(BaseAvatar):
 
     def paste_back_frame(self, pred_frame, idx: int):
         bbox = self.coord_list_cycle[idx]
-
-        # ── CPU 路径（推理结果已在推理线程中转 CPU，避免跨线程 GPU 争抢）──
         y1, y2, x1, x2 = bbox
-        combine_frame = np.copy(self.frame_list_cycle[idx])
-        res_frame = cv2.resize(pred_frame.astype(np.uint8, copy=False), (x2 - x1, y2 - y1))
-        combine_frame[y1:y2, x1:x2] = res_frame
-        return combine_frame
+        target_h, target_w = y2 - y1, x2 - x1
+
+        if _use_gpu and self.frame_gpu is not None:
+            # ── GPU 路径：torch 操作替代 np.copy + cv2.resize ──
+            # pred_frame: numpy [H, W, 3] uint8 (from inference_batch .cpu().numpy())
+            pred_t = torch.from_numpy(pred_frame.astype(np.float32)).div(255.0).half().to(device, non_blocking=True)
+            # pred_t: [96, 96, 3] fp16 on GPU
+
+            # Resize face on GPU（torch 比 cv2 更快，且异步执行不占 CPU）
+            pred_t = pred_t.permute(2, 0, 1).unsqueeze(0)  # [1, 3, 96, 96]
+            pred_t = torch.nn.functional.interpolate(
+                pred_t, size=(target_h, target_w), mode='bilinear', align_corners=False
+            )
+            pred_t = pred_t.squeeze(0).permute(1, 2, 0)  # [target_h, target_w, 3] fp16
+
+            # 从预加载 GPU 帧中选取帧（零拷贝索引），再 clone 避免修改缓存
+            combine_t = self.frame_gpu[idx].clone()  # [H, W, 3] fp16
+
+            # GPU 索引赋值贴回人脸
+            combine_t[y1:y2, x1:x2] = pred_t
+
+            # 转 CPU numpy uint8（唯一 GPU→CPU 传输点）
+            combine_frame = combine_t.mul_(255.0).byte().cpu().numpy()
+            return combine_frame
+        else:
+            # ── CPU 回退路径 ──
+            combine_frame = np.copy(self.frame_list_cycle[idx])
+            res_frame = cv2.resize(pred_frame.astype(np.uint8, copy=False), (target_w, target_h))
+            combine_frame[y1:y2, x1:x2] = res_frame
+            return combine_frame
 

@@ -3,257 +3,1110 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LiveTalking - 数字人实时驱动</title>
+    <title>五六零科技 · 数字人展览平台 | 560 TECH · Digital Human Platform</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <style>
+        /* ── Design System ──────────────────────────────────────────── */
         :root {
-            --primary: #4361ee;
-            --primary-dark: #3f37c9;
-            --bg: #f0f4fc;
-            --card-bg: rgba(255,255,255,0.85);
+            --bg-deep: #060d1a;
+            --bg-card: rgba(10, 22, 50, 0.75);
+            --bg-card-solid: #0a1632;
+            --accent-primary: #00d4ff;
+            --accent-secondary: #f0a500;
+            --accent-glow: rgba(0, 212, 255, 0.3);
+            --text-primary: #e8f4ff;
+            --text-muted: #6b8baa;
+            --border-glow: rgba(0, 212, 255, 0.25);
+            --danger: #ff4d6d;
+            --success: #00e5a0;
             --radius: 14px;
+            --radius-sm: 8px;
         }
+
+        * { box-sizing: border-box; }
+
+        html { scroll-behavior: smooth; }
+
         body {
-            font-family: 'Inter', system-ui, -apple-system, sans-serif;
-            background: linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%);
-            color: #1e293b;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-deep);
+            color: var(--text-primary);
             min-height: 100vh;
             padding-bottom: 40px;
+            overflow-x: hidden;
+            position: relative;
         }
-        .navbar-brand { font-weight: 700; }
+
+        /* ── Animated Grid Background ───────────────────────────────── */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+            background-image:
+                linear-gradient(rgba(0, 212, 255, 0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 212, 255, 0.04) 1px, transparent 1px);
+            background-size: 60px 60px;
+        }
+
+        /* ── Scanline Overlay ───────────────────────────────────────── */
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            z-index: 1;
+            pointer-events: none;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                rgba(0, 0, 0, 0.06) 2px,
+                rgba(0, 0, 0, 0.06) 4px
+            );
+        }
+
+        /* ── Ambient Glow Orbs ──────────────────────────────────────── */
+        .bg-glow {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(80px);
+            pointer-events: none;
+            z-index: 0;
+        }
+        .bg-glow-1 {
+            width: 600px; height: 600px;
+            background: rgba(0, 212, 255, 0.06);
+            top: -200px; right: -200px;
+            animation: glowFloat 20s ease-in-out infinite;
+        }
+        .bg-glow-2 {
+            width: 400px; height: 400px;
+            background: rgba(240, 165, 0, 0.04);
+            bottom: -100px; left: -100px;
+            animation: glowFloat 25s ease-in-out infinite reverse;
+        }
+        @keyframes glowFloat {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(30px, -30px) scale(1.1); }
+            66% { transform: translate(-20px, 20px) scale(0.9); }
+        }
+
+        /* ── Navbar ─────────────────────────────────────────────────── */
+        .navbar {
+            background: linear-gradient(180deg, rgba(6, 13, 26, 0.98) 0%, rgba(6, 13, 26, 0.85) 100%);
+            border-bottom: 1px solid var(--border-glow);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            position: sticky;
+            top: 0;
+            z-index: 1050;
+            padding: 0;
+        }
+        .navbar .container-fluid {
+            padding: 10px 24px;
+        }
+        .navbar-brand {
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 700;
+            font-size: 1.4rem;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            text-decoration: none;
+        }
+        .brand-zh {
+            color: var(--accent-secondary);
+            letter-spacing: 1px;
+        }
+        .brand-en {
+            color: var(--accent-primary);
+            font-weight: 600;
+            font-size: 0.85rem;
+            opacity: 0.8;
+        }
+        .brand-sep {
+            color: rgba(255,255,255,0.15);
+            margin: 0 6px;
+        }
+        .brand-icon {
+            color: var(--accent-primary);
+            font-size: 1.6rem;
+            margin-right: 8px;
+            opacity: 0.9;
+            filter: drop-shadow(0 0 6px var(--accent-glow));
+        }
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .nav-links a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.82rem;
+            font-weight: 500;
+            padding: 4px 12px;
+            border-radius: 6px;
+            transition: all 0.2s;
+            letter-spacing: 0.3px;
+        }
+        .nav-links a:hover {
+            color: var(--accent-primary);
+            background: rgba(0, 212, 255, 0.08);
+        }
+        .nav-links a.nav-danger:hover {
+            color: #ff4d4f;
+            background: rgba(255, 77, 79, 0.12);
+        }
+        .nav-links .nav-sep {
+            color: rgba(255,255,255,0.1);
+            font-size: 0.7rem;
+        }
+        .nav-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        /* ── Status Badge ───────────────────────────────────────────── */
+        .session-badge {
+            font-size: 0.72rem;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-family: 'Rajdhani', sans-serif;
+            letter-spacing: 0.5px;
+            transition: all 0.3s;
+        }
+        .session-badge.connected {
+            background: rgba(0, 229, 160, 0.12);
+            color: var(--success);
+            border: 1px solid rgba(0, 229, 160, 0.3);
+            box-shadow: 0 0 12px rgba(0, 229, 160, 0.15);
+        }
+        .session-badge.disconnected {
+            background: rgba(255, 77, 109, 0.1);
+            color: var(--danger);
+            border: 1px solid rgba(255, 77, 109, 0.2);
+        }
+        .status-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 6px;
+            vertical-align: middle;
+            position: relative;
+            top: -1px;
+        }
+        .status-dot.on {
+            background: var(--success);
+            box-shadow: 0 0 8px var(--success);
+        }
+        .status-dot.off {
+            background: var(--danger);
+        }
+        #sessionIdDisplay {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            letter-spacing: 0.5px;
+        }
+
+        /* ── Glass Card ─────────────────────────────────────────────── */
         .glass-card {
-            background: var(--card-bg);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255,255,255,0.4);
+            background: var(--bg-card);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--border-glow);
             border-radius: var(--radius);
-            box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.05);
             margin-bottom: 20px;
+            transition: box-shadow 0.3s ease, border-color 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .glass-card:hover {
+            border-color: rgba(0, 212, 255, 0.4);
+            box-shadow: 0 4px 32px rgba(0, 0, 0, 0.3), 0 0 20px rgba(0, 212, 255, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+        }
+        .glass-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--accent-primary), transparent);
+            opacity: 0.3;
         }
         .card-header {
             background: transparent;
-            border-bottom: 1px solid rgba(0,0,0,0.06);
-            padding: 16px 20px;
+            border-bottom: 1px solid rgba(0, 212, 255, 0.1);
+            padding: 14px 20px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1rem;
+            letter-spacing: 0.5px;
+            color: var(--text-primary);
+        }
+        .card-header i {
+            color: var(--accent-primary);
+            font-size: 1.1rem;
+        }
+        .card-body {
+            padding: 18px 20px;
+        }
+
+        /* ── Quick Links ────────────────────────────────────────────── */
+        .quick-link {
+            text-decoration: none;
+            display: block;
+        }
+        .quick-link .glass-card {
+            text-align: center;
+            padding: 18px 12px;
+            cursor: pointer;
+            transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+            margin-bottom: 16px;
+        }
+        .quick-link:hover .glass-card {
+            transform: translateY(-5px);
+            border-color: rgba(0, 212, 255, 0.5);
+            box-shadow: 0 8px 40px rgba(0, 0, 0, 0.3), 0 0 30px rgba(0, 212, 255, 0.12);
+        }
+        .quick-link .ql-icon {
+            font-size: 1.8rem;
+            color: var(--accent-primary);
+            display: block;
+            margin-bottom: 6px;
+            transition: transform 0.3s;
+        }
+        .quick-link:hover .ql-icon {
+            transform: scale(1.15);
+        }
+        .quick-link .ql-icon.gold {
+            color: var(--accent-secondary);
+        }
+        .quick-link .ql-title {
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 700;
+            font-size: 1rem;
+            color: var(--text-primary);
+            margin-top: 2px;
+        }
+        .quick-link .ql-desc {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        /* ── Form Controls (Dark Theme) ─────────────────────────────── */
+        .form-control, .form-select {
+            background: rgba(6, 13, 26, 0.6);
+            border: 1px solid rgba(0, 212, 255, 0.15);
+            color: var(--text-primary);
+            border-radius: var(--radius-sm);
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .form-control:focus, .form-select:focus {
+            background: rgba(6, 13, 26, 0.8);
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1);
+            color: var(--text-primary);
+        }
+        .form-control::placeholder {
+            color: rgba(107, 139, 170, 0.5) !important;
+            opacity: 1;
+        }
+        .form-control:-ms-input-placeholder {
+            color: rgba(107, 139, 170, 0.5);
+        }
+        .form-control-sm, .form-select-sm {
+            font-size: 0.82rem;
+            padding: 6px 10px;
+        }
+        .form-label {
+            font-weight: 500;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+            letter-spacing: 0.3px;
+        }
+        .form-check-input {
+            background: rgba(6, 13, 26, 0.6);
+            border: 1px solid rgba(0, 212, 255, 0.2);
+        }
+        .form-check-input:checked {
+            background-color: var(--accent-primary);
+            border-color: var(--accent-primary);
+        }
+        .form-check-label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+        .param-hint {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            opacity: 0.7;
+        }
+        select option {
+            background: var(--bg-card-solid);
+            color: var(--text-primary);
+        }
+
+        /* ── Buttons ────────────────────────────────────────────────── */
+        .btn-primary-custom {
+            background: linear-gradient(135deg, #00b4d8, #0096c7);
+            border: none;
+            color: #fff;
+            font-weight: 600;
+            font-size: 0.85rem;
+            border-radius: var(--radius-sm);
+            padding: 8px 18px;
+            cursor: pointer;
+            transition: all 0.25s;
+            font-family: 'Rajdhani', sans-serif;
+            letter-spacing: 0.5px;
+            position: relative;
+            overflow: hidden;
+        }
+        .btn-primary-custom:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 20px rgba(0, 180, 216, 0.35);
+            color: #fff;
+        }
+        .btn-primary-custom:active {
+            transform: translateY(0);
+        }
+
+        .btn-danger-custom {
+            background: linear-gradient(135deg, #e63946, #c1121f);
+            border: none;
+            color: #fff;
+            font-weight: 600;
+            font-size: 0.85rem;
+            border-radius: var(--radius-sm);
+            padding: 8px 18px;
+            cursor: pointer;
+            transition: all 0.25s;
+            font-family: 'Rajdhani', sans-serif;
+            letter-spacing: 0.5px;
+        }
+        .btn-danger-custom:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 20px rgba(230, 57, 70, 0.35);
+            color: #fff;
+        }
+        .btn-danger-custom:active {
+            transform: translateY(0);
+        }
+
+        .btn-outline-custom {
+            border: 1px solid var(--accent-primary);
+            color: var(--accent-primary);
+            font-weight: 600;
+            font-size: 0.82rem;
+            border-radius: var(--radius-sm);
+            padding: 6px 14px;
+            background: transparent;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: 'Rajdhani', sans-serif;
+        }
+        .btn-outline-custom:hover {
+            background: rgba(0, 212, 255, 0.1);
+            color: var(--accent-primary);
+            box-shadow: 0 0 16px rgba(0, 212, 255, 0.15);
+        }
+        .btn-outline-custom:active {
+            transform: scale(0.97);
+        }
+
+        /* Override Bootstrap btn-danger/btn-primary for fsPttButton */
+        .btn.btn-danger {
+            background: linear-gradient(135deg, #e63946, #c1121f) !important;
+            border: none !important;
+            color: #fff !important;
+            border-radius: var(--radius-sm) !important;
+            transition: all 0.25s !important;
+        }
+        .btn.btn-danger:hover {
+            box-shadow: 0 4px 20px rgba(230, 57, 70, 0.35) !important;
+        }
+        .btn.btn-primary {
+            background: linear-gradient(135deg, #00b4d8, #0096c7) !important;
+            border: none !important;
+            color: #fff !important;
+            border-radius: var(--radius-sm) !important;
+            transition: all 0.25s !important;
+        }
+        .btn.btn-primary:hover {
+            box-shadow: 0 4px 20px rgba(0, 180, 216, 0.35) !important;
+        }
+        .btn-outline-danger {
+            border-color: var(--danger) !important;
+            color: var(--danger) !important;
+        }
+        .btn-outline-danger:hover {
+            background: rgba(255, 77, 109, 0.15) !important;
+            color: var(--danger) !important;
+        }
+
+        /* ── Video Player ───────────────────────────────────────────── */
+        video {
+            width: 100%;
+            border-radius: var(--radius-sm);
+            background: #000;
+            display: block;
+        }
+        video::-webkit-media-controls-fullscreen-button { display: none !important; }
+        video::-moz-full-screen-button { display: none !important; }
+
+        .video-fs-wrapper {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+            border-radius: var(--radius-sm);
+            overflow: hidden;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.4), 0 0 40px rgba(0, 212, 255, 0.05);
+            border: 1px solid rgba(0, 212, 255, 0.1);
+        }
+
+        .video-fs-wrapper:fullscreen,
+        .video-fs-wrapper:-webkit-full-screen {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #000;
+            width: 100vw;
+            height: 100vh;
+            border-radius: 0;
+            border: none;
+        }
+        .video-fs-wrapper:fullscreen video,
+        .video-fs-wrapper:-webkit-full-screen video {
+            max-width: 100%;
+            max-height: 100vh;
+            width: auto;
+            height: auto;
+            border-radius: 0;
+        }
+
+        .fs-trigger {
+            position: absolute;
+            bottom: 8px;
+            right: 8px;
+            background: rgba(0, 0, 0, 0.7);
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 4px;
+            padding: 4px 10px;
+            cursor: pointer;
+            font-size: 14px;
+            z-index: 10;
+            opacity: 0.6;
+            transition: opacity 0.2s, background 0.2s;
+        }
+        .fs-trigger:hover {
+            opacity: 1;
+            background: rgba(0, 212, 255, 0.2);
+            border-color: var(--accent-primary);
+        }
+        /* 全屏模式下始终显示，便于用户找到退出按钮 */
+        .video-fs-wrapper:fullscreen .fs-trigger,
+        .video-fs-wrapper:-webkit-full-screen .fs-trigger {
+            opacity: 0.85;
+        }
+
+        /* ── Fullscreen Toolbar ─────────────────────────────────────── */
+        .fs-toolbar {
+            display: none;
+            position: fixed;
+            top: 12px;
+            right: 12px;
+            z-index: 2147483647;
+            gap: 8px;
+            align-items: center;
+        }
+        .video-fs-wrapper:fullscreen .fs-toolbar,
+        .video-fs-wrapper:-webkit-full-screen .fs-toolbar {
+            display: flex;
+        }
+        .fs-toolbar button {
+            background: rgba(0, 0, 0, 0.75);
+            color: var(--text-primary);
+            border: 1px solid rgba(0, 212, 255, 0.35);
+            border-radius: 6px;
+            padding: 8px 16px;
+            cursor: pointer;
+            font-size: 14px;
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 600;
+            transition: background 0.2s, border-color 0.2s;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+        }
+        .fs-toolbar button:hover {
+            background: rgba(0, 212, 255, 0.15);
+            border-color: var(--accent-primary);
+        }
+        .fs-toolbar button.active {
+            background: rgba(0, 212, 255, 0.2);
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 12px rgba(0, 212, 255, 0.2);
+        }
+
+        /* ── Fullscreen Side Panel ──────────────────────────────────── */
+        .fs-side-panel {
+            display: none;
+        }
+        .video-fs-wrapper:fullscreen .fs-side-panel,
+        .video-fs-wrapper:-webkit-full-screen .fs-side-panel {
+            display: none;
+            flex-direction: column;
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 380px;
+            height: 100vh;
+            overflow-y: auto;
+            padding: 16px;
+            gap: 16px;
+            background: rgba(6, 13, 26, 0.95);
+            color: var(--text-primary);
+            z-index: 100;
+            border-left: 1px solid var(--border-glow);
+        }
+        .video-fs-wrapper:fullscreen.fs-panel-open .fs-side-panel,
+        .video-fs-wrapper:-webkit-full-screen.fs-panel-open .fs-side-panel {
+            display: flex;
+        }
+
+        .video-fs-wrapper:fullscreen .fs-side-panel .fs-glass-card,
+        .video-fs-wrapper:-webkit-full-screen .fs-side-panel .fs-glass-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--border-glow);
+            border-radius: var(--radius);
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+            color: var(--text-primary);
+        }
+        .video-fs-wrapper:fullscreen .fs-side-panel .fs-card-header,
+        .video-fs-wrapper:-webkit-full-screen .fs-side-panel .fs-card-header {
+            background: transparent;
+            border-bottom: 1px solid rgba(0, 212, 255, 0.1);
+            padding: 14px 18px;
             font-weight: 600;
             display: flex;
             align-items: center;
             gap: 8px;
+            font-family: 'Rajdhani', sans-serif;
+            color: var(--text-primary);
         }
-        .card-header i { color: var(--primary); }
-        .card-body { padding: 20px; }
-        .btn-primary-custom {
-            background: linear-gradient(135deg, #4361ee, #3f37c9);
-            border: none;
-            color: #fff;
-            font-weight: 600;
-            border-radius: 8px;
-            padding: 8px 16px;
-            cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
+        .video-fs-wrapper:fullscreen .fs-side-panel .fs-card-header i,
+        .video-fs-wrapper:-webkit-full-screen .fs-side-panel .fs-card-header i {
+            color: var(--accent-primary);
         }
-        .btn-primary-custom:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(67,97,238,0.3); color: #fff; }
-        .btn-primary-custom:active { transform: translateY(0); }
-        .btn-danger-custom { background: #ef4444; border: none; color: #fff; font-weight: 600; border-radius: 8px; padding: 8px 16px; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; }
-        .btn-danger-custom:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(239,68,68,0.3); }
-        .btn-danger-custom:active { transform: translateY(0); }
-        .btn-outline-custom { border: 2px solid var(--primary); color: var(--primary); font-weight: 600; border-radius: 8px; padding: 8px 16px; background: transparent; cursor: pointer; transition: all 0.2s; }
-        .btn-outline-custom:hover { background: var(--primary); color: #fff; }
-        .btn-outline-custom:active { transform: scale(0.97); }
-        video { width: 100%; border-radius: 8px; background: #000; }
-        .session-badge { font-size: 0.75rem; padding: 4px 10px; border-radius: 20px; }
-        .connected { background: #d1fae5; color: #065f46; }
-        .disconnected { background: #fee2e2; color: #991b1b; }
-        .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
-        .status-dot.on { background: #10b981; }
-        .status-dot.off { background: #ef4444; }
-        .quick-link { text-decoration: none; }
-        .quick-link .glass-card { transition: transform 0.3s, box-shadow 0.3s; cursor: pointer; }
-        .quick-link:hover .glass-card { transform: translateY(-3px); box-shadow: 0 12px 28px rgba(0,0,0,0.1); }
-        pre { background: #1e293b; color: #e2e8f0; padding: 12px; border-radius: 8px; font-size: 0.8rem; max-height: 120px; overflow-y: auto; }
-        label { font-weight: 500; font-size: 0.9rem; color: #64748b; margin-bottom: 4px; }
-        .param-hint { font-size: 0.75rem; color: #94a3b8; }
-        ::placeholder { color: #9ca3af !important; opacity: 1; }
-        :-ms-input-placeholder { color: #9ca3af; }
+        .video-fs-wrapper:fullscreen .fs-side-panel .fs-card-body,
+        .video-fs-wrapper:-webkit-full-screen .fs-side-panel .fs-card-body {
+            padding: 14px 18px;
+        }
+        .video-fs-wrapper:fullscreen .fs-side-panel .form-control,
+        .video-fs-wrapper:fullscreen .fs-side-panel .form-select {
+            background: rgba(0, 0, 0, 0.4);
+        }
+
+        /* ── Voice Transcript & Chat Log ────────────────────────────── */
         .voice-transcript {
-            background: rgba(67, 97, 238, 0.06);
-            border-radius: 8px;
+            background: rgba(0, 212, 255, 0.06);
+            border: 1px solid rgba(0, 212, 255, 0.1);
+            border-radius: var(--radius-sm);
             padding: 10px 14px;
             min-height: 40px;
-            font-size: 0.9rem;
-            color: #334155;
+            font-size: 0.85rem;
+            color: var(--text-primary);
             white-space: pre-wrap;
             word-break: break-all;
         }
         .voice-chat-log {
             max-height: 200px;
             overflow-y: auto;
-            font-size: 0.85rem;
+            font-size: 0.82rem;
             padding: 8px 0;
         }
-        .voice-chat-log .msg-user { color: var(--primary); margin-bottom: 4px; }
-        .voice-chat-log .msg-user::before { content: '🗣️ '; }
-        .voice-chat-log .msg-avatar { color: #64748b; margin-bottom: 8px; }
-        .voice-chat-log .msg-avatar::before { content: '🤖 '; }
+        .voice-chat-log .msg-user {
+            color: var(--accent-primary);
+            margin-bottom: 4px;
+            padding: 4px 8px;
+            background: rgba(0, 212, 255, 0.05);
+            border-radius: 4px;
+        }
+        .voice-chat-log .msg-user::before {
+            content: '🗣️ ';
+        }
+        .voice-chat-log .msg-avatar {
+            color: var(--text-muted);
+            margin-bottom: 8px;
+            padding: 4px 8px;
+        }
+        .voice-chat-log .msg-avatar::before {
+            content: '🤖 ';
+        }
 
-        /* Fullscreen wrapper */
-        .video-fs-wrapper { position: relative; display: inline-block; width: 100%; }
-        .video-fs-wrapper:fullscreen,
-        .video-fs-wrapper:-webkit-full-screen {
-            display: flex; align-items: center; justify-content: center;
-            background: #000; width: 100vw; height: 100vh;
+        /* ── PTT Button ─────────────────────────────────────────────── */
+        #pttButton, #fsPttButton {
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 700;
+            letter-spacing: 1px;
+            position: relative;
+            overflow: hidden;
         }
-        .video-fs-wrapper:fullscreen video,
-        .video-fs-wrapper:-webkit-full-screen video {
-            max-width: 100%; max-height: 100vh; width: auto; height: auto; border-radius: 0;
+        #pttButton:active, #fsPttButton:active {
+            transform: scale(0.98);
         }
-        /* Side panel: absolute overlay on the right */
-        .video-fs-wrapper:fullscreen .fs-side-panel,
-        .video-fs-wrapper:-webkit-full-screen .fs-side-panel {
-            display: none; flex-direction: column; position: absolute; top: 0; right: 0;
-            width: 380px; height: 100vh; overflow-y: auto; padding: 16px; gap: 16px;
-            background: #0d1117; color: #e6edf3; z-index: 100;
+
+        /* ── Status Bar ─────────────────────────────────────────────── */
+        #voiceStatusBar, #fsVoiceStatusBar {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            padding: 6px 10px;
+            background: rgba(0, 212, 255, 0.05);
+            border-radius: var(--radius-sm);
+            border: 1px solid rgba(0, 212, 255, 0.08);
         }
-        /* Panel open state */
-        .video-fs-wrapper:fullscreen.fs-panel-open .fs-side-panel,
-        .video-fs-wrapper:-webkit-full-screen.fs-panel-open .fs-side-panel {
+
+        /* ── Custom Scrollbar ───────────────────────────────────────── */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(6, 13, 26, 0.5);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(0, 212, 255, 0.2);
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(0, 212, 255, 0.35);
+        }
+        .voice-chat-log::-webkit-scrollbar,
+        .fs-side-panel::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        /* ── Utility ────────────────────────────────────────────────── */
+        .text-muted-custom {
+            color: var(--text-muted) !important;
+        }
+        .accent-glow {
+            color: var(--accent-primary);
+        }
+        .gold-glow {
+            color: var(--accent-secondary);
+        }
+        .badge-accent {
+            background: rgba(0, 212, 255, 0.1);
+            color: var(--accent-primary);
+            border: 1px solid rgba(0, 212, 255, 0.2);
+        }
+
+        /* ── Responsive ─────────────────────────────────────────────── */
+        @media (max-width: 768px) {
+            .navbar .container-fluid {
+                padding: 8px 12px;
+                flex-wrap: wrap;
+            }
+            .navbar-brand {
+                font-size: 1.1rem;
+            }
+            .brand-en {
+                display: none;
+            }
+            .nav-links a {
+                font-size: 0.75rem;
+                padding: 4px 8px;
+            }
+            .nav-right {
+                gap: 6px;
+            }
+            #sessionIdDisplay {
+                font-size: 0.7rem;
+            }
+            .session-badge {
+                font-size: 0.65rem;
+                padding: 3px 8px;
+            }
+            .card-header {
+                padding: 12px 16px;
+                font-size: 0.9rem;
+            }
+            .card-body {
+                padding: 14px 16px;
+            }
+            .quick-link .glass-card {
+                padding: 12px 8px;
+            }
+            .quick-link .ql-icon {
+                font-size: 1.4rem;
+            }
+            .video-fs-wrapper:fullscreen .fs-side-panel,
+            .video-fs-wrapper:-webkit-full-screen .fs-side-panel {
+                width: 100%;
+                height: 50vh;
+                top: auto;
+                bottom: 0;
+                border-left: none;
+                border-top: 1px solid var(--border-glow);
+            }
+        }
+
+        @media (max-width: 991px) {
+            .quick-link .glass-card {
+                margin-bottom: 12px;
+            }
+        }
+
+        @media (min-width: 992px) {
+            .container {
+                max-width: 1400px;
+            }
+        }
+    
+        /* ── Modern Custom Sliding Toggle Switch ─────────────────────── */
+        .custom-switch-wrap {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            user-select: none;
+        }
+        .custom-switch-input {
+            display: none !important;
+        }
+        .custom-switch-slider {
+            position: relative;
+            width: 44px;
+            height: 22px;
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            transition: all 0.25s ease;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            display: inline-block;
+            vertical-align: middle;
+        }
+        .custom-switch-slider::after {
+            content: "";
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 16px;
+            height: 16px;
+            background-color: #ffffff;
+            border-radius: 50%;
+            transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+        }
+        .custom-switch-input:checked + .custom-switch-slider {
+            background-color: #00d4ff;
+            border-color: #00d4ff;
+            box-shadow: 0 0 8px rgba(0, 212, 255, 0.4);
+        }
+        .custom-switch-input:checked + .custom-switch-slider::after {
+            transform: translateX(22px);
+        }
+        .custom-switch-label {
+            font-size: 0.82rem;
+            color: var(--text-color, #e0e0e0);
+        }
+
+
+        /* ── Collapsible Panel Animation ───────────────────────────── */
+        .panel-collapse-content {
+            overflow: hidden;
+            transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease, margin-top 0.3s ease;
+            max-height: 500px;
+            opacity: 1;
+            margin-top: 8px;
+        }
+        .panel-collapse-content.collapsed {
+            display: none !important;
+        }
+
+
+        
+        /* ── Customer-Facing WebRTC Loading Overlay ─────────────────────── */
+        .video-fs-wrapper {
+            min-height: 450px;
+            background: #080c18;
+            position: relative;
+        }
+        .video-loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(8, 12, 24, 0.82);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            z-index: 30;
             display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+            border-radius: 12px;
+            padding: 15px;
         }
-        .video-fs-wrapper:fullscreen .fs-side-panel .fs-glass-card,
-        .video-fs-wrapper:-webkit-full-screen .fs-side-panel .fs-glass-card {
-            background: rgba(255,255,255,0.85); backdrop-filter: blur(12px);
-            border: 1px solid rgba(255,255,255,0.4); border-radius: 14px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.06); color: #1e293b;
+        .loading-box-customer {
+            background: rgba(18, 26, 46, 0.9);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            border-radius: 14px;
+            padding: 20px 24px;
+            width: 100%;
+            max-width: 380px;
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6);
+            text-align: center;
         }
-        .video-fs-wrapper:fullscreen .fs-side-panel .fs-card-header,
-        .video-fs-wrapper:-webkit-full-screen .fs-side-panel .fs-card-header {
-            background: transparent; border-bottom: 1px solid rgba(0,0,0,0.06);
-            padding: 14px 18px; font-weight: 600; display: flex; align-items: center; gap: 8px;
+        .loading-pulse-icon {
+            width: 48px;
+            height: 48px;
+            margin: 0 auto 12px;
+            border-radius: 50%;
+            background: rgba(0, 212, 255, 0.12);
+            border: 2px solid #00d4ff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+            color: #00d4ff;
+            animation: pulseGlow 1.5s infinite ease-in-out;
         }
-        .video-fs-wrapper:fullscreen .fs-side-panel .fs-card-header i,
-        .video-fs-wrapper:-webkit-full-screen .fs-side-panel .fs-card-header i { color: #4361ee; }
-        .video-fs-wrapper:fullscreen .fs-side-panel .fs-card-body,
-        .video-fs-wrapper:-webkit-full-screen .fs-side-panel .fs-card-body { padding: 16px 18px; }
-        /* Hide native fullscreen button */
-        video::-webkit-media-controls-fullscreen-button { display: none !important; }
-        video::-moz-full-screen-button { display: none !important; }
-        /* Fullscreen button (normal state) */
-        .fs-trigger {
-            position: absolute; bottom: 8px; right: 8px;
-            background: rgba(0,0,0,0.6); color: #fff; border: none;
-            border-radius: 4px; padding: 4px 8px; cursor: pointer;
-            font-size: 14px; z-index: 10; opacity: 0.7; transition: opacity 0.2s;
+        @keyframes pulseGlow {
+            0% { box-shadow: 0 0 0 0 rgba(0, 212, 255, 0.4); transform: scale(1); }
+            70% { box-shadow: 0 0 0 14px rgba(0, 212, 255, 0); transform: scale(1.05); }
+            100% { box-shadow: 0 0 0 0 rgba(0, 212, 255, 0); transform: scale(1); }
         }
-        .fs-trigger:hover { opacity: 1; }
-        /* Toolbar in fullscreen (top-right, contains panel toggle + exit) */
-        .fs-toolbar {
-            display: none; position: fixed; top: 12px; right: 12px; z-index: 2147483647;
+        .loading-status-text {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #ffffff;
+            margin-bottom: 4px;
+        }
+        .loading-status-sub {
+            font-size: 0.78rem;
+            color: rgba(255, 255, 255, 0.6);
+            margin-bottom: 14px;
+        }
+        .customer-step-dots {
+            display: flex;
+            justify-content: center;
             gap: 8px;
         }
-        .video-fs-wrapper:fullscreen .fs-toolbar,
-        .video-fs-wrapper:-webkit-full-screen .fs-toolbar { display: flex; }
-        .fs-toolbar button {
-            background: rgba(255,255,255,0.15); color: #fff; border: 1px solid rgba(255,255,255,0.25);
-            border-radius: 6px; padding: 6px 14px; cursor: pointer; font-size: 14px;
-            transition: background 0.2s;
+        .c-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
         }
-        .fs-toolbar button:hover { background: rgba(255,255,255,0.3); }
-        .fs-toolbar button.active { background: rgba(67,97,238,0.7); border-color: rgba(67,97,238,0.9); }
-        /* Side panel hidden in normal state */
-        .fs-side-panel { display: none; }
-    </style>
+        .c-dot.active {
+            background: #00d4ff;
+            box-shadow: 0 0 8px #00d4ff;
+            transform: scale(1.3);
+        }
+        .c-dot.done {
+            background: #52c41a;
+        }
+
+</style>
 </head>
 <body>
 
-<nav class="navbar navbar-dark" style="background: linear-gradient(135deg, #4361ee, #3f37c9); box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
-    <div class="container-fluid px-4">
-        <span class="navbar-brand"><i class="bi bi-camera-video-fill me-2"></i>LiveTalking</span>
-        <a href="/index-en.html" class="text-white-50 small text-decoration-none me-2">English</a>
-        <div class="d-flex gap-2">
+<!-- Ambient Glow Orbs -->
+<div class="bg-glow bg-glow-1"></div>
+<div class="bg-glow bg-glow-2"></div>
+
+<!-- ===== NAVBAR ===== -->
+<nav class="navbar">
+    <div class="container-fluid">
+        <div class="d-flex align-items-center gap-2">
+            <span class="navbar-brand">
+                <i class="bi bi-camera-reels-fill brand-icon"></i>
+                <span class="brand-zh">五六零科技</span>
+                <span class="brand-sep">·</span>
+                <span class="brand-en">数字人展览平台</span>
+            </span>
+        </div>
+        <div class="nav-right">
+            <div class="nav-links">
+                <a href="/avatar.html" target="_blank"><i class="bi bi-person-bounding-box me-1"></i>Avatar生成</a>
+                <span class="nav-sep">|</span>
+                <a href="/admin.html" target="_blank"><i class="bi bi-gear me-1"></i>管理后台</a>
+                <span class="nav-sep">|</span>
+                <a href="/tts/index.html" target="_blank"><i class="bi bi-soundwave me-1"></i>TTS管理</a>
+                <span class="nav-sep">|</span>
+                <a href="javascript:void(0)" onclick="shutdownServer()" class="nav-danger"><i class="bi bi-power me-1"></i>关闭服务</a>
+                <span class="nav-sep">|</span>
+                <a href="/index-en.html" class="text-muted" style="font-size:0.78rem;"><i class="bi bi-globe me-1"></i>EN</a>
+            </div>
             <span class="session-badge disconnected" id="statusBadge"><span class="status-dot off"></span>未连接</span>
-            <span class="text-white-50 small" id="sessionIdDisplay">SID: -</span>
+            <span class="text-muted" id="sessionIdDisplay">SID: -</span>
         </div>
     </div>
 </nav>
 
-<div class="container mt-4">
-    <!-- Quick Links -->
-    <div class="row g-3 mb-2">
-        <div class="col-md-3">
-            <a href="/avatar.html" class="quick-link" target="_blank">
-                <div class="glass-card p-3 text-center">
-                    <i class="bi bi-person-bounding-box fs-2" style="color: #4361ee;"></i>
-                    <div class="fw-bold mt-2">Avatar 生成</div>
-                    <div class="small text-muted">创建数字人形象</div>
-                </div>
-            </a>
+<!-- ===== MAIN CONTENT ===== -->
+<div class="container mt-4" style="position:relative;z-index:2;">
+
+                            <!-- 核心功能配置面板 (可收起/展开模式) -->
+    <div class="glass-card mb-3 p-3">
+        <!-- 头部点击收起/展开控制条 -->
+        <div class="d-flex align-items-center justify-content-between cursor-pointer" onclick="toggleConfigPanel()" style="cursor:pointer; user-select:none;">
+            <div class="d-flex align-items-center gap-2" style="font-size:0.88rem; color:#00d4ff; font-weight:600;">
+                <i class="bi bi-sliders"></i>
+                <span>核心参数配置面板</span>
+                <span class="badge bg-dark-subtle text-muted fw-normal" style="font-size:0.72rem; border:1px solid rgba(255,255,255,0.1); padding:3px 8px;">点击折叠/展开</span>
+            </div>
+            <div class="text-muted small d-flex align-items-center gap-1" style="font-size:0.8rem;">
+                <span id="panelToggleText">收起配置</span>
+                <i class="bi bi-chevron-up" id="panelToggleIcon" style="transition: transform 0.3s ease;"></i>
+            </div>
         </div>
-        <div class="col-md-3">
-            <a href="/admin.html" class="quick-link" target="_blank">
-                <div class="glass-card p-3 text-center">
-                    <i class="bi bi-speedometer2 fs-2" style="color: #4361ee;"></i>
-                    <div class="fw-bold mt-2">管理后台</div>
-                    <div class="small text-muted">监控会话与配置</div>
+
+        <!-- 可折叠配置正文 -->
+        <div id="configPanelContent" class="panel-collapse-content">
+            <!-- Row 1: 数字人与 TTS 基础配置 -->
+            <div class="row g-3 align-items-center mb-2">
+                <div class="col-md-2">
+                    <label class="form-label small mb-1"><i class="bi bi-person-bounding-box me-1"></i>数字人模型</label>
+                    <select class="form-select form-select-sm" id="offerAvatar">
+                        <option value="zxw560" selected>zxw560 (默认模型)</option>
+                        <option value="cc3">cc3</option>
+                        <option value="zxw560-1">zxw560-1</option>
+                        <option value="zxw560-2">zxw560-2</option>
+                    </select>
+                    <small class="text-muted" id="avatarStatus"></small>
                 </div>
-            </a>
-        </div>
-        <div class="col-md-3">
-            <a href="/tts/index.html" class="quick-link" target="_blank">
-                <div class="glass-card p-3 text-center">
-                    <i class="bi bi-soundwave fs-2" style="color: #4361ee;"></i>
-                    <div class="fw-bold mt-2">TTS 语音管理</div>
-                    <div class="small text-muted">语音列表 · 克隆 · 合成</div>
+                <div class="col-md-2">
+                    <label class="form-label small mb-1"><i class="bi bi-file-earmark-music me-1"></i>参考音频</label>
+                    <input type="text" class="form-control form-control-sm" id="offerRefAudio" placeholder="zh-CN-YunxiaNeural">
                 </div>
-            </a>
+                <div class="col-md-2">
+                    <label class="form-label small mb-1"><i class="bi bi-chat-left-quote me-1"></i>驱动模式</label>
+                    <select class="form-select form-select-sm" id="txtType">
+                        <option value="echo">Echo 复读</option>
+                        <option value="chat">Chat LLM</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small mb-1"><i class="bi bi-cpu me-1"></i>TTS 模型</label>
+                    <select class="form-select form-select-sm" id="ttsModel">
+                        <option value="qwen-tts-realtime-latest" selected>qwen-tts-realtime-latest</option>
+                        <option value="qwen-tts-realtime-2025-07-15">qwen-tts-realtime-2025-07-15</option>
+                        <option value="qwen-tts-2025-05-22">qwen-tts-2025-05-22</option>
+                        <option value="qwen-tts-latest">qwen-tts-latest</option>
+                        <option value="qwen3-tts-flash-realtime" disabled>qwen3-tts-flash-realtime (额度不足)</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small mb-1"><i class="bi bi-soundwave me-1"></i>音色</label>
+                    <select class="form-select form-select-sm" id="ttsVoice">
+                        <option value="Ethan" selected>Ethan (英文男声)</option>
+                        <option value="Cherry">Cherry (英文女声)</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Row 2: 驱动与录制控制 -->
+            <div class="row g-3 align-items-center pt-2" style="border-top:1px dashed rgba(255,255,255,0.08);">
+                <!-- 1. 音频驱动 -->
+                <div class="col-md-5">
+                    <label class="form-label small mb-1"><i class="bi bi-mic-fill me-1"></i>音频驱动 <span style="font-size:0.7rem;color:var(--text-muted);">(POST /humanaudio)</span></label>
+                    <div class="input-group input-group-sm">
+                        <input type="file" class="form-control form-control-sm" id="audioFile" accept="audio/*">
+                        <button class="btn btn-primary-custom btn-sm px-3" onclick="uploadAudio()"><i class="bi bi-upload me-1"></i>上传播放</button>
+                    </div>
+                </div>
+
+                <!-- 2. 录制控制 -->
+                <div class="col-md-4">
+                    <label class="form-label small mb-1"><i class="bi bi-record-circle me-1"></i>录制控制 <span style="font-size:0.7rem;color:var(--text-muted);">(POST /record)</span></label>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-sm btn-outline-custom flex-fill" id="btnRecToggle" onclick="toggleRecord()"><i class="bi bi-record-circle me-1"></i>开始录制</button>
+                        <button class="btn btn-sm btn-outline-custom flex-fill" id="btnDownload" onclick="downloadRecord()" disabled><i class="bi bi-download me-1"></i>下载录像</button>
+                    </div>
+                </div>
+
+                <!-- 3. 自动打断 -->
+                <div class="col-md-3 d-flex align-items-center pt-3">
+                    <label class="custom-switch-wrap mb-0">
+                        <input type="checkbox" id="txtInterrupt" checked class="custom-switch-input">
+                        <span class="custom-switch-slider"></span>
+                        <span class="custom-switch-label text-nowrap">播报自动打断</span>
+                    </label>
+                </div>
+            </div>
         </div>
     </div>
 
-    <div class="row">
-        <!-- Left Column: Connection + Video -->
+<div class="row">
+        <!-- ===== LEFT COLUMN: WebRTC + Video ===== -->
         <div class="col-lg-7">
-            <!-- 1. WebRTC Connection -->
+            <!-- WebRTC Connection -->
             <div class="glass-card">
-                <div class="card-header"><i class="bi bi-broadcast"></i> WebRTC 连接</div>
-                <div class="card-body">
-                    <div class="row g-2 align-items-end mb-3">
-                        <div class="col-md-4">
-                            <label class="form-label">Avatar ID</label>
-                            <input type="text" class="form-control form-control-sm" id="offerAvatar" list="avatarList" placeholder="cc3" value="cc3">
-                            <datalist id="avatarList">
-                                <option value="cc3">
-                                <option value="cc2">
-                                <option value="cc1">
-                                <option value="wav2lip256_avatar1">
-                                <option value="musetalk_avatar3">
-                            </datalist>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">参考音频</label>
-                            <input type="text" class="form-control form-control-sm" id="offerRefAudio" placeholder="zh-CN-YunxiaNeural">
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">参考音频文本</label>
-                            <input type="text" class="form-control form-control-sm" id="offerRefText" placeholder="参考文本（可选）">
-                        </div>
+                <div class="card-header d-flex align-items-center justify-content-between py-2 px-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-broadcast"></i> WebRTC 连接
                     </div>
-                    <div class="d-flex gap-2">
-                        <button class="btn-primary-custom" id="btnStart" onclick="start()"><i class="bi bi-play-fill"></i> 开始连接</button>
-                        <button class="btn-danger-custom" id="btnStop" onclick="stop()" style="display:none;"><i class="bi bi-stop-fill"></i> 断开连接</button>
+                    <div class="d-flex align-items-center gap-2">
+                        <button class="btn-primary-custom py-1 px-3" id="btnStart" onclick="start()" style="font-size:0.85rem;"><i class="bi bi-play-fill"></i> 开始连接</button>
+                        <button class="btn-danger-custom py-1 px-3" id="btnStop" onclick="stop()" style="display:none; font-size:0.85rem;"><i class="bi bi-stop-fill"></i> 断开连接</button>
                     </div>
-                    <div class="mt-3">
+                </div>
+                <div class="card-body p-2">
+                    <div>
                         <div id="videoFullscreenWrapper" class="video-fs-wrapper">
                             <video id="video" autoplay playsinline muted controls></video>
                             <audio id="audio" autoplay></audio>
-                            <button class="fs-trigger" id="fsBtn" onclick="toggleFullscreen()" title="全屏">⛶</button>
+
+                            <!-- WebRTC 客户向简易加载蒙层 (覆盖在 video 之上) -->
+                            <div id="videoLoadingOverlay" class="video-loading-overlay" style="display:none;">
+                                <div class="loading-box-customer">
+                                    <div class="loading-pulse-icon">
+                                        <i class="bi bi-robot" id="loadingIcon"></i>
+                                    </div>
+                                    <div class="loading-status-text" id="webrtcStepTitle">正在连接数字人服务器...</div>
+                                    <div class="loading-status-sub" id="webrtcStepSubtext">准备初始化数字人推流通道</div>
+                                    <div class="customer-step-dots">
+                                        <span class="c-dot active" id="cdot1"></span>
+                                        <span class="c-dot" id="cdot2"></span>
+                                        <span class="c-dot" id="cdot3"></span>
+                                        <span class="c-dot" id="cdot4"></span>
+                                    </div>
+                                </div>
+                            </div>
+                            <button class="fs-trigger" id="fsBtn" onclick="toggleFullscreen()" title="全屏"><i class="bi bi-arrows-fullscreen"></i></button>
                             <div class="fs-toolbar" id="fsToolbar">
-                                <button id="fsPanelToggle" onclick="toggleFsPanel()" title="控制面板">☰ 控制</button>
-                                <button onclick="toggleFullscreen()" title="退出全屏">✕ 退出</button>
+                                <button id="fsPanelToggle" onclick="toggleFsPanel()" title="控制面板"><i class="bi bi-layout-sidebar"></i> 控制</button>
+                                <button onclick="toggleFullscreen()" title="退出全屏"><i class="bi bi-fullscreen-exit"></i> 退出</button>
                             </div>
                             <div id="fsSidePanel" class="fs-side-panel">
                                 <!-- Voice Conversation -->
                                 <div class="fs-glass-card">
                                     <div class="fs-card-header"><i class="bi bi-mic-fill"></i> 语音对话</div>
                                     <div class="fs-card-body">
-                                        <div id="fsVoiceStatusBar" class="small mb-2" style="display:none;color:#64748b;">
+                                        <div id="fsVoiceStatusBar" class="small mb-2" style="display:none;">
                                             <span id="fsVoiceStatusIcon">🎤</span>
                                             <span id="fsVoiceStatusText"></span>
                                         </div>
@@ -266,15 +1119,6 @@
                                                 <option value="ptt">🎤 按住说话</option>
                                             </select>
                                             <button class="btn-outline-custom btn-sm" onclick="interrupt()"><i class="bi bi-stop-circle"></i> 打断</button>
-                                        </div>
-                                        <div class="d-flex gap-2 align-items-center mb-2 small">
-                                            <label class="mb-0 text-muted" style="white-space:nowrap;">音色</label>
-                                            <select class="form-select form-select-sm" id="fsVoiceTtsVoice"
-                                                onchange="document.getElementById('ttsVoice').value=this.value; document.getElementById('voiceTtsVoice').value=this.value"
-                                                style="width:100px;">
-                                                <option value="Ethan" selected>Ethan (英文男声)</option>
-                            <option value="Cherry">Cherry</option>
-                                            </select>
                                         </div>
                                         <div id="fsPttContainer" style="display:none;" class="mb-2">
                                             <button id="fsPttButton" class="btn-primary-custom w-100 py-3 fs-5"
@@ -299,29 +1143,24 @@
                                                 <option value="echo">Echo 复读</option>
                                                 <option value="chat">Chat LLM</option>
                                             </select>
-                                            <div class="form-check form-switch">
-                                                <input class="form-check-input" type="checkbox" id="fsTxtInterrupt" checked>
-                                                <label class="form-check-label small">打断</label>
-                                            </div>
-                                            <button class="btn-primary-custom btn-sm ms-auto" onclick="sendFsText()"><i class="bi bi-send"></i> 发送</button>
-                                            <button class="btn-outline-custom btn-sm" onclick="interrupt()"><i class="bi bi-stop-circle"></i> 打断</button>
-                                        </div>
-                                        <div class="d-flex gap-2 align-items-center">
-                                            <label class="form-label mb-0" style="white-space:nowrap;">TTS 模型</label>
-                                            <select class="form-select form-select-sm" id="fsTtsModel" style="flex:1;">
-                                                <option value="qwen-tts-realtime-latest" selected>qwen-tts-realtime-latest</option>
+                                            <select class="form-select form-select-sm" style="width:auto; flex:0 0 auto;" id="fsTtsModel">
+                                                <option value="qwen-tts-realtime-latest">qwen-tts-realtime-latest</option>
                                                 <option value="qwen-tts-realtime-2025-07-15">qwen-tts-realtime-2025-07-15</option>
                                                 <option value="qwen-tts-2025-05-22">qwen-tts-2025-05-22</option>
                                                 <option value="qwen-tts-latest">qwen-tts-latest</option>
-                                                <option value="qwen3-tts-flash-realtime" disabled>qwen3-tts-flash-realtime ⚠️ 额度不足</option>
                                             </select>
-                                            <label class="form-label mb-0" style="white-space:nowrap;">音色</label>
-                                            <select class="form-select form-select-sm" id="fsTtsVoice" style="width:120px;">
-                                                <option value="Ethan" selected>Ethan (英文男声)</option>
-                            <option value="Cherry">Cherry</option>
+                                            <select class="form-select form-select-sm" style="width:auto; flex:0 0 auto;" id="fsTtsVoice">
+                                                <option value="Ethan">Ethan (英文男声)</option>
+                                                <option value="Cherry">Cherry (英文女声)</option>
                                             </select>
+                                            <label class="custom-switch-wrap mb-0">
+                                                <input type="checkbox" id="fsTxtInterrupt" checked class="custom-switch-input">
+                                                <span class="custom-switch-slider"></span>
+                                                <span class="custom-switch-label text-nowrap">打断</span>
+                                            </label>
+                                            <button class="btn-primary-custom btn-sm ms-auto" onclick="sendFsText()"><i class="bi bi-send"></i> 发送</button>
+                                            <button class="btn-outline-custom btn-sm" onclick="interrupt()"><i class="bi bi-stop-circle"></i> 打断</button>
                                         </div>
-                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -330,13 +1169,15 @@
             </div>
         </div>
 
-        <!-- Right Column: Drivers + Actions -->
+        <!-- ===== RIGHT COLUMN: Drivers + Actions ===== -->
+        </div><!-- /col-lg-7 -->
+
         <div class="col-lg-5">
-            <!-- 2. Voice Conversation -->
+            <!-- Voice Conversation -->
             <div class="glass-card">
                 <div class="card-header"><i class="bi bi-mic-fill"></i> 语音对话</div>
                 <div class="card-body">
-                    <div id="voiceStatusBar" class="small text-muted mb-2" style="display:none;">
+                    <div id="voiceStatusBar" class="small mb-2" style="display:none;">
                         <span id="voiceStatusIcon">🎤</span>
                         <span id="voiceStatusText">聆听中...</span>
                     </div>
@@ -348,17 +1189,6 @@
                         </select>
                         <button class="btn-outline-custom btn-sm" onclick="interrupt()"><i class="bi bi-stop-circle"></i> 打断</button>
                     </div>
-                    <div class="d-flex gap-2 align-items-center mb-2 small">
-                        <label class="mb-0 text-muted" style="white-space:nowrap;">音色</label>
-                        <select class="form-select form-select-sm" id="voiceTtsVoice" onchange="document.getElementById('ttsVoice').value=this.value" style="width:100px;">
-                            <option value="Ethan" selected>Ethan (英文男声)</option>
-                            <option value="Cherry">Cherry</option>
-                        </select>
-                        <label class="mb-0 text-muted" style="white-space:nowrap;">模型</label>
-                        <select class="form-select form-select-sm" id="voiceTtsModel" onchange="document.getElementById('ttsModel').value=this.value" style="flex:1;">
-                            <option value="qwen-tts-realtime-latest" selected>qwen-tts-realtime-latest</option>
-                        </select>
-                    </div>
                     <div id="pttContainer" style="display:none;" class="mb-2">
                         <button id="pttButton" class="btn-primary-custom w-100 py-3 fs-5" onmousedown="pttStart()" onmouseup="pttEnd()" ontouchstart="pttStart()" ontouchend="pttEnd()">🎤 按住说话</button>
                     </div>
@@ -367,85 +1197,65 @@
                 </div>
             </div>
 
-            <!-- 3. Text Driver -->
+            <!-- Text Driver -->
             <div class="glass-card">
-                <div class="card-header"><i class="bi bi-chat-text-fill"></i> 文本驱动 (POST /human)</div>
+                <div class="card-header"><i class="bi bi-chat-text-fill"></i> 文本驱动 <span style="font-size:0.7rem;color:var(--text-muted);font-weight:400;">(POST /human)</span></div>
                 <div class="card-body">
                     <div class="mb-2">
                         <label class="form-label">输入文本 <span class="param-hint">(type: echo/chat)</span></label>
                         <textarea class="form-control form-control-sm" id="txtMessage" rows="2" placeholder="输入要播报的文本...">你好，欢迎使用LiveTalking</textarea>
                     </div>
-                    <div class="d-flex gap-2 align-items-end mb-2">
-                        <select class="form-select form-select-sm" style="width:120px;" id="txtType">
-                            <option value="echo">Echo 复读</option>
-                            <option value="chat">Chat LLM</option>
-                        </select>
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" id="txtInterrupt" checked>
-                            <label class="form-check-label small">打断</label>
-                        </div>
-                        <button class="btn-primary-custom btn-sm ms-auto" onclick="sendText()"><i class="bi bi-send"></i> 发送</button>
-                        <button class="btn-outline-custom btn-sm" onclick="interrupt()"><i class="bi bi-stop-circle"></i> 打断</button>
+                    <div class="d-flex gap-2 align-items-center mb-2">
+                        <button class="btn-primary-custom btn-sm ms-auto" onclick="sendText()"><i class="bi bi-send"></i> 发送文本</button>
+                        <button class="btn-outline-custom btn-sm" onclick="interrupt()"><i class="bi bi-stop-circle"></i> 打断播报</button>
                     </div>
-                    <div class="d-flex gap-2 align-items-center">
-                        <label class="form-label mb-0" style="white-space:nowrap;">TTS 模型</label>
-                        <select class="form-select form-select-sm" id="ttsModel" style="flex:1;">
-                            <option value="qwen-tts-realtime-latest" selected>qwen-tts-realtime-latest ✅</option>
-                            <option value="qwen-tts-realtime-2025-07-15">qwen-tts-realtime-2025-07-15 ✅</option>
-                            <option value="qwen-tts-2025-05-22">qwen-tts-2025-05-22 ✅</option>
-                            <option value="qwen-tts-latest">qwen-tts-latest ✅</option>
-                            <option value="qwen3-tts-flash-realtime" disabled>qwen3-tts-flash-realtime ⚠️ 额度不足</option>
-                        </select>
-                        <label class="form-label mb-0" style="white-space:nowrap;">音色</label>
-                        <select class="form-select form-select-sm" id="ttsVoice" style="width:120px;">
-                            <option value="Ethan" selected>Ethan (英文男声)</option>
-                            <option value="Cherry">Cherry</option>
-                        </select>
                     </div>
-                </div>
             </div>
 
-            <!-- 3. Audio Upload -->
-            <div class="glass-card">
-                <div class="card-header"><i class="bi bi-mic-fill"></i> 音频驱动 (POST /humanaudio)</div>
-                <div class="card-body">
-                    <input type="file" class="form-control form-control-sm mb-2" id="audioFile" accept="audio/*">
-                    <button class="btn-primary-custom btn-sm" onclick="uploadAudio()"><i class="bi bi-upload"></i> 上传并播放</button>
-                </div>
+            
+
+            
             </div>
 
-            <!-- 4. Recording -->
-            <div class="glass-card">
-                <div class="card-header"><i class="bi bi-record-circle"></i> 录制控制 (POST /record)</div>
-                <div class="card-body">
-                    <div class="d-flex gap-2">
-                        <button class="btn-outline-custom btn-sm" id="btnRecToggle" onclick="toggleRecord()"><i class="bi bi-record-circle"></i> 开始录制</button>
-                        <button class="btn-outline-custom btn-sm" id="btnDownload" onclick="downloadRecord()" disabled><i class="bi bi-download"></i> 下载录像</button>
-                    </div>
+            
                 </div>
             </div>
-
-            <!-- 5. Custom State -->
-            <div class="glass-card">
-                <div class="card-header"><i class="bi bi-sliders"></i> 动作编排 (POST /set_audiotype)</div>
-                <div class="card-body">
-                    <div class="row g-2 align-items-end">
-                        <div class="col-6">
-                            <label class="form-label">Audiotype 索引</label>
-                            <input type="number" class="form-control form-control-sm" id="audiotypeVal" value="2" min="2">
-                        </div>
-                        <div class="col-6">
-                            <button class="btn-primary-custom btn-sm w-100" onclick="setAudiotype()"><i class="bi bi-arrow-right-circle"></i> 切换状态</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-        </div>
-    </div>
-</div>
 
 <script>
+// ── 动态加载可用 Avatar 列表 ──────────────────────────────────
+async function loadAvatars() {
+    const select = document.getElementById('offerAvatar');
+    const statusEl = document.getElementById('avatarStatus');
+    try {
+        const resp = await fetch('/api/avatars');
+        const json = await resp.json();
+        if (json.code === 0 && json.data && json.data.avatars) {
+            const avatars = json.data.avatars;
+            const defaultId = json.data.default || '';
+            select.innerHTML = '';
+            if (avatars.length === 0) {
+                select.innerHTML = '<option value="">无可用形象</option>';
+                if (statusEl) statusEl.textContent = '请先创建数字人形象';
+            } else {
+                avatars.forEach(id => {
+                    const opt = document.createElement('option');
+                    opt.value = id;
+                    opt.textContent = (id === defaultId) ? id + ' (默认模型)' : id;
+                    if (id === defaultId) opt.selected = true;
+                    select.appendChild(opt);
+                });
+                if (statusEl) statusEl.textContent = '共 ' + avatars.length + ' 个可用数字人模型';
+            }
+        }
+
+    } catch (e) {
+        console.warn('Network fetch skipped for avatars, keeping pre-populated options:', e);
+        // 保留预置可用数字人模型，绝不清空
+    }
+}
+document.addEventListener('DOMContentLoaded', loadAvatars);
+loadAvatars(); // 立即执行，防止已错失 DOMContentLoaded 事件
+
 let pc = null;
 let sessionid = null;
 
@@ -473,6 +1283,7 @@ const RECONNECT_BASE_DELAY = 2000; // ms, exponential backoff
 function negotiate() {
     pc.addTransceiver('video', { direction: 'recvonly' });
     pc.addTransceiver('audio', { direction: 'recvonly' });
+    setWebRTCStep(2, '正在加载数字人模型...', '预加载 3D 形象与动态渲染', 'bi-person-badge');
     return pc.createOffer().then(offer => pc.setLocalDescription(offer)).then(() => {
         return new Promise(resolve => {
             if (pc.iceGatheringState === 'complete') resolve();
@@ -487,9 +1298,10 @@ function negotiate() {
             sdp: offer.sdp,
             type: offer.type,
             avatar: document.getElementById('offerAvatar').value || undefined,
-            refaudio: document.getElementById('offerRefAudio').value || undefined,
-            reftext: document.getElementById('offerRefText').value || undefined,
+            refaudio: document.getElementById('ttsVoice').value || undefined,
+            reftext: document.getElementById('offerRefText')?.value || undefined,
         };
+        setWebRTCStep(3, '正在初始化语音引擎...', '配置高清音轨与推流响应', 'bi-soundwave');
         return fetch('/offer', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     }).then(res => res.json()).then(answer => {
         if (answer.sessionid) setSessionId(answer.sessionid);
@@ -529,7 +1341,7 @@ function _attemptReconnect() {
 function _setupConnection() {
     const config = {
         sdpSemantics: 'unified-plan',
-        iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
+        iceServers: [{ urls: 'stun:stun.qq.com:3478' }],
     };
     pc = new RTCPeerConnection(config);
     pc.addEventListener('track', evt => {
@@ -551,11 +1363,25 @@ function _setupConnection() {
 }
 
 function start() {
+    setWebRTCStep(1, '正在连接数字人服务器...', '建立实时音视频通信通道', 'bi-wifi');
     _reconnectAttempts = 0;
     _setupConnection();
     negotiate();
     document.getElementById('btnStart').style.display = 'none';
     document.getElementById('btnStop').style.display = 'inline-block';
+}
+
+function shutdownServer() {
+    if (!confirm('确定要关闭远程服务器进程吗？\n\n关闭后需要手动在服务器端重新启动。')) return;
+    if (!confirm('再次确认：真的要关闭服务器吗？')) return;
+    fetch('/api/admin/shutdown', { method: 'POST' })
+        .then(r => r.json())
+        .then(d => {
+            alert('服务器已关闭: ' + (d.msg || 'OK'));
+        })
+        .catch(() => {
+            alert('服务器已关闭（连接已中断）');
+        });
 }
 
 function stop() {
@@ -756,11 +1582,6 @@ function onVoiceModeChange() {
     if (fsVm) { fsVm.value = newMode; }
     const fsPttC = document.getElementById('fsPttContainer');
     if (fsPttC) { fsPttC.style.display = (newMode === 'ptt') ? 'block' : 'none'; }
-    // Sync fullscreen voice selectors
-    const fsVoiceSelect = document.getElementById('fsVoiceTtsVoice');
-    if (fsVoiceSelect) {
-        fsVoiceSelect.value = document.getElementById('voiceTtsVoice').value;
-    }
 }
 
 function resetVoiceMode() {
@@ -1441,13 +2262,11 @@ function sendVoiceText(text, interrupt) {
     }, VOICE_WAITING_MAX_MS);
 
     const type = document.getElementById('txtType').value;
-    const ttsVoice = (document.getElementById('voiceTtsVoice')?.value || document.getElementById('ttsVoice').value);
-    const ttsModel = (document.getElementById('voiceTtsModel')?.value || document.getElementById('ttsModel').value);
+    const ttsModel = document.getElementById('ttsModel').value;
+    const ttsVoice = document.getElementById('ttsVoice').value;
     const body = { text, type, interrupt, sessionid: String(sessionid) };
-    const tts = { model: ttsModel };
-    tts.ref_file = ttsVoice;
-    body.tts = tts;
-    console.log('[Voice] /human body:', JSON.stringify({ text: text.substring(0,30), type, ttsVoice, ttsModel }));
+    body.tts = { model: ttsModel, ref_file: ttsVoice };
+
     fetch('/human', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1573,16 +2392,6 @@ stop = function() {
     _origStop();
 };
 
-// Sync voice panel selectors with text panel on startup
-(function initVoiceSelectors() {
-    const voiceTtsVoice = document.getElementById('voiceTtsVoice');
-    const ttsVoice = document.getElementById('ttsVoice');
-    if (voiceTtsVoice && ttsVoice) voiceTtsVoice.value = ttsVoice.value;
-    const voiceTtsModel = document.getElementById('voiceTtsModel');
-    const ttsModel = document.getElementById('ttsModel');
-    if (voiceTtsModel && ttsModel) voiceTtsModel.value = ttsModel.value;
-})();
-
 // ─── Fullscreen Side Panel ────────────────────────────────────
 const _wrapper = document.getElementById('videoFullscreenWrapper');
 let _isFullscreen = false;
@@ -1604,23 +2413,44 @@ function onFullscreenChange() {
     const fsEl = document.fullscreenElement || document.webkitFullscreenElement;
     _isFullscreen = (fsEl === _wrapper);
     if (_isFullscreen) {
-        // Sync state into side panel (ready for when user opens it)
-        document.getElementById('fsVoiceMode').value = document.getElementById('voiceMode').value;
-        document.getElementById('fsPttContainer').style.display =
-            (document.getElementById('voiceMode').value === 'ptt') ? 'block' : 'none';
-        document.getElementById('fsTxtType').value = document.getElementById('txtType').value;
-        document.getElementById('fsTxtInterrupt').checked = document.getElementById('txtInterrupt').checked;
-        document.getElementById('fsTtsModel').value = document.getElementById('ttsModel').value;
-        document.getElementById('fsTtsVoice').value = document.getElementById('ttsVoice').value;
-        const fsLog = document.getElementById('fsVoiceChatLog');
-        fsLog.innerHTML = document.getElementById('voiceChatLog').innerHTML;
-        fsLog.scrollTop = fsLog.scrollHeight;
-        // Panel starts closed
-        _wrapper.classList.remove('fs-panel-open');
-        document.getElementById('fsPanelToggle').classList.remove('active');
+        // Sync state into side panel（防御性：每个赋值都做空检查，避免因元素缺失导致整段崩溃）
+        try {
+            const fsVoiceMode = document.getElementById('fsVoiceMode');
+            const voiceModeEl = document.getElementById('voiceMode');
+            if (fsVoiceMode && voiceModeEl) fsVoiceMode.value = voiceModeEl.value;
+            const fsPtt = document.getElementById('fsPttContainer');
+            if (fsPtt && voiceModeEl) {
+                fsPtt.style.display = (voiceModeEl.value === 'ptt') ? 'block' : 'none';
+            }
+            const fsTxtType = document.getElementById('fsTxtType');
+            const txtTypeEl = document.getElementById('txtType');
+            if (fsTxtType && txtTypeEl) fsTxtType.value = txtTypeEl.value;
+            const fsTxtInt = document.getElementById('fsTxtInterrupt');
+            const txtIntEl = document.getElementById('txtInterrupt');
+            if (fsTxtInt && txtIntEl) fsTxtInt.checked = txtIntEl.checked;
+            const fsTtsModel = document.getElementById('fsTtsModel');
+            const ttsModelEl = document.getElementById('ttsModel');
+            if (fsTtsModel && ttsModelEl) fsTtsModel.value = ttsModelEl.value;
+            const fsTtsVoice = document.getElementById('fsTtsVoice');
+            const ttsVoiceEl = document.getElementById('ttsVoice');
+            if (fsTtsVoice && ttsVoiceEl) fsTtsVoice.value = ttsVoiceEl.value;
+            const fsLog = document.getElementById('fsVoiceChatLog');
+            const mainLog = document.getElementById('voiceChatLog');
+            if (fsLog && mainLog) {
+                fsLog.innerHTML = mainLog.innerHTML;
+                fsLog.scrollTop = fsLog.scrollHeight;
+            }
+        } catch (e) {
+            console.warn('[FullscreenSync] sync failed:', e);
+        }
+        // 进入全屏自动展开侧边控制面板（避免用户找不到入口）
+        _wrapper.classList.add('fs-panel-open');
+        const toggleBtn = document.getElementById('fsPanelToggle');
+        if (toggleBtn) toggleBtn.classList.add('active');
     } else {
         _wrapper.classList.remove('fs-panel-open');
-        document.getElementById('fsPanelToggle').classList.remove('active');
+        const toggleBtn = document.getElementById('fsPanelToggle');
+        if (toggleBtn) toggleBtn.classList.remove('active');
     }
 }
 
@@ -1682,6 +2512,74 @@ showVoiceTranscript = function(text, interim) {
         el.textContent = (interim ? '...' : '✓ ') + text;
     }
 };
+
+function toggleConfigPanel() {
+    var content = document.getElementById("configPanelContent");
+    var icon = document.getElementById("panelToggleIcon");
+    var text = document.getElementById("panelToggleText");
+    if (!content) return;
+    var isCollapsed = content.classList.contains("collapsed");
+    if (isCollapsed) {
+        content.classList.remove("collapsed");
+        content.style.display = "";
+        if (icon) icon.className = "bi bi-chevron-up";
+        if (text) text.innerText = "收起配置";
+    } else {
+        content.classList.add("collapsed");
+        if (icon) icon.className = "bi bi-chevron-down";
+        if (text) text.innerText = "展开配置";
+    }
+}
+
+
+
+let _webrtcLoaded = false;
+
+function setWebRTCStep(step, title, subtext, icon) {
+    if (_webrtcLoaded && step < 4) return; // 如果视频已播放，忽略滞后的中间步骤
+    const overlay = document.getElementById('videoLoadingOverlay');
+    if (!overlay) return;
+    overlay.style.display = 'flex';
+    overlay.style.opacity = '1';
+    overlay.style.visibility = 'visible';
+
+    if (title) document.getElementById('webrtcStepTitle').innerHTML = title;
+    if (subtext) document.getElementById('webrtcStepSubtext').textContent = subtext;
+    if (icon) document.getElementById('loadingIcon').className = 'bi ' + icon;
+
+    for (let i = 1; i <= 4; i++) {
+        const dot = document.getElementById('cdot' + i);
+        if (!dot) continue;
+        dot.classList.remove('active', 'done');
+        if (i < step) dot.classList.add('done');
+        else if (i === step) dot.classList.add('active');
+    }
+}
+
+function hideWebRTCStep() {
+    _webrtcLoaded = true;
+    const overlay = document.getElementById('videoLoadingOverlay');
+    if (!overlay) return;
+    setWebRTCStep(4, '数字人连线就绪！', '正在呈现画面...', 'bi-check-lg');
+    setTimeout(() => {
+        overlay.style.opacity = '0';
+        setTimeout(() => {
+            overlay.style.display = 'none';
+            overlay.style.visibility = 'hidden';
+        }, 300);
+    }, 200);
+}
+
+// 绑定视频元素的播放事件，保证画面一出立即关闭遮罩
+document.addEventListener('DOMContentLoaded', () => {
+    const v = document.getElementById('video');
+    if (v) {
+        v.addEventListener('playing', hideWebRTCStep);
+        v.addEventListener('timeupdate', () => {
+            if (v.currentTime > 0.1 && !_webrtcLoaded) hideWebRTCStep();
+        });
+    }
+});
 
 </script>
 </body>

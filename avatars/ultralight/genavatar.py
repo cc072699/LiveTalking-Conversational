@@ -1,5 +1,6 @@
 import argparse
 import os
+import shutil
 import cv2
 import torch
 import numpy as np
@@ -92,4 +93,4 @@ if __name__ == "__main__":
     print(f"写入数据到坐标文件:{coords_path}")
     with open(coords_path, 'wb') as f:
         pickle.dump(coord_list, f)
-    os.system(f"cp {args.checkpoint} {pth_path}")
+    shutil.copy2(args.checkpoint, pth_path)

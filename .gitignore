@@ -33,3 +33,4 @@ data/tmp/
 *.wav
 .DS_Store
 .idea
+.venv/

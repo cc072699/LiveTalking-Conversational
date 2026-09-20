@@ -4,10 +4,6 @@
 
 import json
 import asyncio
-import random
-import copy
-from typing import Dict, Optional
-import queue
 
 from aiohttp import web
 from aiortc import RTCPeerConnection, RTCSessionDescription, RTCIceServer, RTCConfiguration
@@ -15,10 +11,6 @@ from aiortc.rtcrtpsender import RTCRtpSender
 
 from utils.logger import logger
 
-
-# def _rand_session_id(n: int = 6) -> int:
-#     """生成 N 位随机 session ID"""
-#     return random.randint(10 ** (n - 1), 10 ** n - 1)
 
 
 from server.session_manager import session_manager
@@ -58,15 +50,6 @@ class RTCManager:
             )
 
         offer = RTCSessionDescription(sdp=params["sdp"], type=params["type"])
-
-        if False: # 不再由 RTCManager 控制 max_session，让业务逻辑或SessionManager 控制
-            logger.info('reach max session')
-            return web.Response(
-                content_type="application/json",
-                text=json.dumps({"code": -1, "msg": "reach max session"}),
-            )
-
-        #sessionid = _rand_session_id()
 
         # 通过 SessionManager 构建
         try:
@@ -167,6 +150,8 @@ class RTCManager:
         import aiohttp
         await session_manager.create_session({}, sessionid)
         avatar_session = session_manager.get_session(sessionid)
+        if avatar_session is None:
+            raise RuntimeError(f"Failed to create RTCPush session {sessionid}")
 
         pc = RTCPeerConnection()
         self.pcs.add(pc)
